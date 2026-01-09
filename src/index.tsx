@@ -104,25 +104,19 @@ app.patch('/api/records/:id', async (c) => {
 app.post('/api/generate-image', async (c) => {
   const { prompt, imageUrls, aspectRatio } = await c.req.json()
   
-  // Try multiple parameter formats for aspect ratio
+  // Per KieAI docs, the parameter is "image_size" not "aspect_ratio"
+  // Valid values: 1:1, 2:3, 3:2, 3:4, 4:3, 4:5, 5:4, 9:16, 16:9, 21:9
   const requestBody = {
     model: 'google/nano-banana',
     input: {
       prompt,
       image_urls: imageUrls || [REFERENCE_IMAGES.face, REFERENCE_IMAGES.outfit, REFERENCE_IMAGES.logo],
-      // Try all possible parameter names for aspect ratio
-      aspect_ratio: aspectRatio || '16:9',
-      aspectRatio: aspectRatio || '16:9',
-      ratio: aspectRatio || '16:9',
-      resolution: '1K',
+      image_size: aspectRatio || '16:9',  // This is the correct parameter name
       output_format: 'png'
-    },
-    // Also try at root level
-    aspect_ratio: aspectRatio || '16:9',
-    aspectRatio: aspectRatio || '16:9'
+    }
   }
   
-  console.log('KieAI Request:', JSON.stringify(requestBody, null, 2))
+  console.log('KieAI Nano Banana Request:', JSON.stringify(requestBody, null, 2))
   
   const res = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
     method: 'POST',
