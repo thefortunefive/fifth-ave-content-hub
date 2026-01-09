@@ -1295,15 +1295,25 @@ app.get('/', (c) => {
           </div>
         </div>
 
-        <!-- SOCIAL CONTENT SECTION - LARGE, PRIMARY FOCUS -->
-        <div id="socialContentSection" class="glass rounded-2xl p-6 hidden">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-xl font-semibold flex items-center gap-2">
+        <!-- SOCIAL CONTENT SECTION - COLLAPSIBLE, EXPANDABLE -->
+        <div id="socialContentSection" class="glass rounded-2xl hidden overflow-hidden">
+          <!-- Collapsible Header -->
+          <div class="p-4 cursor-pointer flex items-center justify-between border-b border-white/10" onclick="toggleSocialContent()">
+            <div class="flex items-center gap-3">
               <i class="fas fa-share-alt text-amber-500"></i>
-              Social Media Content
-            </h3>
-            <span class="text-xs text-gray-500">Auto-saves on edit</span>
+              <h3 class="font-semibold">Social Media Content</h3>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-xs text-gray-500">Auto-saves on edit</span>
+              <button onclick="event.stopPropagation(); expandSocialContent()" title="Expand to full screen" class="text-gray-400 hover:text-amber-500 transition-colors">
+                <i class="fas fa-expand"></i>
+              </button>
+              <i id="socialContentToggle" class="fas fa-chevron-up text-gray-400 transition-transform"></i>
+            </div>
           </div>
+          
+          <!-- Collapsible Content -->
+          <div id="socialContentBody" class="p-6">
           
           <!-- Tabs - Larger -->
           <div class="flex border-b border-white/10 mb-6 overflow-x-auto gap-1">
@@ -1424,6 +1434,7 @@ app.get('/', (c) => {
                 class="w-full bg-white/5 border border-white/10 rounded p-2 text-sm resize-y editable-field"></textarea>
             </div>
           </div>
+          </div><!-- End socialContentBody -->
         </div>
       </div>
     </div>
@@ -3306,6 +3317,134 @@ CRITICAL:
         content.classList.add('hidden');
         toggle.style.transform = 'rotate(0deg)';
       }
+    }
+    
+    // Toggle Social Media Content (collapsible section)
+    function toggleSocialContent() {
+      const content = document.getElementById('socialContentBody');
+      const toggle = document.getElementById('socialContentToggle');
+      const isHidden = content.classList.contains('hidden');
+      
+      if (isHidden) {
+        content.classList.remove('hidden');
+        toggle.style.transform = 'rotate(0deg)';
+      } else {
+        content.classList.add('hidden');
+        toggle.style.transform = 'rotate(180deg)';
+      }
+    }
+    
+    // Expand Social Content to full-screen modal
+    function expandSocialContent() {
+      const socialSection = document.getElementById('socialContentSection');
+      const overlay = document.getElementById('socialExpandOverlay');
+      
+      if (!overlay) {
+        // Create overlay if it doesn't exist
+        const newOverlay = document.createElement('div');
+        newOverlay.id = 'socialExpandOverlay';
+        newOverlay.className = 'fixed inset-0 z-50 bg-black/95 hidden';
+        newOverlay.innerHTML = \`
+          <div class="h-full flex flex-col p-4">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-2xl font-bold text-amber-500">
+                <i class="fas fa-share-alt mr-2"></i>Social Media Content
+              </h3>
+              <button onclick="collapseSocialContent()" class="text-gray-400 hover:text-white text-2xl">
+                <i class="fas fa-compress-alt"></i>
+              </button>
+            </div>
+            <div id="expandedTabsContainer" class="flex border-b border-white/10 mb-4 overflow-x-auto gap-1"></div>
+            <div id="expandedTextarea" class="flex-1 flex flex-col">
+              <textarea id="expandedContent" 
+                class="flex-1 w-full bg-white/5 border border-white/10 rounded-xl p-6 text-lg resize-none focus:border-amber-500 focus:outline-none"
+                placeholder="Select a tab to edit..."></textarea>
+            </div>
+          </div>
+        \`;
+        document.body.appendChild(newOverlay);
+      }
+      
+      // Copy tabs to expanded view
+      const expandedTabs = document.getElementById('expandedTabsContainer');
+      const activeTab = document.querySelector('.tab-btn.tab-active')?.dataset.tab || 'twitter';
+      expandedTabs.innerHTML = ['twitter', 'threads', 'bluesky', 'linkedin', 'facebook', 'instagram', 'blog', 'script']
+        .map(tab => \`<button onclick="switchExpandedTab('\${tab}')" class="tab-btn \${tab === activeTab ? 'tab-active' : ''} px-4 py-3 text-base whitespace-nowrap" data-expanded-tab="\${tab}">
+          <i class="\${getTabIcon(tab)} mr-2"></i>\${getTabLabel(tab)}
+        </button>\`).join('');
+      
+      // Sync current content
+      const currentTextarea = document.getElementById(\`content\${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}\`);
+      document.getElementById('expandedContent').value = currentTextarea?.value || '';
+      document.getElementById('expandedContent').dataset.currentTab = activeTab;
+      
+      document.getElementById('socialExpandOverlay').classList.remove('hidden');
+    }
+    
+    function collapseSocialContent() {
+      // Save content back to original textarea
+      const expandedContent = document.getElementById('expandedContent');
+      const currentTab = expandedContent.dataset.currentTab;
+      if (currentTab) {
+        const originalTextarea = document.getElementById(\`content\${currentTab.charAt(0).toUpperCase() + currentTab.slice(1)}\`);
+        if (originalTextarea) {
+          originalTextarea.value = expandedContent.value;
+          // Trigger auto-save
+          originalTextarea.dispatchEvent(new Event('change'));
+        }
+      }
+      document.getElementById('socialExpandOverlay').classList.add('hidden');
+    }
+    
+    function switchExpandedTab(tab) {
+      const expandedContent = document.getElementById('expandedContent');
+      const previousTab = expandedContent.dataset.currentTab;
+      
+      // Save content from previous tab
+      if (previousTab) {
+        const prevTextarea = document.getElementById(\`content\${previousTab.charAt(0).toUpperCase() + previousTab.slice(1)}\`);
+        if (prevTextarea) {
+          prevTextarea.value = expandedContent.value;
+        }
+      }
+      
+      // Load new tab content
+      const newTextarea = document.getElementById(\`content\${tab.charAt(0).toUpperCase() + tab.slice(1)}\`);
+      expandedContent.value = newTextarea?.value || '';
+      expandedContent.dataset.currentTab = tab;
+      
+      // Update tab styling
+      document.querySelectorAll('[data-expanded-tab]').forEach(btn => {
+        btn.classList.toggle('tab-active', btn.dataset.expandedTab === tab);
+      });
+    }
+    
+    function getTabIcon(tab) {
+      const icons = {
+        twitter: 'fab fa-twitter',
+        threads: 'fab fa-threads',
+        bluesky: 'fas fa-cloud',
+        linkedin: 'fab fa-linkedin',
+        facebook: 'fab fa-facebook',
+        instagram: 'fab fa-instagram',
+        blog: 'fas fa-blog',
+        script: 'fas fa-video'
+      };
+      return icons[tab] || 'fas fa-file';
+    }
+    
+    function getTabLabel(tab) {
+      const labels = {
+        twitter: 'Twitter/X',
+        threads: 'Threads',
+        bluesky: 'Bluesky',
+        linkedin: 'LinkedIn',
+        facebook: 'Facebook',
+        instagram: 'Instagram',
+        blog: 'Blog',
+        script: 'Script'
+      };
+      return labels[tab] || tab;
     }
 
     function handleHistoryDragStart(event, url) {
