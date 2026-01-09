@@ -2765,23 +2765,54 @@ app.get('/', (c) => {
       // Format the headline for the aspect ratio
       const formattedHeadline = formatHeadlineForRatio(headline, ratio);
       
+      // Get ratio-specific text layout instructions
+      let ratioInstructions = '';
+      let bannerHeight = '';
+      let textSize = '';
+      let lineBreakHint = '';
+      
+      if (ratio === '16:9') {
+        // Wide landscape - plenty of horizontal space
+        bannerHeight = '12-15% of image height';
+        textSize = 'LARGE bold text (about 5% of image height)';
+        lineBreakHint = 'Text should fit on 1-2 lines maximum across the wide banner';
+        ratioInstructions = 'This is a WIDE 16:9 landscape image. The banner spans a wide area so text can be larger and fit on fewer lines.';
+      } else if (ratio === '9:16') {
+        // Tall portrait - narrow horizontal space
+        bannerHeight = '10-12% of image height';
+        textSize = 'MEDIUM text (about 4% of image WIDTH since it is narrow)';
+        lineBreakHint = 'Text MUST wrap to 3-4 shorter lines to fit the NARROW width. Each line should be only 3-4 words.';
+        ratioInstructions = 'This is a TALL NARROW 9:16 portrait image (like Instagram Stories). The banner is NARROW so text must be SMALLER and wrap to MULTIPLE LINES to fit.';
+      } else if (ratio === '1:1') {
+        // Square - moderate space
+        bannerHeight = '12-14% of image height';
+        textSize = 'MEDIUM-LARGE text (about 4.5% of image width)';
+        lineBreakHint = 'Text should wrap to 2-3 lines of moderate length (4-5 words per line)';
+        ratioInstructions = 'This is a SQUARE 1:1 image. The banner has moderate width so text should be medium sized and wrap to 2-3 lines.';
+      }
+      
       // Create a specific prompt for Ideogram to add text overlay
       // Ideogram excels at text rendering - be very specific about what we want
       const textPrompt = \`Keep this exact image but add a professional news headline banner at the bottom.
 
+ASPECT RATIO CONTEXT:
+\${ratioInstructions}
+
 BANNER SPECIFICATIONS:
-- Position: Bottom 12-15% of the image
+- Position: Bottom \${bannerHeight}
 - Background: Dark semi-transparent black banner (85% opacity) spanning full width
 - Text content: "\${formattedHeadline}"
 - Text style: Bold white Helvetica/sans-serif font, left-aligned with padding
-- Text size: Large enough to be easily readable but fitting within the banner
-- Logo: Small golden crown icon labeled "5th Ave Crypto" in bottom-right of banner
+- Text size: \${textSize}
+- Line breaks: \${lineBreakHint}
+- Logo: Small golden crown icon labeled "5th Ave Crypto" in bottom-right corner of banner
 
 CRITICAL: 
 - Do NOT change the main image content AT ALL
 - Only ADD the text banner overlay at the bottom
 - The headline text must be EXACTLY as written above - letter perfect
-- Text must be crisp, clear, and professional\`;
+- Text must be crisp, clear, and professional
+- TEXT MUST FIT WITHIN THE BANNER - adjust size and line breaks as needed for this aspect ratio\`;
 
       console.log('Ideogram V3 text overlay prompt:', textPrompt);
       
