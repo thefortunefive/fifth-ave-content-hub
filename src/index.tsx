@@ -2652,23 +2652,25 @@ app.get('/', (c) => {
           // Update status
           document.getElementById(size.statusId).innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>' + size.ratio;
           document.getElementById(size.statusId).className = 'text-amber-400';
-          statusText.textContent = 'Generating ' + size.ratio + ' version...';
+          statusText.textContent = 'Cropping to ' + size.ratio + '...';
           
-          // Generate image with approved image as reference
-          const generatedUrl = await generateImageForRatio(lastGeneratedUrl, basePrompt, size.ratio);
+          // IMPORTANT: Nano Banana ignores aspect ratio when given reference images
+          // So instead, we CROP the 16:9 image to the target ratio
+          // This is more reliable than trying to regenerate
+          const croppedUrl = await cropImageToRatio(lastGeneratedUrl, size.ratio);
           
           // Check if headline text should be added
           const addHeadlineText = document.getElementById('addHeadlineText')?.checked;
           const shortHeadline = document.getElementById('shortHeadline')?.value?.trim();
           
-          let finalUrl = generatedUrl;
+          let finalUrl = croppedUrl;
           if (addHeadlineText && shortHeadline) {
             statusText.textContent = 'Adding text to ' + size.ratio + '...';
             try {
-              finalUrl = await addTextOverlayWithZImage(generatedUrl, shortHeadline, size.ratio);
+              finalUrl = await addTextOverlayWithZImage(croppedUrl, shortHeadline, size.ratio);
             } catch (err) {
               console.error('Error adding text overlay:', err);
-              finalUrl = generatedUrl;
+              finalUrl = croppedUrl;
             }
           }
           
@@ -2777,6 +2779,47 @@ app.get('/', (c) => {
         img.onerror = () => reject(new Error('Failed to decode image'));
         img.src = proxyData.dataUrl;
       });
+    }
+    
+    // Crop image to a specific aspect ratio and upload
+    async function cropImageToRatio(imageUrl, targetRatio) {
+      console.log('Cropping image to ratio:', targetRatio);
+      
+      // Load the source image
+      const img = await loadImage(imageUrl);
+      
+      // Calculate target dimensions based on ratio
+      // Keep the shorter dimension and crop the longer one
+      let targetWidth, targetHeight;
+      
+      if (targetRatio === '9:16') {
+        // Portrait - vertical (9:16)
+        // From 16:9 source, we need to crop significantly
+        // Use the full height and calculate width
+        targetHeight = img.height;
+        targetWidth = Math.floor(targetHeight * (9/16));
+      } else if (targetRatio === '1:1') {
+        // Square (1:1)
+        // Use the smaller dimension for both
+        const minDim = Math.min(img.width, img.height);
+        targetWidth = minDim;
+        targetHeight = minDim;
+      } else {
+        // Default to 16:9 (landscape)
+        targetWidth = img.width;
+        targetHeight = Math.floor(img.width * (9/16));
+      }
+      
+      console.log('Crop dimensions:', { sourceW: img.width, sourceH: img.height, targetW: targetWidth, targetH: targetHeight });
+      
+      // Crop the image
+      const blob = await cropToAspectRatio(img, targetWidth, targetHeight);
+      
+      // Upload and return the URL
+      const uploadedUrl = await uploadCroppedImage(blob);
+      console.log('Cropped image uploaded:', uploadedUrl);
+      
+      return uploadedUrl;
     }
     
     // Add text overlay to image using canvas (reliable text rendering with template-based sizing)
