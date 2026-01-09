@@ -1560,16 +1560,8 @@ app.get('/', (c) => {
       const container = document.getElementById('headlineInputContainer');
       container.classList.toggle('hidden', !isChecked);
       
-      // Auto-enable logo reference for current ratio when headline is on
-      if (isChecked && references['logo']) {
-        const ratio = currentAspectRatio;
-        if (references['logo'][ratio]) {
-          references['logo'][ratio].enabled = true;
-        }
-        saveReferences();
-        renderReferenceGridExpanded();
-        updateActiveCount();
-      }
+      // Logo is no longer auto-enabled - text overlay handles headlines separately
+      // Logo reference can still be manually enabled if needed for the base image
       
       // Regenerate prompt if we have a current record
       if (currentRecord) {
@@ -2951,17 +2943,8 @@ CRITICAL:
         ctx.fillText(line, padding, y);
       });
       
-      // Load and draw logo
-      try {
-        const logoUrl = 'https://iili.io/fEiEfUB.png';
-        const logoImg = await loadImage(logoUrl);
-        const logoSize = fontSize * 1.2; // Logo slightly larger than text
-        const logoX = canvas.width - padding - logoSize;
-        const logoY = bannerY + (bannerHeight - logoSize) / 2;
-        ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
-      } catch (err) {
-        console.warn('Could not load logo:', err);
-      }
+      // Logo removed from canvas overlay - text only
+      // If logo is needed, it should be added as a separate step or manually
       
       // Convert canvas to blob and upload
       return new Promise((resolve, reject) => {
