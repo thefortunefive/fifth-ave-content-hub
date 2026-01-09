@@ -27,14 +27,13 @@
 - [x] Auto-save images to Airtable postImage field
 - [x] Auto-save social content on edit
 - [x] "Generate All Sizes" - uses approved image as reference for other ratios
-- [x] Canvas-based text overlay (not AI text)
+- [x] **Two-step image generation with Z-Image text overlay**
 - [x] Drag images between sections
 - [x] Copy content buttons per platform
 
 ## Known Issues ⚠️
 
 ### High Priority
-- [ ] Text overlay on images needs refinement (font sizing, positioning)
 - [ ] Reference images sometimes not triggering correctly in generation
 
 ### Medium Priority
@@ -68,6 +67,13 @@
 4. **Airtable Image Quality**
    - Changed thumbnails from small to large for record cards
 
+5. **Two-Step Image Generation (Z-Image Text Overlay)**
+   - Step 1: Nano Banana generates base image (character, scene, no text)
+   - Step 2: Z-Image adds headline text overlay (excellent text rendering)
+   - Cost: ~$0.094/image total ($0.09 Nano Banana + $0.004 Z-Image)
+   - Canvas overlay as fallback if Z-Image fails
+   - UI shows "Step 1" and "Step 2" progress
+
 ## Next Steps (Prioritized)
 
 ### Immediate
@@ -90,7 +96,7 @@
 
 | Decision | Rationale | Date |
 |----------|-----------|------|
-| Canvas text overlay instead of AI text | AI image generators are bad at text rendering | 2026-01-09 |
+| Z-Image for text overlay (two-step) | Nano Banana for base image, Z-Image for crisp text | 2026-01-09 |
 | AI regeneration for sizes instead of cropping | Cropping cuts off important parts, AI recomposes properly | 2026-01-09 |
 | Single column layout | Maximize image visibility per user request | 2026-01-09 |
 | Collapsible record details | Social content editing is primary focus | 2026-01-09 |

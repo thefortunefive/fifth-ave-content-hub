@@ -135,6 +135,33 @@ app.post('/api/generate-image', async (c) => {
   return c.json(await res.json())
 })
 
+// API: Generate image with Z-Image (for text overlay - excellent text rendering)
+app.post('/api/generate-image-zimage', async (c) => {
+  const { prompt, imageUrl, aspectRatio } = await c.req.json()
+  
+  const requestBody = {
+    model: 'fal-ai/z-image/turbo',
+    input: {
+      prompt,
+      image_url: imageUrl, // The base image to add text to
+      aspect_ratio: aspectRatio || '16:9',
+      output_format: 'png'
+    }
+  }
+  
+  console.log('Z-Image Request (text overlay):', JSON.stringify(requestBody, null, 2))
+  
+  const res = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${KIEAI_API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(requestBody)
+  })
+  return c.json(await res.json())
+})
+
 // API: Check KieAI task status
 app.get('/api/task-status/:taskId', async (c) => {
   const taskId = c.req.param('taskId')
@@ -2425,12 +2452,23 @@ app.get('/', (c) => {
       const btn = document.getElementById('generateBtn');
       const status = document.getElementById('generationStatus');
       
+      // Check if we're doing two-step generation (with headline)
+      const addHeadlineText = document.getElementById('addHeadlineText')?.checked;
+      const shortHeadline = document.getElementById('shortHeadline')?.value?.trim();
+      const isTwoStep = addHeadlineText && shortHeadline;
+      
       btn.disabled = true;
       btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generating ' + ratioToGenerate + '...';
       status.classList.remove('hidden');
-      document.getElementById('statusText').textContent = 'Creating ' + ratioToGenerate + ' image...';
+      
+      if (isTwoStep) {
+        document.getElementById('statusText').textContent = 'Step 1: Creating base image with Nano Banana...';
+      } else {
+        document.getElementById('statusText').textContent = 'Creating ' + ratioToGenerate + ' image...';
+      }
 
       console.log('Generating image with aspect ratio:', ratioToGenerate);
+      console.log('Two-step mode (with headline):', isTwoStep);
 
       try {
         const createRes = await fetch('/api/generate-image', {
@@ -2445,7 +2483,11 @@ app.get('/', (c) => {
         if (createData.code !== 200) throw new Error(createData.msg || 'Failed to create task');
 
         const taskId = createData.data.taskId;
-        document.getElementById('statusText').textContent = 'Processing ' + ratioToGenerate + '...';
+        if (isTwoStep) {
+          document.getElementById('statusText').textContent = 'Step 1: Processing base image...';
+        } else {
+          document.getElementById('statusText').textContent = 'Processing ' + ratioToGenerate + '...';
+        }
 
         let attempts = 0;
         while (attempts < 60) {
@@ -2465,7 +2507,11 @@ app.get('/', (c) => {
             throw new Error(statusData.data.failMsg || 'Generation failed');
           }
           attempts++;
-          document.getElementById('statusText').textContent = \`Processing \${ratioToGenerate}... (\${attempts * 2}s)\`;
+          if (isTwoStep) {
+            document.getElementById('statusText').textContent = \`Step 1: Processing base image... (\${attempts * 2}s)\`;
+          } else {
+            document.getElementById('statusText').textContent = \`Processing \${ratioToGenerate}... (\${attempts * 2}s)\`;
+          }
         }
         if (attempts >= 60) throw new Error('Generation timed out');
       } catch (err) {
@@ -2487,10 +2533,10 @@ app.get('/', (c) => {
       let finalUrl = url;
       
       if (addHeadlineText && shortHeadline) {
-        // Add text overlay using canvas
-        document.getElementById('statusText').textContent = 'Adding text overlay...';
+        // Step 2: Add text overlay using Z-Image AI (excellent text rendering)
+        document.getElementById('statusText').textContent = 'Step 2: Adding headline with Z-Image AI...';
         try {
-          finalUrl = await addTextOverlayToImage(url, shortHeadline, finalRatio);
+          finalUrl = await addTextOverlayWithZImage(url, shortHeadline, finalRatio);
         } catch (err) {
           console.error('Error adding text overlay:', err);
           // Fall back to original image if overlay fails
@@ -2591,7 +2637,7 @@ app.get('/', (c) => {
           if (addHeadlineText && shortHeadline) {
             statusText.textContent = 'Adding text to ' + size.ratio + '...';
             try {
-              finalUrl = await addTextOverlayToImage(generatedUrl, shortHeadline, size.ratio);
+              finalUrl = await addTextOverlayWithZImage(generatedUrl, shortHeadline, size.ratio);
             } catch (err) {
               console.error('Error adding text overlay:', err);
               finalUrl = generatedUrl;
@@ -2705,8 +2751,80 @@ app.get('/', (c) => {
       });
     }
     
-    // Add text overlay to image using canvas
-    async function addTextOverlayToImage(imageUrl, headline, ratio) {
+    // Add text overlay to image using Z-Image AI (excellent text rendering)
+    async function addTextOverlayWithZImage(imageUrl, headline, ratio) {
+      // Format the headline for the aspect ratio
+      const formattedHeadline = formatHeadlineForRatio(headline, ratio);
+      
+      // Create a specific prompt for Z-Image to add text overlay
+      const textPrompt = \`Add a professional news headline banner to this image. 
+      
+At the bottom of the image, add a dark semi-transparent banner (85% opacity black) spanning the full width.
+
+Inside the banner, add this headline text in WHITE, bold Helvetica font:
+"\${formattedHeadline}"
+
+The text should be:
+- Left-aligned with padding from the edge
+- Properly sized to fit the banner (not too big, not too small)
+- Clear, crisp, and highly readable
+- Professional news/media style typography
+
+In the bottom-right corner of the banner, add a small "5th Ave Crypto" logo (gold/amber colored crown icon).
+
+Keep the original image EXACTLY as-is - only add the banner and text at the bottom. Do not modify anything else.\`;
+
+      console.log('Z-Image text overlay prompt:', textPrompt);
+      
+      try {
+        // Call Z-Image API
+        const createRes = await fetch('/api/generate-image-zimage', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            prompt: textPrompt, 
+            imageUrl: imageUrl,
+            aspectRatio: ratio 
+          })
+        });
+        const createData = await createRes.json();
+
+        console.log('Z-Image create response:', createData);
+
+        if (createData.code !== 200) {
+          throw new Error(createData.msg || 'Failed to create Z-Image task');
+        }
+
+        const taskId = createData.data.taskId;
+
+        // Poll for completion
+        let attempts = 0;
+        while (attempts < 60) {
+          await new Promise(r => setTimeout(r, 2000));
+          const statusRes = await fetch('/api/task-status/' + taskId);
+          const statusData = await statusRes.json();
+
+          if (statusData.data?.state === 'success') {
+            const resultJson = JSON.parse(statusData.data.resultJson);
+            const finalImageUrl = resultJson.resultUrls[0];
+            console.log('Z-Image text overlay complete:', finalImageUrl);
+            return finalImageUrl;
+          } else if (statusData.data?.state === 'failed') {
+            throw new Error(statusData.data.failMsg || 'Z-Image text overlay failed');
+          }
+          attempts++;
+        }
+        throw new Error('Z-Image text overlay timed out');
+      } catch (err) {
+        console.error('Z-Image text overlay error:', err);
+        // Fall back to canvas overlay if Z-Image fails
+        console.log('Falling back to canvas text overlay...');
+        return await addTextOverlayWithCanvas(imageUrl, headline, ratio);
+      }
+    }
+    
+    // Add text overlay to image using canvas (fallback method)
+    async function addTextOverlayWithCanvas(imageUrl, headline, ratio) {
       // Load the original image
       const img = await loadImage(imageUrl);
       
