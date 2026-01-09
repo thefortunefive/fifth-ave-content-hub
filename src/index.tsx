@@ -135,23 +135,33 @@ app.post('/api/generate-image', async (c) => {
   return c.json(await res.json())
 })
 
-// API: Generate image with GPT Image 1.5 (for text overlay - excellent text rendering)
+// API: Generate image with Ideogram (for text overlay - excellent text rendering)
 app.post('/api/generate-image-ideogram', async (c) => {
   const { prompt, imageUrl, aspectRatio } = await c.req.json()
   
-  // GPT Image 1.5 preserves original image dimensions when no aspect_ratio is specified
-  // We'll omit aspect_ratio to keep the original image size and just add text
+  // Map aspect ratio to Ideogram format
+  let imageSize = 'landscape_16_9'
+  if (aspectRatio === '9:16') {
+    imageSize = 'portrait_9_16'
+  } else if (aspectRatio === '1:1') {
+    imageSize = 'square_hd'
+  }
+  
   const requestBody = {
-    model: 'gpt-image/1.5-image-to-image',
+    model: 'ideogram/character-remix',
     input: {
       prompt,
-      input_urls: [imageUrl], // The base image to edit/add text to
-      quality: 'medium' // medium = 4 credits ($0.02), high = 22 credits ($0.11)
-      // Omitting aspect_ratio to preserve original image dimensions
+      image_url: imageUrl, // The base image to add text to
+      image_size: imageSize,
+      rendering_speed: 'BALANCED',
+      style: 'REALISTIC',
+      expand_prompt: false, // Don't expand - we want exact text
+      num_images: '1',
+      strength: 0.3 // Low strength to keep original image mostly intact, just add text
     }
   }
   
-  console.log('GPT Image 1.5 Request (text overlay):', JSON.stringify(requestBody, null, 2))
+  console.log('Ideogram Request (text overlay):', JSON.stringify(requestBody, null, 2))
   
   const res = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
     method: 'POST',
@@ -2546,8 +2556,8 @@ app.get('/', (c) => {
       let finalUrl = url;
       
       if (addHeadlineText && shortHeadline) {
-        // Step 2: Add text overlay using GPT Image 1.5 (excellent text rendering)
-        document.getElementById('statusText').textContent = 'Step 2: Adding headline with GPT Image 1.5...';
+        // Step 2: Add text overlay using Ideogram (excellent text rendering)
+        document.getElementById('statusText').textContent = 'Step 2: Adding headline with Ideogram...';
         try {
           finalUrl = await addTextOverlayWithZImage(url, shortHeadline, finalRatio);
         } catch (err) {
@@ -2764,7 +2774,7 @@ app.get('/', (c) => {
       });
     }
     
-    // Add text overlay to image using GPT Image 1.5 (excellent text rendering, preserves dimensions)
+    // Add text overlay to image using Ideogram (excellent text rendering, preserves dimensions)
     async function addTextOverlayWithZImage(imageUrl, headline, ratio) {
       // Format the headline for the aspect ratio
       const formattedHeadline = formatHeadlineForRatio(headline, ratio);
@@ -2795,8 +2805,8 @@ app.get('/', (c) => {
         ratioInstructions = 'This is a SQUARE 1:1 image. The banner has moderate width so text should be medium sized and wrap to 2-3 lines.';
       }
       
-      // Create a specific prompt for GPT Image 1.5 to add text overlay
-      // GPT Image 1.5 excels at text rendering - be very specific about what we want
+      // Create a specific prompt for Ideogram to add text overlay
+      // Ideogram excels at text rendering - be very specific about what we want
       const textPrompt = \`Keep this exact image but add a professional news headline banner at the bottom.
 
 ASPECT RATIO CONTEXT:
@@ -2817,10 +2827,10 @@ CRITICAL:
 - Text must be crisp, clear, and professional
 - TEXT MUST FIT WITHIN THE BANNER - adjust size and line breaks as needed for this aspect ratio\`;
 
-      console.log('GPT Image 1.5 text overlay prompt:', textPrompt);
+      console.log('Ideogram text overlay prompt:', textPrompt);
       
       try {
-        // Call GPT Image 1.5 API (no logo - text only)
+        // Call Ideogram API (no logo - text only)
         const createRes = await fetch('/api/generate-image-ideogram', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -2832,17 +2842,17 @@ CRITICAL:
         });
         const createData = await createRes.json();
 
-        console.log('GPT Image 1.5 create response:', createData);
+        console.log('Ideogram create response:', createData);
 
         if (createData.code !== 200) {
-          throw new Error(createData.msg || 'Failed to create GPT Image task');
+          throw new Error(createData.msg || 'Failed to create Ideogram task');
         }
 
         const taskId = createData.data.taskId;
 
         // Poll for completion
         let attempts = 0;
-        while (attempts < 90) { // GPT Image may take longer
+        while (attempts < 90) { // Ideogram may take longer
           await new Promise(r => setTimeout(r, 2000));
           const statusRes = await fetch('/api/task-status/' + taskId);
           const statusData = await statusRes.json();
@@ -2850,21 +2860,21 @@ CRITICAL:
           if (statusData.data?.state === 'success') {
             const resultJson = JSON.parse(statusData.data.resultJson);
             const textOnlyUrl = resultJson.resultUrls[0];
-            console.log('GPT Image 1.5 text overlay complete, now adding logo...');
+            console.log('Ideogram text overlay complete, now adding logo...');
             
             // Step 3: Add logo via canvas (GPT can't reliably place logos)
             const finalImageUrl = await addLogoToImage(textOnlyUrl, ratio);
             console.log('Logo added, final image:', finalImageUrl);
             return finalImageUrl;
           } else if (statusData.data?.state === 'failed') {
-            throw new Error(statusData.data.failMsg || 'GPT Image text overlay failed');
+            throw new Error(statusData.data.failMsg || 'Ideogram text overlay failed');
           }
           attempts++;
         }
-        throw new Error('GPT Image text overlay timed out');
+        throw new Error('Ideogram text overlay timed out');
       } catch (err) {
-        console.error('GPT Image text overlay error:', err);
-        // Fall back to canvas overlay if GPT Image fails
+        console.error('Ideogram text overlay error:', err);
+        // Fall back to canvas overlay if Ideogram fails
         console.log('Falling back to canvas text overlay...');
         return await addTextOverlayWithCanvas(imageUrl, headline, ratio);
       }
