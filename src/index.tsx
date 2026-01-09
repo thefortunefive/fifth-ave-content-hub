@@ -1560,8 +1560,16 @@ app.get('/', (c) => {
       const container = document.getElementById('headlineInputContainer');
       container.classList.toggle('hidden', !isChecked);
       
-      // Logo is no longer auto-enabled - text overlay handles headlines separately
-      // Logo reference can still be manually enabled if needed for the base image
+      // Auto-enable logo reference for current ratio when headline is on
+      if (isChecked && references['logo']) {
+        const ratio = currentAspectRatio;
+        if (references['logo'][ratio]) {
+          references['logo'][ratio].enabled = true;
+        }
+        saveReferences();
+        renderReferenceGridExpanded();
+        updateActiveCount();
+      }
       
       // Regenerate prompt if we have a current record
       if (currentRecord) {
@@ -2841,8 +2849,12 @@ CRITICAL:
 
           if (statusData.data?.state === 'success') {
             const resultJson = JSON.parse(statusData.data.resultJson);
-            const finalImageUrl = resultJson.resultUrls[0];
-            console.log('GPT Image 1.5 text overlay complete:', finalImageUrl);
+            const textOnlyUrl = resultJson.resultUrls[0];
+            console.log('GPT Image 1.5 text overlay complete, now adding logo...');
+            
+            // Step 3: Add logo via canvas (GPT can't reliably place logos)
+            const finalImageUrl = await addLogoToImage(textOnlyUrl, ratio);
+            console.log('Logo added, final image:', finalImageUrl);
             return finalImageUrl;
           } else if (statusData.data?.state === 'failed') {
             throw new Error(statusData.data.failMsg || 'GPT Image text overlay failed');
@@ -2855,6 +2867,53 @@ CRITICAL:
         // Fall back to canvas overlay if GPT Image fails
         console.log('Falling back to canvas text overlay...');
         return await addTextOverlayWithCanvas(imageUrl, headline, ratio);
+      }
+    }
+    
+    // Add logo to image in bottom-right corner (after GPT adds text)
+    async function addLogoToImage(imageUrl, ratio) {
+      try {
+        const img = await loadImage(imageUrl);
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+        
+        // Calculate banner area (bottom 12-15% based on ratio)
+        let bannerHeightPercent = 0.15;
+        if (ratio === '9:16') bannerHeightPercent = 0.12;
+        else if (ratio === '1:1') bannerHeightPercent = 0.14;
+        
+        const bannerHeight = canvas.height * bannerHeightPercent;
+        const bannerY = canvas.height - bannerHeight;
+        const padding = canvas.width * 0.03;
+        
+        // Load and draw logo in bottom-right of banner
+        const logoUrl = 'https://iili.io/fEiEfUB.png';
+        const logoImg = await loadImage(logoUrl);
+        const logoSize = Math.min(bannerHeight * 0.7, canvas.width * 0.08);
+        const logoX = canvas.width - padding - logoSize;
+        const logoY = bannerY + (bannerHeight - logoSize) / 2;
+        
+        ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
+        
+        // Upload the final image
+        return new Promise((resolve, reject) => {
+          canvas.toBlob(async (blob) => {
+            try {
+              const uploadedUrl = await uploadCroppedImage(blob);
+              resolve(uploadedUrl);
+            } catch (err) {
+              console.error('Failed to upload logo image:', err);
+              resolve(imageUrl); // Return original if upload fails
+            }
+          }, 'image/png', 0.95);
+        });
+      } catch (err) {
+        console.error('Failed to add logo:', err);
+        return imageUrl; // Return original if logo add fails
       }
     }
     
@@ -2943,8 +3002,17 @@ CRITICAL:
         ctx.fillText(line, padding, y);
       });
       
-      // Logo removed from canvas overlay - text only
-      // If logo is needed, it should be added as a separate step or manually
+      // Add logo in bottom-right corner of the banner
+      try {
+        const logoUrl = 'https://iili.io/fEiEfUB.png';
+        const logoImg = await loadImage(logoUrl);
+        const logoSize = Math.min(bannerHeight * 0.8, fontSize * 1.5); // Logo fits within banner
+        const logoX = canvas.width - padding - logoSize;
+        const logoY = bannerY + (bannerHeight - logoSize) / 2;
+        ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
+      } catch (err) {
+        console.warn('Could not load logo:', err);
+      }
       
       // Convert canvas to blob and upload
       return new Promise((resolve, reject) => {
