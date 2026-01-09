@@ -67,12 +67,13 @@
 4. **Airtable Image Quality**
    - Changed thumbnails from small to large for record cards
 
-5. **Two-Step Image Generation (Z-Image Text Overlay)**
+5. **Two-Step Image Generation (Ideogram V3 Text Overlay)**
    - Step 1: Nano Banana generates base image (character, scene, no text)
-   - Step 2: Z-Image adds headline text overlay (excellent text rendering)
-   - Cost: ~$0.094/image total ($0.09 Nano Banana + $0.004 Z-Image)
-   - Canvas overlay as fallback if Z-Image fails
+   - Step 2: Ideogram V3 Remix adds headline text overlay (industry-best text rendering)
+   - Cost: ~$0.12/image total ($0.09 Nano Banana + ~$0.03 Ideogram V3)
+   - Canvas overlay as fallback if Ideogram fails
    - UI shows "Step 1" and "Step 2" progress
+   - Ideogram V3 was chosen based on research showing it's the best at text in images
 
 ## Next Steps (Prioritized)
 
@@ -96,7 +97,7 @@
 
 | Decision | Rationale | Date |
 |----------|-----------|------|
-| Z-Image for text overlay (two-step) | Nano Banana for base image, Z-Image for crisp text | 2026-01-09 |
+| Ideogram V3 for text overlay (two-step) | Nano Banana for base image, Ideogram V3 for industry-best text | 2026-01-09 |
 | AI regeneration for sizes instead of cropping | Cropping cuts off important parts, AI recomposes properly | 2026-01-09 |
 | Single column layout | Maximize image visibility per user request | 2026-01-09 |
 | Collapsible record details | Social content editing is primary focus | 2026-01-09 |

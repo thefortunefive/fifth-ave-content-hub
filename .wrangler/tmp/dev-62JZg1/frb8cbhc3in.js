@@ -1,32 +1,34 @@
 var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
-// _worker.js
+// .wrangler/tmp/pages-bVKx5k/bundledWorker-0.6035997462124005.mjs
+var __defProp2 = Object.defineProperty;
+var __name2 = /* @__PURE__ */ __name((target, value) => __defProp2(target, "name", { value, configurable: true }), "__name");
 var xt = Object.defineProperty;
-var Ne = /* @__PURE__ */ __name((e) => {
+var Ne = /* @__PURE__ */ __name2((e) => {
   throw TypeError(e);
 }, "Ne");
-var vt = /* @__PURE__ */ __name((e, t, a) => t in e ? xt(e, t, { enumerable: true, configurable: true, writable: true, value: a }) : e[t] = a, "vt");
-var h = /* @__PURE__ */ __name((e, t, a) => vt(e, typeof t != "symbol" ? t + "" : t, a), "h");
-var Be = /* @__PURE__ */ __name((e, t, a) => t.has(e) || Ne("Cannot " + a), "Be");
-var s = /* @__PURE__ */ __name((e, t, a) => (Be(e, t, "read from private field"), a ? a.call(e) : t.get(e)), "s");
-var m = /* @__PURE__ */ __name((e, t, a) => t.has(e) ? Ne("Cannot add the same private member more than once") : t instanceof WeakSet ? t.add(e) : t.set(e, a), "m");
-var f = /* @__PURE__ */ __name((e, t, a, r) => (Be(e, t, "write to private field"), r ? r.call(e, a) : t.set(e, a), a), "f");
-var b = /* @__PURE__ */ __name((e, t, a) => (Be(e, t, "access private method"), a), "b");
-var $e = /* @__PURE__ */ __name((e, t, a, r) => ({ set _(n) {
+var vt = /* @__PURE__ */ __name2((e, t, a) => t in e ? xt(e, t, { enumerable: true, configurable: true, writable: true, value: a }) : e[t] = a, "vt");
+var h = /* @__PURE__ */ __name2((e, t, a) => vt(e, typeof t != "symbol" ? t + "" : t, a), "h");
+var Be = /* @__PURE__ */ __name2((e, t, a) => t.has(e) || Ne("Cannot " + a), "Be");
+var i = /* @__PURE__ */ __name2((e, t, a) => (Be(e, t, "read from private field"), a ? a.call(e) : t.get(e)), "i");
+var m = /* @__PURE__ */ __name2((e, t, a) => t.has(e) ? Ne("Cannot add the same private member more than once") : t instanceof WeakSet ? t.add(e) : t.set(e, a), "m");
+var f = /* @__PURE__ */ __name2((e, t, a, r) => (Be(e, t, "write to private field"), r ? r.call(e, a) : t.set(e, a), a), "f");
+var b = /* @__PURE__ */ __name2((e, t, a) => (Be(e, t, "access private method"), a), "b");
+var $e = /* @__PURE__ */ __name2((e, t, a, r) => ({ set _(n) {
   f(e, t, n, a);
 }, get _() {
-  return s(e, t, r);
+  return i(e, t, r);
 } }), "$e");
-var Ge = /* @__PURE__ */ __name((e, t, a) => (r, n) => {
+var Ge = /* @__PURE__ */ __name2((e, t, a) => (r, n) => {
   let o = -1;
-  return i(0);
-  async function i(c) {
+  return s(0);
+  async function s(c) {
     if (c <= o) throw new Error("next() called multiple times");
     o = c;
     let l, d = false, u;
     if (e[c] ? (u = e[c][0][0], r.req.routeIndex = c) : u = c === e.length && n || void 0, u) try {
-      l = await u(r, () => i(c + 1));
+      l = await u(r, () => s(c + 1));
     } catch (g) {
       if (g instanceof Error && t) r.error = g, l = await t(g, r), d = true;
       else throw g;
@@ -34,10 +36,11 @@ var Ge = /* @__PURE__ */ __name((e, t, a) => (r, n) => {
     else r.finalized === false && a && (l = await a(r));
     return l && (r.finalized === false || d) && (r.res = l), r;
   }
-  __name(i, "i");
+  __name(s, "s");
+  __name2(s, "s");
 }, "Ge");
 var yt = Symbol();
-var wt = /* @__PURE__ */ __name(async (e, t = /* @__PURE__ */ Object.create(null)) => {
+var wt = /* @__PURE__ */ __name2(async (e, t = /* @__PURE__ */ Object.create(null)) => {
   const { all: a = false, dot: r = false } = t, o = (e instanceof nt ? e.raw.headers : e.headers).get("Content-Type");
   return o != null && o.startsWith("multipart/form-data") || o != null && o.startsWith("application/x-www-form-urlencoded") ? It(e, { all: a, dot: r }) : {};
 }, "wt");
@@ -46,6 +49,7 @@ async function It(e, t) {
   return a ? Tt(a, t) : {};
 }
 __name(It, "It");
+__name2(It, "It");
 function Tt(e, t) {
   const a = /* @__PURE__ */ Object.create(null);
   return e.forEach((r, n) => {
@@ -55,32 +59,33 @@ function Tt(e, t) {
   }), a;
 }
 __name(Tt, "Tt");
-var St = /* @__PURE__ */ __name((e, t, a) => {
+__name2(Tt, "Tt");
+var St = /* @__PURE__ */ __name2((e, t, a) => {
   e[t] !== void 0 ? Array.isArray(e[t]) ? e[t].push(a) : e[t] = [e[t], a] : t.endsWith("[]") ? e[t] = [a] : e[t] = a;
 }, "St");
-var Et = /* @__PURE__ */ __name((e, t, a) => {
+var Et = /* @__PURE__ */ __name2((e, t, a) => {
   let r = e;
   const n = t.split(".");
-  n.forEach((o, i) => {
-    i === n.length - 1 ? r[o] = a : ((!r[o] || typeof r[o] != "object" || Array.isArray(r[o]) || r[o] instanceof File) && (r[o] = /* @__PURE__ */ Object.create(null)), r = r[o]);
+  n.forEach((o, s) => {
+    s === n.length - 1 ? r[o] = a : ((!r[o] || typeof r[o] != "object" || Array.isArray(r[o]) || r[o] instanceof File) && (r[o] = /* @__PURE__ */ Object.create(null)), r = r[o]);
   });
 }, "Et");
-var Qe = /* @__PURE__ */ __name((e) => {
+var Qe = /* @__PURE__ */ __name2((e) => {
   const t = e.split("/");
   return t[0] === "" && t.shift(), t;
 }, "Qe");
-var Ct = /* @__PURE__ */ __name((e) => {
+var Ct = /* @__PURE__ */ __name2((e) => {
   const { groups: t, path: a } = kt(e), r = Qe(a);
   return Rt(r, t);
 }, "Ct");
-var kt = /* @__PURE__ */ __name((e) => {
+var kt = /* @__PURE__ */ __name2((e) => {
   const t = [];
   return e = e.replace(/\{[^}]+\}/g, (a, r) => {
     const n = `@${r}`;
     return t.push([n, a]), n;
   }), { groups: t, path: e };
 }, "kt");
-var Rt = /* @__PURE__ */ __name((e, t) => {
+var Rt = /* @__PURE__ */ __name2((e, t) => {
   for (let a = t.length - 1; a >= 0; a--) {
     const [r] = t[a];
     for (let n = e.length - 1; n >= 0; n--) if (e[n].includes(r)) {
@@ -91,7 +96,7 @@ var Rt = /* @__PURE__ */ __name((e, t) => {
   return e;
 }, "Rt");
 var Ee = {};
-var Lt = /* @__PURE__ */ __name((e, t) => {
+var Lt = /* @__PURE__ */ __name2((e, t) => {
   if (e === "*") return "*";
   const a = e.match(/^\:([^\{\}]+)(?:\{(.+)\})?$/);
   if (a) {
@@ -100,7 +105,7 @@ var Lt = /* @__PURE__ */ __name((e, t) => {
   }
   return null;
 }, "Lt");
-var ze = /* @__PURE__ */ __name((e, t) => {
+var ze = /* @__PURE__ */ __name2((e, t) => {
   try {
     return t(e);
   } catch {
@@ -113,25 +118,25 @@ var ze = /* @__PURE__ */ __name((e, t) => {
     });
   }
 }, "ze");
-var At = /* @__PURE__ */ __name((e) => ze(e, decodeURI), "At");
-var et = /* @__PURE__ */ __name((e) => {
+var At = /* @__PURE__ */ __name2((e) => ze(e, decodeURI), "At");
+var et = /* @__PURE__ */ __name2((e) => {
   const t = e.url, a = t.indexOf("/", t.indexOf(":") + 4);
   let r = a;
   for (; r < t.length; r++) {
     const n = t.charCodeAt(r);
     if (n === 37) {
-      const o = t.indexOf("?", r), i = t.slice(a, o === -1 ? void 0 : o);
-      return At(i.includes("%25") ? i.replace(/%25/g, "%2525") : i);
+      const o = t.indexOf("?", r), s = t.slice(a, o === -1 ? void 0 : o);
+      return At(s.includes("%25") ? s.replace(/%25/g, "%2525") : s);
     } else if (n === 63) break;
   }
   return t.slice(a, r);
 }, "et");
-var Dt = /* @__PURE__ */ __name((e) => {
+var Dt = /* @__PURE__ */ __name2((e) => {
   const t = et(e);
   return t.length > 1 && t.at(-1) === "/" ? t.slice(0, -1) : t;
 }, "Dt");
-var re = /* @__PURE__ */ __name((e, t, ...a) => (a.length && (t = re(t, ...a)), `${(e == null ? void 0 : e[0]) === "/" ? "" : "/"}${e}${t === "/" ? "" : `${(e == null ? void 0 : e.at(-1)) === "/" ? "" : "/"}${(t == null ? void 0 : t[0]) === "/" ? t.slice(1) : t}`}`), "re");
-var tt = /* @__PURE__ */ __name((e) => {
+var re = /* @__PURE__ */ __name2((e, t, ...a) => (a.length && (t = re(t, ...a)), `${(e == null ? void 0 : e[0]) === "/" ? "" : "/"}${e}${t === "/" ? "" : `${(e == null ? void 0 : e.at(-1)) === "/" ? "" : "/"}${(t == null ? void 0 : t[0]) === "/" ? t.slice(1) : t}`}`), "re");
+var tt = /* @__PURE__ */ __name2((e) => {
   if (e.charCodeAt(e.length - 1) !== 63 || !e.includes(":")) return null;
   const t = e.split("/"), a = [];
   let r = "";
@@ -142,21 +147,21 @@ var tt = /* @__PURE__ */ __name((e) => {
       const o = n.replace("?", "");
       r += "/" + o, a.push(r);
     } else r += "/" + n;
-  }), a.filter((n, o, i) => i.indexOf(n) === o);
+  }), a.filter((n, o, s) => s.indexOf(n) === o);
 }, "tt");
-var Fe = /* @__PURE__ */ __name((e) => /[%+]/.test(e) ? (e.indexOf("+") !== -1 && (e = e.replace(/\+/g, " ")), e.indexOf("%") !== -1 ? ze(e, rt) : e) : e, "Fe");
-var at = /* @__PURE__ */ __name((e, t, a) => {
+var Fe = /* @__PURE__ */ __name2((e) => /[%+]/.test(e) ? (e.indexOf("+") !== -1 && (e = e.replace(/\+/g, " ")), e.indexOf("%") !== -1 ? ze(e, rt) : e) : e, "Fe");
+var at = /* @__PURE__ */ __name2((e, t, a) => {
   let r;
   if (!a && t && !/[%+]/.test(t)) {
-    let i = e.indexOf("?", 8);
-    if (i === -1) return;
-    for (e.startsWith(t, i + 1) || (i = e.indexOf(`&${t}`, i + 1)); i !== -1; ) {
-      const c = e.charCodeAt(i + t.length + 1);
+    let s = e.indexOf("?", 8);
+    if (s === -1) return;
+    for (e.startsWith(t, s + 1) || (s = e.indexOf(`&${t}`, s + 1)); s !== -1; ) {
+      const c = e.charCodeAt(s + t.length + 1);
       if (c === 61) {
-        const l = i + t.length + 2, d = e.indexOf("&", l);
+        const l = s + t.length + 2, d = e.indexOf("&", l);
         return Fe(e.slice(l, d === -1 ? void 0 : d));
       } else if (c == 38 || isNaN(c)) return "";
-      i = e.indexOf(`&${t}`, i + 1);
+      s = e.indexOf(`&${t}`, s + 1);
     }
     if (r = /[%+]/.test(e), !r) return;
   }
@@ -164,20 +169,20 @@ var at = /* @__PURE__ */ __name((e, t, a) => {
   r ?? (r = /[%+]/.test(e));
   let o = e.indexOf("?", 8);
   for (; o !== -1; ) {
-    const i = e.indexOf("&", o + 1);
+    const s = e.indexOf("&", o + 1);
     let c = e.indexOf("=", o);
-    c > i && i !== -1 && (c = -1);
-    let l = e.slice(o + 1, c === -1 ? i === -1 ? void 0 : i : c);
-    if (r && (l = Fe(l)), o = i, l === "") continue;
+    c > s && s !== -1 && (c = -1);
+    let l = e.slice(o + 1, c === -1 ? s === -1 ? void 0 : s : c);
+    if (r && (l = Fe(l)), o = s, l === "") continue;
     let d;
-    c === -1 ? d = "" : (d = e.slice(c + 1, i === -1 ? void 0 : i), r && (d = Fe(d))), a ? (n[l] && Array.isArray(n[l]) || (n[l] = []), n[l].push(d)) : n[l] ?? (n[l] = d);
+    c === -1 ? d = "" : (d = e.slice(c + 1, s === -1 ? void 0 : s), r && (d = Fe(d))), a ? (n[l] && Array.isArray(n[l]) || (n[l] = []), n[l].push(d)) : n[l] ?? (n[l] = d);
   }
   return t ? n[t] : n;
 }, "at");
 var Ht = at;
-var Bt = /* @__PURE__ */ __name((e, t) => at(e, t, true), "Bt");
+var Bt = /* @__PURE__ */ __name2((e, t) => at(e, t, true), "Bt");
 var rt = decodeURIComponent;
-var _e = /* @__PURE__ */ __name((e) => ze(e, rt), "_e");
+var _e = /* @__PURE__ */ __name2((e) => ze(e, rt), "_e");
 var se;
 var R;
 var z;
@@ -189,6 +194,9 @@ var Ye;
 var nt = (Ye = class {
   static {
     __name(this, "Ye");
+  }
+  static {
+    __name2(this, "Ye");
   }
   constructor(e, t = "/", a = [[]]) {
     m(this, z);
@@ -227,25 +235,25 @@ var nt = (Ye = class {
     return (t = this.bodyCache).parsedBody ?? (t.parsedBody = await wt(this, e));
   }
   json() {
-    return s(this, $).call(this, "text").then((e) => JSON.parse(e));
+    return i(this, $).call(this, "text").then((e) => JSON.parse(e));
   }
   text() {
-    return s(this, $).call(this, "text");
+    return i(this, $).call(this, "text");
   }
   arrayBuffer() {
-    return s(this, $).call(this, "arrayBuffer");
+    return i(this, $).call(this, "arrayBuffer");
   }
   blob() {
-    return s(this, $).call(this, "blob");
+    return i(this, $).call(this, "blob");
   }
   formData() {
-    return s(this, $).call(this, "formData");
+    return i(this, $).call(this, "formData");
   }
   addValidatedData(e, t) {
-    s(this, se)[e] = t;
+    i(this, se)[e] = t;
   }
   valid(e) {
-    return s(this, se)[e];
+    return i(this, se)[e];
   }
   get url() {
     return this.raw.url;
@@ -254,35 +262,35 @@ var nt = (Ye = class {
     return this.raw.method;
   }
   get [yt]() {
-    return s(this, R);
+    return i(this, R);
   }
   get matchedRoutes() {
-    return s(this, R)[0].map(([[, e]]) => e);
+    return i(this, R)[0].map(([[, e]]) => e);
   }
   get routePath() {
-    return s(this, R)[0].map(([[, e]]) => e)[this.routeIndex].path;
+    return i(this, R)[0].map(([[, e]]) => e)[this.routeIndex].path;
   }
-}, se = /* @__PURE__ */ new WeakMap(), R = /* @__PURE__ */ new WeakMap(), z = /* @__PURE__ */ new WeakSet(), ot = /* @__PURE__ */ __name(function(e) {
-  const t = s(this, R)[0][this.routeIndex][1][e], a = b(this, z, je).call(this, t);
+}, se = /* @__PURE__ */ new WeakMap(), R = /* @__PURE__ */ new WeakMap(), z = /* @__PURE__ */ new WeakSet(), ot = /* @__PURE__ */ __name2(function(e) {
+  const t = i(this, R)[0][this.routeIndex][1][e], a = b(this, z, je).call(this, t);
   return a && /\%/.test(a) ? _e(a) : a;
-}, "ot"), st = /* @__PURE__ */ __name(function() {
-  const e = {}, t = Object.keys(s(this, R)[0][this.routeIndex][1]);
+}, "ot"), st = /* @__PURE__ */ __name2(function() {
+  const e = {}, t = Object.keys(i(this, R)[0][this.routeIndex][1]);
   for (const a of t) {
-    const r = b(this, z, je).call(this, s(this, R)[0][this.routeIndex][1][a]);
+    const r = b(this, z, je).call(this, i(this, R)[0][this.routeIndex][1][a]);
     r !== void 0 && (e[a] = /\%/.test(r) ? _e(r) : r);
   }
   return e;
-}, "st"), je = /* @__PURE__ */ __name(function(e) {
-  return s(this, R)[1] ? s(this, R)[1][e] : e;
+}, "st"), je = /* @__PURE__ */ __name2(function(e) {
+  return i(this, R)[1] ? i(this, R)[1][e] : e;
 }, "je"), $ = /* @__PURE__ */ new WeakMap(), Ye);
 var Ft = { Stringify: 1 };
-var it = /* @__PURE__ */ __name(async (e, t, a, r, n) => {
+var it = /* @__PURE__ */ __name2(async (e, t, a, r, n) => {
   typeof e == "object" && !(e instanceof String) && (e instanceof Promise || (e = e.toString()), e instanceof Promise && (e = await e));
   const o = e.callbacks;
   return o != null && o.length ? (n ? n[0] += e : n = [e], Promise.all(o.map((c) => c({ phase: t, buffer: n, context: r }))).then((c) => Promise.all(c.filter(Boolean).map((l) => it(l, t, false, r, n))).then(() => n[0]))) : Promise.resolve(e);
 }, "it");
 var Ot = "text/plain; charset=UTF-8";
-var Oe = /* @__PURE__ */ __name((e, t) => ({ "Content-Type": e, ...t }), "Oe");
+var Oe = /* @__PURE__ */ __name2((e, t) => ({ "Content-Type": e, ...t }), "Oe");
 var be;
 var xe;
 var F;
@@ -292,7 +300,7 @@ var E;
 var ve;
 var le;
 var de;
-var K;
+var J;
 var ye;
 var we;
 var G;
@@ -301,6 +309,9 @@ var We;
 var Pt = (We = class {
   static {
     __name(this, "We");
+  }
+  static {
+    __name2(this, "We");
   }
   constructor(e, t) {
     m(this, G);
@@ -316,61 +327,61 @@ var Pt = (We = class {
     m(this, ve);
     m(this, le);
     m(this, de);
-    m(this, K);
+    m(this, J);
     m(this, ye);
     m(this, we);
-    h(this, "render", (...e2) => (s(this, le) ?? f(this, le, (t2) => this.html(t2)), s(this, le).call(this, ...e2)));
+    h(this, "render", (...e2) => (i(this, le) ?? f(this, le, (t2) => this.html(t2)), i(this, le).call(this, ...e2)));
     h(this, "setLayout", (e2) => f(this, ve, e2));
-    h(this, "getLayout", () => s(this, ve));
+    h(this, "getLayout", () => i(this, ve));
     h(this, "setRenderer", (e2) => {
       f(this, le, e2);
     });
     h(this, "header", (e2, t2, a) => {
-      this.finalized && f(this, E, new Response(s(this, E).body, s(this, E)));
-      const r = s(this, E) ? s(this, E).headers : s(this, K) ?? f(this, K, new Headers());
+      this.finalized && f(this, E, new Response(i(this, E).body, i(this, E)));
+      const r = i(this, E) ? i(this, E).headers : i(this, J) ?? f(this, J, new Headers());
       t2 === void 0 ? r.delete(e2) : a != null && a.append ? r.append(e2, t2) : r.set(e2, t2);
     });
     h(this, "status", (e2) => {
       f(this, ie, e2);
     });
     h(this, "set", (e2, t2) => {
-      s(this, F) ?? f(this, F, /* @__PURE__ */ new Map()), s(this, F).set(e2, t2);
+      i(this, F) ?? f(this, F, /* @__PURE__ */ new Map()), i(this, F).set(e2, t2);
     });
-    h(this, "get", (e2) => s(this, F) ? s(this, F).get(e2) : void 0);
+    h(this, "get", (e2) => i(this, F) ? i(this, F).get(e2) : void 0);
     h(this, "newResponse", (...e2) => b(this, G, ne).call(this, ...e2));
     h(this, "body", (e2, t2, a) => b(this, G, ne).call(this, e2, t2, a));
-    h(this, "text", (e2, t2, a) => !s(this, K) && !s(this, ie) && !t2 && !a && !this.finalized ? new Response(e2) : b(this, G, ne).call(this, e2, t2, Oe(Ot, a)));
+    h(this, "text", (e2, t2, a) => !i(this, J) && !i(this, ie) && !t2 && !a && !this.finalized ? new Response(e2) : b(this, G, ne).call(this, e2, t2, Oe(Ot, a)));
     h(this, "json", (e2, t2, a) => b(this, G, ne).call(this, JSON.stringify(e2), t2, Oe("application/json", a)));
     h(this, "html", (e2, t2, a) => {
-      const r = /* @__PURE__ */ __name((n) => b(this, G, ne).call(this, n, t2, Oe("text/html; charset=UTF-8", a)), "r");
+      const r = /* @__PURE__ */ __name2((n) => b(this, G, ne).call(this, n, t2, Oe("text/html; charset=UTF-8", a)), "r");
       return typeof e2 == "object" ? it(e2, Ft.Stringify, false, {}).then(r) : r(e2);
     });
     h(this, "redirect", (e2, t2) => {
       const a = String(e2);
       return this.header("Location", /[^\x00-\xFF]/.test(a) ? encodeURI(a) : a), this.newResponse(null, t2 ?? 302);
     });
-    h(this, "notFound", () => (s(this, de) ?? f(this, de, () => new Response()), s(this, de).call(this, this)));
+    h(this, "notFound", () => (i(this, de) ?? f(this, de, () => new Response()), i(this, de).call(this, this)));
     f(this, be, e), t && (f(this, O, t.executionCtx), this.env = t.env, f(this, de, t.notFoundHandler), f(this, we, t.path), f(this, ye, t.matchResult));
   }
   get req() {
-    return s(this, xe) ?? f(this, xe, new nt(s(this, be), s(this, we), s(this, ye))), s(this, xe);
+    return i(this, xe) ?? f(this, xe, new nt(i(this, be), i(this, we), i(this, ye))), i(this, xe);
   }
   get event() {
-    if (s(this, O) && "respondWith" in s(this, O)) return s(this, O);
+    if (i(this, O) && "respondWith" in i(this, O)) return i(this, O);
     throw Error("This context has no FetchEvent");
   }
   get executionCtx() {
-    if (s(this, O)) return s(this, O);
+    if (i(this, O)) return i(this, O);
     throw Error("This context has no ExecutionContext");
   }
   get res() {
-    return s(this, E) || f(this, E, new Response(null, { headers: s(this, K) ?? f(this, K, new Headers()) }));
+    return i(this, E) || f(this, E, new Response(null, { headers: i(this, J) ?? f(this, J, new Headers()) }));
   }
   set res(e) {
-    if (s(this, E) && e) {
+    if (i(this, E) && e) {
       e = new Response(e.body, e);
-      for (const [t, a] of s(this, E).headers.entries()) if (t !== "content-type") if (t === "set-cookie") {
-        const r = s(this, E).headers.getSetCookie();
+      for (const [t, a] of i(this, E).headers.entries()) if (t !== "content-type") if (t === "set-cookie") {
+        const r = i(this, E).headers.getSetCookie();
         e.headers.delete("set-cookie");
         for (const n of r) e.headers.append("set-cookie", n);
       } else e.headers.set(t, a);
@@ -378,20 +389,20 @@ var Pt = (We = class {
     f(this, E, e), this.finalized = true;
   }
   get var() {
-    return s(this, F) ? Object.fromEntries(s(this, F)) : {};
+    return i(this, F) ? Object.fromEntries(i(this, F)) : {};
   }
-}, be = /* @__PURE__ */ new WeakMap(), xe = /* @__PURE__ */ new WeakMap(), F = /* @__PURE__ */ new WeakMap(), ie = /* @__PURE__ */ new WeakMap(), O = /* @__PURE__ */ new WeakMap(), E = /* @__PURE__ */ new WeakMap(), ve = /* @__PURE__ */ new WeakMap(), le = /* @__PURE__ */ new WeakMap(), de = /* @__PURE__ */ new WeakMap(), K = /* @__PURE__ */ new WeakMap(), ye = /* @__PURE__ */ new WeakMap(), we = /* @__PURE__ */ new WeakMap(), G = /* @__PURE__ */ new WeakSet(), ne = /* @__PURE__ */ __name(function(e, t, a) {
-  const r = s(this, E) ? new Headers(s(this, E).headers) : s(this, K) ?? new Headers();
+}, be = /* @__PURE__ */ new WeakMap(), xe = /* @__PURE__ */ new WeakMap(), F = /* @__PURE__ */ new WeakMap(), ie = /* @__PURE__ */ new WeakMap(), O = /* @__PURE__ */ new WeakMap(), E = /* @__PURE__ */ new WeakMap(), ve = /* @__PURE__ */ new WeakMap(), le = /* @__PURE__ */ new WeakMap(), de = /* @__PURE__ */ new WeakMap(), J = /* @__PURE__ */ new WeakMap(), ye = /* @__PURE__ */ new WeakMap(), we = /* @__PURE__ */ new WeakMap(), G = /* @__PURE__ */ new WeakSet(), ne = /* @__PURE__ */ __name2(function(e, t, a) {
+  const r = i(this, E) ? new Headers(i(this, E).headers) : i(this, J) ?? new Headers();
   if (typeof t == "object" && "headers" in t) {
     const o = t.headers instanceof Headers ? t.headers : new Headers(t.headers);
-    for (const [i, c] of o) i.toLowerCase() === "set-cookie" ? r.append(i, c) : r.set(i, c);
+    for (const [s, c] of o) s.toLowerCase() === "set-cookie" ? r.append(s, c) : r.set(s, c);
   }
-  if (a) for (const [o, i] of Object.entries(a)) if (typeof i == "string") r.set(o, i);
+  if (a) for (const [o, s] of Object.entries(a)) if (typeof s == "string") r.set(o, s);
   else {
     r.delete(o);
-    for (const c of i) r.append(o, c);
+    for (const c of s) r.append(o, c);
   }
-  const n = typeof t == "number" ? t : (t == null ? void 0 : t.status) ?? s(this, ie);
+  const n = typeof t == "number" ? t : (t == null ? void 0 : t.status) ?? i(this, ie);
   return new Response(e, { status: n, headers: r });
 }, "ne"), We);
 var y = "ALL";
@@ -402,16 +413,19 @@ var dt = class extends Error {
   static {
     __name(this, "dt");
   }
+  static {
+    __name2(this, "dt");
+  }
 };
 var Mt = "__COMPOSED_HANDLER";
-var Ut = /* @__PURE__ */ __name((e) => e.text("404 Not Found", 404), "Ut");
-var Ze = /* @__PURE__ */ __name((e, t) => {
+var Ut = /* @__PURE__ */ __name2((e) => e.text("404 Not Found", 404), "Ut");
+var qe = /* @__PURE__ */ __name2((e, t) => {
   if ("getResponse" in e) {
     const a = e.getResponse();
     return t.newResponse(a.body, a);
   }
   return console.error(e), t.text("Internal Server Error", 500);
-}, "Ze");
+}, "qe");
 var L;
 var w;
 var ct;
@@ -423,6 +437,9 @@ var ce;
 var Nt = (ce = class {
   static {
     __name(this, "ce");
+  }
+  static {
+    __name2(this, "ce");
   }
   constructor(t = {}) {
     m(this, w);
@@ -441,7 +458,7 @@ var Nt = (ce = class {
     m(this, L, "/");
     h(this, "routes", []);
     m(this, A, Ut);
-    h(this, "errorHandler", Ze);
+    h(this, "errorHandler", qe);
     h(this, "onError", (t2) => (this.errorHandler = t2, this));
     h(this, "notFound", (t2) => (f(this, A, t2), this));
     h(this, "fetch", (t2, ...a) => b(this, w, ke).call(this, t2, a[1], a[0], t2.method));
@@ -452,19 +469,19 @@ var Nt = (ce = class {
       });
     });
     [...zt, jt].forEach((o) => {
-      this[o] = (i, ...c) => (typeof i == "string" ? f(this, L, i) : b(this, w, W).call(this, o, s(this, L), i), c.forEach((l) => {
-        b(this, w, W).call(this, o, s(this, L), l);
+      this[o] = (s, ...c) => (typeof s == "string" ? f(this, L, s) : b(this, w, W).call(this, o, i(this, L), s), c.forEach((l) => {
+        b(this, w, W).call(this, o, i(this, L), l);
       }), this);
-    }), this.on = (o, i, ...c) => {
-      for (const l of [i].flat()) {
+    }), this.on = (o, s, ...c) => {
+      for (const l of [s].flat()) {
         f(this, L, l);
         for (const d of [o].flat()) c.map((u) => {
-          b(this, w, W).call(this, d.toUpperCase(), s(this, L), u);
+          b(this, w, W).call(this, d.toUpperCase(), i(this, L), u);
         });
       }
       return this;
-    }, this.use = (o, ...i) => (typeof o == "string" ? f(this, L, o) : (f(this, L, "*"), i.unshift(o)), i.forEach((c) => {
-      b(this, w, W).call(this, y, s(this, L), c);
+    }, this.use = (o, ...s) => (typeof o == "string" ? f(this, L, o) : (f(this, L, "*"), s.unshift(o)), s.forEach((c) => {
+      b(this, w, W).call(this, y, i(this, L), c);
     }), this);
     const { strict: r, ...n } = t;
     Object.assign(this, n), this.getPath = r ?? true ? t.getPath ?? et : Dt;
@@ -472,9 +489,9 @@ var Nt = (ce = class {
   route(t, a) {
     const r = this.basePath(t);
     return a.routes.map((n) => {
-      var i;
+      var s;
       let o;
-      a.errorHandler === Ze ? o = n.handler : (o = /* @__PURE__ */ __name(async (c, l) => (await Ge([], a.errorHandler)(c, () => n.handler(c, l))).res, "o"), o[Mt] = n.handler), b(i = r, w, W).call(i, n.method, n.path, o);
+      a.errorHandler === qe ? o = n.handler : (o = /* @__PURE__ */ __name2(async (c, l) => (await Ge([], a.errorHandler)(c, () => n.handler(c, l))).res, "o"), o[Mt] = n.handler), b(s = r, w, W).call(s, n.method, n.path, o);
     }), this;
   }
   basePath(t) {
@@ -483,8 +500,8 @@ var Nt = (ce = class {
   }
   mount(t, a, r) {
     let n, o;
-    r && (typeof r == "function" ? o = r : (o = r.optionHandler, r.replaceRequest === false ? n = /* @__PURE__ */ __name((l) => l, "n") : n = r.replaceRequest));
-    const i = o ? (l) => {
+    r && (typeof r == "function" ? o = r : (o = r.optionHandler, r.replaceRequest === false ? n = /* @__PURE__ */ __name2((l) => l, "n") : n = r.replaceRequest));
+    const s = o ? (l) => {
       const d = o(l);
       return Array.isArray(d) ? d : [d];
     } : (l) => {
@@ -502,38 +519,38 @@ var Nt = (ce = class {
         return g.pathname = g.pathname.slice(d) || "/", new Request(g, u);
       };
     })());
-    const c = /* @__PURE__ */ __name(async (l, d) => {
-      const u = await a(n(l.req.raw), ...i(l));
+    const c = /* @__PURE__ */ __name2(async (l, d) => {
+      const u = await a(n(l.req.raw), ...s(l));
       if (u) return u;
       await d();
     }, "c");
     return b(this, w, W).call(this, y, re(t, "*"), c), this;
   }
-}, L = /* @__PURE__ */ new WeakMap(), w = /* @__PURE__ */ new WeakSet(), ct = /* @__PURE__ */ __name(function() {
+}, L = /* @__PURE__ */ new WeakMap(), w = /* @__PURE__ */ new WeakSet(), ct = /* @__PURE__ */ __name2(function() {
   const t = new ce({ router: this.router, getPath: this.getPath });
-  return t.errorHandler = this.errorHandler, f(t, A, s(this, A)), t.routes = this.routes, t;
-}, "ct"), A = /* @__PURE__ */ new WeakMap(), W = /* @__PURE__ */ __name(function(t, a, r) {
+  return t.errorHandler = this.errorHandler, f(t, A, i(this, A)), t.routes = this.routes, t;
+}, "ct"), A = /* @__PURE__ */ new WeakMap(), W = /* @__PURE__ */ __name2(function(t, a, r) {
   t = t.toUpperCase(), a = re(this._basePath, a);
   const n = { basePath: this._basePath, path: a, method: t, handler: r };
   this.router.add(t, a, [r, n]), this.routes.push(n);
-}, "W"), Ce = /* @__PURE__ */ __name(function(t, a) {
+}, "W"), Ce = /* @__PURE__ */ __name2(function(t, a) {
   if (t instanceof Error) return this.errorHandler(t, a);
   throw t;
-}, "Ce"), ke = /* @__PURE__ */ __name(function(t, a, r, n) {
+}, "Ce"), ke = /* @__PURE__ */ __name2(function(t, a, r, n) {
   if (n === "HEAD") return (async () => new Response(null, await b(this, w, ke).call(this, t, a, r, "GET")))();
-  const o = this.getPath(t, { env: r }), i = this.router.match(n, o), c = new Pt(t, { path: o, matchResult: i, env: r, executionCtx: a, notFoundHandler: s(this, A) });
-  if (i[0].length === 1) {
+  const o = this.getPath(t, { env: r }), s = this.router.match(n, o), c = new Pt(t, { path: o, matchResult: s, env: r, executionCtx: a, notFoundHandler: i(this, A) });
+  if (s[0].length === 1) {
     let d;
     try {
-      d = i[0][0][0][0](c, async () => {
-        c.res = await s(this, A).call(this, c);
+      d = s[0][0][0][0](c, async () => {
+        c.res = await i(this, A).call(this, c);
       });
     } catch (u) {
       return b(this, w, Ce).call(this, u, c);
     }
-    return d instanceof Promise ? d.then((u) => u || (c.finalized ? c.res : s(this, A).call(this, c))).catch((u) => b(this, w, Ce).call(this, u, c)) : d ?? s(this, A).call(this, c);
+    return d instanceof Promise ? d.then((u) => u || (c.finalized ? c.res : i(this, A).call(this, c))).catch((u) => b(this, w, Ce).call(this, u, c)) : d ?? i(this, A).call(this, c);
   }
-  const l = Ge(i[0], this.errorHandler, s(this, A));
+  const l = Ge(s[0], this.errorHandler, i(this, A));
   return (async () => {
     try {
       const d = await l(c);
@@ -546,17 +563,18 @@ var Nt = (ce = class {
 }, "ke"), ce);
 var ut = [];
 function $t(e, t) {
-  const a = this.buildAllMatchers(), r = /* @__PURE__ */ __name((n, o) => {
-    const i = a[n] || a[y], c = i[2][o];
+  const a = this.buildAllMatchers(), r = /* @__PURE__ */ __name2((n, o) => {
+    const s = a[n] || a[y], c = s[2][o];
     if (c) return c;
-    const l = o.match(i[0]);
+    const l = o.match(s[0]);
     if (!l) return [[], ut];
     const d = l.indexOf("", 1);
-    return [i[1][d], l];
+    return [s[1][d], l];
   }, "r");
   return this.match = r, r(e, t);
 }
 __name($t, "$t");
+__name2($t, "$t");
 var Le = "[^/]+";
 var me = ".*";
 var pe = "(?:|/.*)";
@@ -566,104 +584,113 @@ function _t(e, t) {
   return e.length === 1 ? t.length === 1 ? e < t ? -1 : 1 : -1 : t.length === 1 || e === me || e === pe ? 1 : t === me || t === pe ? -1 : e === Le ? 1 : t === Le ? -1 : e.length === t.length ? e < t ? -1 : 1 : t.length - e.length;
 }
 __name(_t, "_t");
+__name2(_t, "_t");
+var K;
 var X;
-var V;
 var D;
 var te;
-var Zt = (te = class {
+var qt = (te = class {
   static {
     __name(this, "te");
   }
+  static {
+    __name2(this, "te");
+  }
   constructor() {
+    m(this, K);
     m(this, X);
-    m(this, V);
     m(this, D, /* @__PURE__ */ Object.create(null));
   }
   insert(t, a, r, n, o) {
     if (t.length === 0) {
-      if (s(this, X) !== void 0) throw oe;
+      if (i(this, K) !== void 0) throw oe;
       if (o) return;
-      f(this, X, a);
+      f(this, K, a);
       return;
     }
-    const [i, ...c] = t, l = i === "*" ? c.length === 0 ? ["", "", me] : ["", "", Le] : i === "/*" ? ["", "", pe] : i.match(/^\:([^\{\}]+)(?:\{(.+)\})?$/);
+    const [s, ...c] = t, l = s === "*" ? c.length === 0 ? ["", "", me] : ["", "", Le] : s === "/*" ? ["", "", pe] : s.match(/^\:([^\{\}]+)(?:\{(.+)\})?$/);
     let d;
     if (l) {
       const u = l[1];
       let g = l[2] || Le;
       if (u && l[2] && (g === ".*" || (g = g.replace(/^\((?!\?:)(?=[^)]+\)$)/, "(?:"), /\((?!\?:)/.test(g)))) throw oe;
-      if (d = s(this, D)[g], !d) {
-        if (Object.keys(s(this, D)).some((p) => p !== me && p !== pe)) throw oe;
+      if (d = i(this, D)[g], !d) {
+        if (Object.keys(i(this, D)).some((p) => p !== me && p !== pe)) throw oe;
         if (o) return;
-        d = s(this, D)[g] = new te(), u !== "" && f(d, V, n.varIndex++);
+        d = i(this, D)[g] = new te(), u !== "" && f(d, X, n.varIndex++);
       }
-      !o && u !== "" && r.push([u, s(d, V)]);
-    } else if (d = s(this, D)[i], !d) {
-      if (Object.keys(s(this, D)).some((u) => u.length > 1 && u !== me && u !== pe)) throw oe;
+      !o && u !== "" && r.push([u, i(d, X)]);
+    } else if (d = i(this, D)[s], !d) {
+      if (Object.keys(i(this, D)).some((u) => u.length > 1 && u !== me && u !== pe)) throw oe;
       if (o) return;
-      d = s(this, D)[i] = new te();
+      d = i(this, D)[s] = new te();
     }
     d.insert(c, a, r, n, o);
   }
   buildRegExpStr() {
-    const a = Object.keys(s(this, D)).sort(_t).map((r) => {
-      const n = s(this, D)[r];
-      return (typeof s(n, V) == "number" ? `(${r})@${s(n, V)}` : Gt.has(r) ? `\\${r}` : r) + n.buildRegExpStr();
+    const a = Object.keys(i(this, D)).sort(_t).map((r) => {
+      const n = i(this, D)[r];
+      return (typeof i(n, X) == "number" ? `(${r})@${i(n, X)}` : Gt.has(r) ? `\\${r}` : r) + n.buildRegExpStr();
     });
-    return typeof s(this, X) == "number" && a.unshift(`#${s(this, X)}`), a.length === 0 ? "" : a.length === 1 ? a[0] : "(?:" + a.join("|") + ")";
+    return typeof i(this, K) == "number" && a.unshift(`#${i(this, K)}`), a.length === 0 ? "" : a.length === 1 ? a[0] : "(?:" + a.join("|") + ")";
   }
-}, X = /* @__PURE__ */ new WeakMap(), V = /* @__PURE__ */ new WeakMap(), D = /* @__PURE__ */ new WeakMap(), te);
+}, K = /* @__PURE__ */ new WeakMap(), X = /* @__PURE__ */ new WeakMap(), D = /* @__PURE__ */ new WeakMap(), te);
 var Ae;
 var Ie;
-var Je;
-var qt = (Je = class {
+var Ve;
+var Zt = (Ve = class {
   static {
-    __name(this, "Je");
+    __name(this, "Ve");
+  }
+  static {
+    __name2(this, "Ve");
   }
   constructor() {
     m(this, Ae, { varIndex: 0 });
-    m(this, Ie, new Zt());
+    m(this, Ie, new qt());
   }
   insert(e, t, a) {
     const r = [], n = [];
-    for (let i = 0; ; ) {
+    for (let s = 0; ; ) {
       let c = false;
       if (e = e.replace(/\{[^}]+\}/g, (l) => {
-        const d = `@\\${i}`;
-        return n[i] = [d, l], i++, c = true, d;
+        const d = `@\\${s}`;
+        return n[s] = [d, l], s++, c = true, d;
       }), !c) break;
     }
     const o = e.match(/(?::[^\/]+)|(?:\/\*$)|./g) || [];
-    for (let i = n.length - 1; i >= 0; i--) {
-      const [c] = n[i];
+    for (let s = n.length - 1; s >= 0; s--) {
+      const [c] = n[s];
       for (let l = o.length - 1; l >= 0; l--) if (o[l].indexOf(c) !== -1) {
-        o[l] = o[l].replace(c, n[i][1]);
+        o[l] = o[l].replace(c, n[s][1]);
         break;
       }
     }
-    return s(this, Ie).insert(o, t, r, s(this, Ae), a), r;
+    return i(this, Ie).insert(o, t, r, i(this, Ae), a), r;
   }
   buildRegExp() {
-    let e = s(this, Ie).buildRegExpStr();
+    let e = i(this, Ie).buildRegExpStr();
     if (e === "") return [/^$/, [], []];
     let t = 0;
     const a = [], r = [];
-    return e = e.replace(/#(\d+)|@(\d+)|\.\*\$/g, (n, o, i) => o !== void 0 ? (a[++t] = Number(o), "$()") : (i !== void 0 && (r[Number(i)] = ++t), "")), [new RegExp(`^${e}`), a, r];
+    return e = e.replace(/#(\d+)|@(\d+)|\.\*\$/g, (n, o, s) => o !== void 0 ? (a[++t] = Number(o), "$()") : (s !== void 0 && (r[Number(s)] = ++t), "")), [new RegExp(`^${e}`), a, r];
   }
-}, Ae = /* @__PURE__ */ new WeakMap(), Ie = /* @__PURE__ */ new WeakMap(), Je);
+}, Ae = /* @__PURE__ */ new WeakMap(), Ie = /* @__PURE__ */ new WeakMap(), Ve);
 var Yt = [/^$/, [], /* @__PURE__ */ Object.create(null)];
 var Re = /* @__PURE__ */ Object.create(null);
 function gt(e) {
   return Re[e] ?? (Re[e] = new RegExp(e === "*" ? "" : `^${e.replace(/\/\*$|([.\\+*[^\]$()])/g, (t, a) => a ? `\\${a}` : "(?:|/.*)")}$`));
 }
 __name(gt, "gt");
+__name2(gt, "gt");
 function Wt() {
   Re = /* @__PURE__ */ Object.create(null);
 }
 __name(Wt, "Wt");
-function Jt(e) {
+__name2(Wt, "Wt");
+function Vt(e) {
   var d;
-  const t = new qt(), a = [];
+  const t = new Zt(), a = [];
   if (e.length === 0) return Yt;
   const r = e.map((u) => [!/\*|\/:/.test(u[0]), ...u]).sort(([u, g], [p, v]) => u ? 1 : p ? -1 : g.length - v.length), n = /* @__PURE__ */ Object.create(null);
   for (let u = 0, g = -1, p = r.length; u < p; u++) {
@@ -684,7 +711,7 @@ function Jt(e) {
       return [S, Te];
     }));
   }
-  const [o, i, c] = t.buildRegExp();
+  const [o, s, c] = t.buildRegExp();
   for (let u = 0, g = a.length; u < g; u++) for (let p = 0, v = a[u].length; p < v; p++) {
     const C = (d = a[u][p]) == null ? void 0 : d[1];
     if (!C) continue;
@@ -692,36 +719,41 @@ function Jt(e) {
     for (let x = 0, S = M.length; x < S; x++) C[M[x]] = c[C[M[x]]];
   }
   const l = [];
-  for (const u in i) l[u] = a[i[u]];
+  for (const u in s) l[u] = a[s[u]];
   return [o, l, n];
 }
-__name(Jt, "Jt");
+__name(Vt, "Vt");
+__name2(Vt, "Vt");
 function ae(e, t) {
   if (e) {
     for (const a of Object.keys(e).sort((r, n) => n.length - r.length)) if (gt(a).test(t)) return [...e[a]];
   }
 }
 __name(ae, "ae");
+__name2(ae, "ae");
 var _;
-var Z;
+var q;
 var De;
 var ft;
-var Ke;
-var Kt = (Ke = class {
+var Je;
+var Jt = (Je = class {
   static {
-    __name(this, "Ke");
+    __name(this, "Je");
+  }
+  static {
+    __name2(this, "Je");
   }
   constructor() {
     m(this, De);
     h(this, "name", "RegExpRouter");
     m(this, _);
-    m(this, Z);
+    m(this, q);
     h(this, "match", $t);
-    f(this, _, { [y]: /* @__PURE__ */ Object.create(null) }), f(this, Z, { [y]: /* @__PURE__ */ Object.create(null) });
+    f(this, _, { [y]: /* @__PURE__ */ Object.create(null) }), f(this, q, { [y]: /* @__PURE__ */ Object.create(null) });
   }
   add(e, t, a) {
     var c;
-    const r = s(this, _), n = s(this, Z);
+    const r = i(this, _), n = i(this, q);
     if (!r || !n) throw new Error(lt);
     r[e] || [r, n].forEach((l) => {
       l[e] = /* @__PURE__ */ Object.create(null), Object.keys(l[y]).forEach((d) => {
@@ -743,9 +775,9 @@ var Kt = (Ke = class {
       });
       return;
     }
-    const i = tt(t) || [t];
-    for (let l = 0, d = i.length; l < d; l++) {
-      const u = i[l];
+    const s = tt(t) || [t];
+    for (let l = 0, d = s.length; l < d; l++) {
+      const u = s[l];
       Object.keys(n).forEach((g) => {
         var p;
         (e === y || e === g) && ((p = n[g])[u] || (p[u] = [...ae(r[g], u) || ae(r[y], u) || []]), n[g][u].push([a, o - d + l + 1]));
@@ -754,59 +786,62 @@ var Kt = (Ke = class {
   }
   buildAllMatchers() {
     const e = /* @__PURE__ */ Object.create(null);
-    return Object.keys(s(this, Z)).concat(Object.keys(s(this, _))).forEach((t) => {
+    return Object.keys(i(this, q)).concat(Object.keys(i(this, _))).forEach((t) => {
       e[t] || (e[t] = b(this, De, ft).call(this, t));
-    }), f(this, _, f(this, Z, void 0)), Wt(), e;
+    }), f(this, _, f(this, q, void 0)), Wt(), e;
   }
-}, _ = /* @__PURE__ */ new WeakMap(), Z = /* @__PURE__ */ new WeakMap(), De = /* @__PURE__ */ new WeakSet(), ft = /* @__PURE__ */ __name(function(e) {
+}, _ = /* @__PURE__ */ new WeakMap(), q = /* @__PURE__ */ new WeakMap(), De = /* @__PURE__ */ new WeakSet(), ft = /* @__PURE__ */ __name2(function(e) {
   const t = [];
   let a = e === y;
-  return [s(this, _), s(this, Z)].forEach((r) => {
+  return [i(this, _), i(this, q)].forEach((r) => {
     const n = r[e] ? Object.keys(r[e]).map((o) => [o, r[e][o]]) : [];
     n.length !== 0 ? (a || (a = true), t.push(...n)) : e !== y && t.push(...Object.keys(r[y]).map((o) => [o, r[y][o]]));
-  }), a ? Jt(t) : null;
-}, "ft"), Ke);
-var q;
+  }), a ? Vt(t) : null;
+}, "ft"), Je);
+var Z;
 var P;
-var Xe;
-var Xt = (Xe = class {
+var Ke;
+var Kt = (Ke = class {
   static {
-    __name(this, "Xe");
+    __name(this, "Ke");
+  }
+  static {
+    __name2(this, "Ke");
   }
   constructor(e) {
     h(this, "name", "SmartRouter");
-    m(this, q, []);
+    m(this, Z, []);
     m(this, P, []);
-    f(this, q, e.routers);
+    f(this, Z, e.routers);
   }
   add(e, t, a) {
-    if (!s(this, P)) throw new Error(lt);
-    s(this, P).push([e, t, a]);
+    if (!i(this, P)) throw new Error(lt);
+    i(this, P).push([e, t, a]);
   }
   match(e, t) {
-    if (!s(this, P)) throw new Error("Fatal error");
-    const a = s(this, q), r = s(this, P), n = a.length;
-    let o = 0, i;
+    if (!i(this, P)) throw new Error("Fatal error");
+    const a = i(this, Z), r = i(this, P), n = a.length;
+    let o = 0, s;
     for (; o < n; o++) {
       const c = a[o];
       try {
         for (let l = 0, d = r.length; l < d; l++) c.add(...r[l]);
-        i = c.match(e, t);
+        s = c.match(e, t);
       } catch (l) {
         if (l instanceof dt) continue;
         throw l;
       }
-      this.match = c.match.bind(c), f(this, q, [c]), f(this, P, void 0);
+      this.match = c.match.bind(c), f(this, Z, [c]), f(this, P, void 0);
       break;
     }
     if (o === n) throw new Error("Fatal error");
-    return this.name = `SmartRouter + ${this.activeRouter.name}`, i;
+    return this.name = `SmartRouter + ${this.activeRouter.name}`, s;
   }
   get activeRouter() {
-    if (s(this, P) || s(this, q).length !== 1) throw new Error("No active router has been determined yet.");
-    return s(this, q)[0];
+    if (i(this, P) || i(this, Z).length !== 1) throw new Error("No active router has been determined yet.");
+    return i(this, Z)[0];
   }
-}, q = /* @__PURE__ */ new WeakMap(), P = /* @__PURE__ */ new WeakMap(), Xe);
+}, Z = /* @__PURE__ */ new WeakMap(), P = /* @__PURE__ */ new WeakMap(), Ke);
 var he = /* @__PURE__ */ Object.create(null);
 var Y;
 var T;
@@ -814,11 +849,14 @@ var Q;
 var ue;
 var I;
 var j;
-var J;
+var V;
 var ge;
-var Vt = (ge = class {
+var Xt = (ge = class {
   static {
     __name(this, "ge");
+  }
+  static {
+    __name2(this, "ge");
   }
   constructor(t, a, r) {
     m(this, j);
@@ -836,42 +874,42 @@ var Vt = (ge = class {
   insert(t, a, r) {
     f(this, ue, ++$e(this, ue)._);
     let n = this;
-    const o = Ct(a), i = [];
+    const o = Ct(a), s = [];
     for (let c = 0, l = o.length; c < l; c++) {
       const d = o[c], u = o[c + 1], g = Lt(d, u), p = Array.isArray(g) ? g[0] : d;
-      if (p in s(n, T)) {
-        n = s(n, T)[p], g && i.push(g[1]);
+      if (p in i(n, T)) {
+        n = i(n, T)[p], g && s.push(g[1]);
         continue;
       }
-      s(n, T)[p] = new ge(), g && (s(n, Q).push(g), i.push(g[1])), n = s(n, T)[p];
+      i(n, T)[p] = new ge(), g && (i(n, Q).push(g), s.push(g[1])), n = i(n, T)[p];
     }
-    return s(n, Y).push({ [t]: { handler: r, possibleKeys: i.filter((c, l, d) => d.indexOf(c) === l), score: s(this, ue) } }), n;
+    return i(n, Y).push({ [t]: { handler: r, possibleKeys: s.filter((c, l, d) => d.indexOf(c) === l), score: i(this, ue) } }), n;
   }
   search(t, a) {
     var l;
     const r = [];
     f(this, I, he);
     let o = [this];
-    const i = Qe(a), c = [];
-    for (let d = 0, u = i.length; d < u; d++) {
-      const g = i[d], p = d === u - 1, v = [];
+    const s = Qe(a), c = [];
+    for (let d = 0, u = s.length; d < u; d++) {
+      const g = s[d], p = d === u - 1, v = [];
       for (let C = 0, M = o.length; C < M; C++) {
-        const x = o[C], S = s(x, T)[g];
-        S && (f(S, I, s(x, I)), p ? (s(S, T)["*"] && r.push(...b(this, j, J).call(this, s(S, T)["*"], t, s(x, I))), r.push(...b(this, j, J).call(this, S, t, s(x, I)))) : v.push(S));
-        for (let U = 0, Te = s(x, Q).length; U < Te; U++) {
-          const Se = s(x, Q)[U], H = s(x, I) === he ? {} : { ...s(x, I) };
+        const x = o[C], S = i(x, T)[g];
+        S && (f(S, I, i(x, I)), p ? (i(S, T)["*"] && r.push(...b(this, j, V).call(this, i(S, T)["*"], t, i(x, I))), r.push(...b(this, j, V).call(this, S, t, i(x, I)))) : v.push(S));
+        for (let U = 0, Te = i(x, Q).length; U < Te; U++) {
+          const Se = i(x, Q)[U], H = i(x, I) === he ? {} : { ...i(x, I) };
           if (Se === "*") {
-            const N = s(x, T)["*"];
-            N && (r.push(...b(this, j, J).call(this, N, t, s(x, I))), f(N, I, H), v.push(N));
+            const N = i(x, T)["*"];
+            N && (r.push(...b(this, j, V).call(this, N, t, i(x, I))), f(N, I, H), v.push(N));
             continue;
           }
           const [pt, Ue, fe] = Se;
           if (!g && !(fe instanceof RegExp)) continue;
-          const B = s(x, T)[pt], bt = i.slice(d).join("/");
+          const B = i(x, T)[pt], bt = s.slice(d).join("/");
           if (fe instanceof RegExp) {
             const N = fe.exec(bt);
             if (N) {
-              if (H[Ue] = N[0], r.push(...b(this, j, J).call(this, B, t, s(x, I), H)), Object.keys(s(B, T)).length) {
+              if (H[Ue] = N[0], r.push(...b(this, j, V).call(this, B, t, i(x, I), H)), Object.keys(i(B, T)).length) {
                 f(B, I, H);
                 const He = ((l = N[0].match(/\//)) == null ? void 0 : l.length) ?? 0;
                 (c[He] || (c[He] = [])).push(B);
@@ -879,76 +917,83 @@ var Vt = (ge = class {
               continue;
             }
           }
-          (fe === true || fe.test(g)) && (H[Ue] = g, p ? (r.push(...b(this, j, J).call(this, B, t, H, s(x, I))), s(B, T)["*"] && r.push(...b(this, j, J).call(this, s(B, T)["*"], t, H, s(x, I)))) : (f(B, I, H), v.push(B)));
+          (fe === true || fe.test(g)) && (H[Ue] = g, p ? (r.push(...b(this, j, V).call(this, B, t, H, i(x, I))), i(B, T)["*"] && r.push(...b(this, j, V).call(this, i(B, T)["*"], t, H, i(x, I)))) : (f(B, I, H), v.push(B)));
         }
       }
       o = v.concat(c.shift() ?? []);
     }
     return r.length > 1 && r.sort((d, u) => d.score - u.score), [r.map(({ handler: d, params: u }) => [d, u])];
   }
-}, Y = /* @__PURE__ */ new WeakMap(), T = /* @__PURE__ */ new WeakMap(), Q = /* @__PURE__ */ new WeakMap(), ue = /* @__PURE__ */ new WeakMap(), I = /* @__PURE__ */ new WeakMap(), j = /* @__PURE__ */ new WeakSet(), J = /* @__PURE__ */ __name(function(t, a, r, n) {
+}, Y = /* @__PURE__ */ new WeakMap(), T = /* @__PURE__ */ new WeakMap(), Q = /* @__PURE__ */ new WeakMap(), ue = /* @__PURE__ */ new WeakMap(), I = /* @__PURE__ */ new WeakMap(), j = /* @__PURE__ */ new WeakSet(), V = /* @__PURE__ */ __name2(function(t, a, r, n) {
   const o = [];
-  for (let i = 0, c = s(t, Y).length; i < c; i++) {
-    const l = s(t, Y)[i], d = l[a] || l[y], u = {};
+  for (let s = 0, c = i(t, Y).length; s < c; s++) {
+    const l = i(t, Y)[s], d = l[a] || l[y], u = {};
     if (d !== void 0 && (d.params = /* @__PURE__ */ Object.create(null), o.push(d), r !== he || n && n !== he)) for (let g = 0, p = d.possibleKeys.length; g < p; g++) {
       const v = d.possibleKeys[g], C = u[d.score];
       d.params[v] = n != null && n[v] && !C ? n[v] : r[v] ?? (n == null ? void 0 : n[v]), u[d.score] = true;
     }
   }
   return o;
-}, "J"), ge);
+}, "V"), ge);
 var ee;
-var Ve;
-var Qt = (Ve = class {
+var Xe;
+var Qt = (Xe = class {
   static {
-    __name(this, "Ve");
+    __name(this, "Xe");
+  }
+  static {
+    __name2(this, "Xe");
   }
   constructor() {
     h(this, "name", "TrieRouter");
     m(this, ee);
-    f(this, ee, new Vt());
+    f(this, ee, new Xt());
   }
   add(e, t, a) {
     const r = tt(t);
     if (r) {
-      for (let n = 0, o = r.length; n < o; n++) s(this, ee).insert(e, r[n], a);
+      for (let n = 0, o = r.length; n < o; n++) i(this, ee).insert(e, r[n], a);
       return;
     }
-    s(this, ee).insert(e, t, a);
+    i(this, ee).insert(e, t, a);
   }
   match(e, t) {
-    return s(this, ee).search(e, t);
+    return i(this, ee).search(e, t);
   }
-}, ee = /* @__PURE__ */ new WeakMap(), Ve);
+}, ee = /* @__PURE__ */ new WeakMap(), Xe);
 var ht = class extends Nt {
   static {
     __name(this, "ht");
   }
+  static {
+    __name2(this, "ht");
+  }
   constructor(e = {}) {
-    super(e), this.router = e.router ?? new Xt({ routers: [new Kt(), new Qt()] });
+    super(e), this.router = e.router ?? new Kt({ routers: [new Jt(), new Qt()] });
   }
 };
-var ea = /* @__PURE__ */ __name((e) => {
-  const a = { ...{ origin: "*", allowMethods: ["GET", "HEAD", "PUT", "POST", "DELETE", "PATCH"], allowHeaders: [], exposeHeaders: [] }, ...e }, r = /* @__PURE__ */ ((o) => typeof o == "string" ? o === "*" ? () => o : (i) => o === i ? i : null : typeof o == "function" ? o : (i) => o.includes(i) ? i : null)(a.origin), n = ((o) => typeof o == "function" ? o : Array.isArray(o) ? () => o : () => [])(a.allowMethods);
-  return async function(i, c) {
+var ea = /* @__PURE__ */ __name2((e) => {
+  const a = { ...{ origin: "*", allowMethods: ["GET", "HEAD", "PUT", "POST", "DELETE", "PATCH"], allowHeaders: [], exposeHeaders: [] }, ...e }, r = /* @__PURE__ */ ((o) => typeof o == "string" ? o === "*" ? () => o : (s) => o === s ? s : null : typeof o == "function" ? o : (s) => o.includes(s) ? s : null)(a.origin), n = ((o) => typeof o == "function" ? o : Array.isArray(o) ? () => o : () => [])(a.allowMethods);
+  return async function(s, c) {
     var u;
     function l(g, p) {
-      i.res.headers.set(g, p);
+      s.res.headers.set(g, p);
     }
     __name(l, "l");
-    const d = await r(i.req.header("origin") || "", i);
-    if (d && l("Access-Control-Allow-Origin", d), a.credentials && l("Access-Control-Allow-Credentials", "true"), (u = a.exposeHeaders) != null && u.length && l("Access-Control-Expose-Headers", a.exposeHeaders.join(",")), i.req.method === "OPTIONS") {
+    __name2(l, "l");
+    const d = await r(s.req.header("origin") || "", s);
+    if (d && l("Access-Control-Allow-Origin", d), a.credentials && l("Access-Control-Allow-Credentials", "true"), (u = a.exposeHeaders) != null && u.length && l("Access-Control-Expose-Headers", a.exposeHeaders.join(",")), s.req.method === "OPTIONS") {
       a.origin !== "*" && l("Vary", "Origin"), a.maxAge != null && l("Access-Control-Max-Age", a.maxAge.toString());
-      const g = await n(i.req.header("origin") || "", i);
+      const g = await n(s.req.header("origin") || "", s);
       g.length && l("Access-Control-Allow-Methods", g.join(","));
       let p = a.allowHeaders;
       if (!(p != null && p.length)) {
-        const v = i.req.header("Access-Control-Request-Headers");
+        const v = s.req.header("Access-Control-Request-Headers");
         v && (p = v.split(/\s*,\s*/));
       }
-      return p != null && p.length && (l("Access-Control-Allow-Headers", p.join(",")), i.res.headers.append("Vary", "Access-Control-Request-Headers")), i.res.headers.delete("Content-Length"), i.res.headers.delete("Content-Type"), new Response(null, { headers: i.res.headers, status: 204, statusText: "No Content" });
+      return p != null && p.length && (l("Access-Control-Allow-Headers", p.join(",")), s.res.headers.append("Vary", "Access-Control-Request-Headers")), s.res.headers.delete("Content-Length"), s.res.headers.delete("Content-Type"), new Response(null, { headers: s.res.headers, status: 204, statusText: "No Content" });
     }
-    await c(), a.origin !== "*" && i.header("Vary", "Origin", { append: true });
+    await c(), a.origin !== "*" && s.header("Vary", "Origin", { append: true });
   };
 }, "ea");
 var k = new ht();
@@ -974,8 +1019,8 @@ k.get("/api/records", async (e) => {
   if (!a || !r) return e.json({ error: "Missing baseId or tableId" }, 400);
   let o = `https://api.airtable.com/v0/${a}/${r}?pageSize=50`;
   n && n !== "all" && (o += `&filterByFormula={Status}='${n}'`);
-  const i = await fetch(o, { headers: { Authorization: `Bearer ${t}` } });
-  return e.json(await i.json());
+  const s = await fetch(o, { headers: { Authorization: `Bearer ${t}` } });
+  return e.json(await s.json());
 });
 k.get("/api/records/:id", async (e) => {
   const t = e.req.header("X-Airtable-Token");
@@ -990,8 +1035,8 @@ k.patch("/api/records/:id", async (e) => {
   if (!t) return e.json({ error: "Missing Airtable token" }, 401);
   const a = e.req.query("baseId"), r = e.req.query("tableId"), n = e.req.param("id"), o = await e.req.json();
   if (!a || !r) return e.json({ error: "Missing baseId or tableId" }, 400);
-  const i = await fetch(`https://api.airtable.com/v0/${a}/${r}/${n}`, { method: "PATCH", headers: { Authorization: `Bearer ${t}`, "Content-Type": "application/json" }, body: JSON.stringify({ fields: o }) });
-  return e.json(await i.json());
+  const s = await fetch(`https://api.airtable.com/v0/${a}/${r}/${n}`, { method: "PATCH", headers: { Authorization: `Bearer ${t}`, "Content-Type": "application/json" }, body: JSON.stringify({ fields: o }) });
+  return e.json(await s.json());
 });
 k.post("/api/generate-image", async (e) => {
   const { prompt: t, imageUrls: a, aspectRatio: r } = await e.req.json(), n = { model: "google/nano-banana", input: { prompt: t, image_urls: a || [Pe.face, Pe.outfit, Pe.logo], aspect_ratio: r || "16:9", aspectRatio: r || "16:9", ratio: r || "16:9", resolution: "1K", output_format: "png" }, aspect_ratio: r || "16:9", aspectRatio: r || "16:9" };
@@ -999,11 +1044,14 @@ k.post("/api/generate-image", async (e) => {
   const o = await fetch("https://api.kie.ai/api/v1/jobs/createTask", { method: "POST", headers: { Authorization: `Bearer ${Me}`, "Content-Type": "application/json" }, body: JSON.stringify(n) });
   return e.json(await o.json());
 });
-k.post("/api/generate-image-zimage", async (e) => {
-  const { prompt: t, imageUrl: a, aspectRatio: r } = await e.req.json(), n = { model: "fal-ai/z-image/turbo", input: { prompt: t, image_url: a, aspect_ratio: r || "16:9", output_format: "png" } };
-  console.log("Z-Image Request (text overlay):", JSON.stringify(n, null, 2));
-  const o = await fetch("https://api.kie.ai/api/v1/jobs/createTask", { method: "POST", headers: { Authorization: `Bearer ${Me}`, "Content-Type": "application/json" }, body: JSON.stringify(n) });
-  return e.json(await o.json());
+k.post("/api/generate-image-ideogram", async (e) => {
+  const { prompt: t, imageUrl: a, aspectRatio: r } = await e.req.json();
+  let n = "landscape_16_9";
+  r === "9:16" ? n = "portrait_9_16" : r === "1:1" && (n = "square_hd");
+  const o = { model: "ideogram/character-remix", input: { prompt: t, image_url: a, image_size: n, rendering_speed: "BALANCED", style: "REALISTIC", expand_prompt: false, num_images: "1", strength: 0.3 } };
+  console.log("Ideogram V3 Remix Request (text overlay):", JSON.stringify(o, null, 2));
+  const s = await fetch("https://api.kie.ai/api/v1/jobs/createTask", { method: "POST", headers: { Authorization: `Bearer ${Me}`, "Content-Type": "application/json" }, body: JSON.stringify(o) });
+  return e.json(await s.json());
 });
 k.get("/api/task-status/:taskId", async (e) => {
   const t = e.req.param("taskId"), a = await fetch(`https://api.kie.ai/api/v1/jobs/recordInfo?taskId=${t}`, { headers: { Authorization: `Bearer ${Me}` } });
@@ -1024,8 +1072,8 @@ k.post("/api/proxy-image", async (e) => {
     const r = await a.arrayBuffer(), n = new Uint8Array(r);
     let o = "";
     for (let l = 0; l < n.length; l++) o += String.fromCharCode(n[l]);
-    const i = btoa(o), c = a.headers.get("content-type") || "image/png";
-    return e.json({ success: true, base64: i, contentType: c, dataUrl: "data:" + c + ";base64," + i });
+    const s = btoa(o), c = a.headers.get("content-type") || "image/png";
+    return e.json({ success: true, base64: s, contentType: c, dataUrl: "data:" + c + ";base64," + s });
   } catch (t) {
     return e.json({ error: "Proxy error: " + t.message }, 500);
   }
@@ -3332,8 +3380,8 @@ k.get("/", (e) => e.html(`
       let finalUrl = url;
       
       if (addHeadlineText && shortHeadline) {
-        // Step 2: Add text overlay using Z-Image AI (excellent text rendering)
-        document.getElementById('statusText').textContent = 'Step 2: Adding headline with Z-Image AI...';
+        // Step 2: Add text overlay using Ideogram V3 (best text rendering)
+        document.getElementById('statusText').textContent = 'Step 2: Adding headline with Ideogram V3...';
         try {
           finalUrl = await addTextOverlayWithZImage(url, shortHeadline, finalRatio);
         } catch (err) {
@@ -3550,34 +3598,34 @@ k.get("/", (e) => e.html(`
       });
     }
     
-    // Add text overlay to image using Z-Image AI (excellent text rendering)
+    // Add text overlay to image using Ideogram V3 (best text rendering in the industry)
     async function addTextOverlayWithZImage(imageUrl, headline, ratio) {
       // Format the headline for the aspect ratio
       const formattedHeadline = formatHeadlineForRatio(headline, ratio);
       
-      // Create a specific prompt for Z-Image to add text overlay
-      const textPrompt = \`Add a professional news headline banner to this image. 
-      
-At the bottom of the image, add a dark semi-transparent banner (85% opacity black) spanning the full width.
+      // Create a specific prompt for Ideogram to add text overlay
+      // Ideogram excels at text rendering - be very specific about what we want
+      const textPrompt = \`Keep this exact image but add a professional news headline banner at the bottom.
 
-Inside the banner, add this headline text in WHITE, bold Helvetica font:
-"\${formattedHeadline}"
+BANNER SPECIFICATIONS:
+- Position: Bottom 12-15% of the image
+- Background: Dark semi-transparent black banner (85% opacity) spanning full width
+- Text content: "\${formattedHeadline}"
+- Text style: Bold white Helvetica/sans-serif font, left-aligned with padding
+- Text size: Large enough to be easily readable but fitting within the banner
+- Logo: Small golden crown icon labeled "5th Ave Crypto" in bottom-right of banner
 
-The text should be:
-- Left-aligned with padding from the edge
-- Properly sized to fit the banner (not too big, not too small)
-- Clear, crisp, and highly readable
-- Professional news/media style typography
+CRITICAL: 
+- Do NOT change the main image content AT ALL
+- Only ADD the text banner overlay at the bottom
+- The headline text must be EXACTLY as written above - letter perfect
+- Text must be crisp, clear, and professional\`;
 
-In the bottom-right corner of the banner, add a small "5th Ave Crypto" logo (gold/amber colored crown icon).
-
-Keep the original image EXACTLY as-is - only add the banner and text at the bottom. Do not modify anything else.\`;
-
-      console.log('Z-Image text overlay prompt:', textPrompt);
+      console.log('Ideogram V3 text overlay prompt:', textPrompt);
       
       try {
-        // Call Z-Image API
-        const createRes = await fetch('/api/generate-image-zimage', {
+        // Call Ideogram API
+        const createRes = await fetch('/api/generate-image-ideogram', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
@@ -3588,17 +3636,17 @@ Keep the original image EXACTLY as-is - only add the banner and text at the bott
         });
         const createData = await createRes.json();
 
-        console.log('Z-Image create response:', createData);
+        console.log('Ideogram V3 create response:', createData);
 
         if (createData.code !== 200) {
-          throw new Error(createData.msg || 'Failed to create Z-Image task');
+          throw new Error(createData.msg || 'Failed to create Ideogram task');
         }
 
         const taskId = createData.data.taskId;
 
         // Poll for completion
         let attempts = 0;
-        while (attempts < 60) {
+        while (attempts < 90) { // Ideogram may take longer
           await new Promise(r => setTimeout(r, 2000));
           const statusRes = await fetch('/api/task-status/' + taskId);
           const statusData = await statusRes.json();
@@ -3606,17 +3654,17 @@ Keep the original image EXACTLY as-is - only add the banner and text at the bott
           if (statusData.data?.state === 'success') {
             const resultJson = JSON.parse(statusData.data.resultJson);
             const finalImageUrl = resultJson.resultUrls[0];
-            console.log('Z-Image text overlay complete:', finalImageUrl);
+            console.log('Ideogram V3 text overlay complete:', finalImageUrl);
             return finalImageUrl;
           } else if (statusData.data?.state === 'failed') {
-            throw new Error(statusData.data.failMsg || 'Z-Image text overlay failed');
+            throw new Error(statusData.data.failMsg || 'Ideogram text overlay failed');
           }
           attempts++;
         }
-        throw new Error('Z-Image text overlay timed out');
+        throw new Error('Ideogram text overlay timed out');
       } catch (err) {
-        console.error('Z-Image text overlay error:', err);
-        // Fall back to canvas overlay if Z-Image fails
+        console.error('Ideogram text overlay error:', err);
+        // Fall back to canvas overlay if Ideogram fails
         console.log('Falling back to canvas text overlay...');
         return await addTextOverlayWithCanvas(imageUrl, headline, ratio);
       }
@@ -4893,14 +4941,12 @@ Keep the original image EXACTLY as-is - only add the banner and text at the bott
 </body>
 </html>
   `));
-var qe = new ht();
+var Ze = new ht();
 var ta = Object.assign({ "/src/index.tsx": k });
 var mt = false;
-for (const [, e] of Object.entries(ta)) e && (qe.route("/", e), qe.notFound(e.notFoundHandler), mt = true);
+for (const [, e] of Object.entries(ta)) e && (Ze.route("/", e), Ze.notFound(e.notFoundHandler), mt = true);
 if (!mt) throw new Error("Can't import modules from ['/src/index.tsx','/app/server.ts']");
-
-// ../../../../usr/lib/node_modules/wrangler/templates/middleware/middleware-ensure-req-body-drained.ts
-var drainBody = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx) => {
+var drainBody = /* @__PURE__ */ __name2(async (request, env, _ctx, middlewareCtx) => {
   try {
     return await middlewareCtx.next(request, env);
   } finally {
@@ -4916,8 +4962,6 @@ var drainBody = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx)
   }
 }, "drainBody");
 var middleware_ensure_req_body_drained_default = drainBody;
-
-// ../../../../usr/lib/node_modules/wrangler/templates/middleware/middleware-miniflare3-json-error.ts
 function reduceError(e) {
   return {
     name: e?.name,
@@ -4927,7 +4971,8 @@ function reduceError(e) {
   };
 }
 __name(reduceError, "reduceError");
-var jsonError = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx) => {
+__name2(reduceError, "reduceError");
+var jsonError = /* @__PURE__ */ __name2(async (request, env, _ctx, middlewareCtx) => {
   try {
     return await middlewareCtx.next(request, env);
   } catch (e) {
@@ -4939,20 +4984,17 @@ var jsonError = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx)
   }
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
-
-// ../.wrangler/tmp/bundle-xKWMM0/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
 ];
-var middleware_insertion_facade_default = qe;
-
-// ../../../../usr/lib/node_modules/wrangler/templates/middleware/common.ts
+var middleware_insertion_facade_default = Ze;
 var __facade_middleware__ = [];
 function __facade_register__(...args) {
   __facade_middleware__.push(...args.flat());
 }
 __name(__facade_register__, "__facade_register__");
+__name2(__facade_register__, "__facade_register__");
 function __facade_invokeChain__(request, env, ctx, dispatch, middlewareChain) {
   const [head, ...tail] = middlewareChain;
   const middlewareCtx = {
@@ -4964,6 +5006,7 @@ function __facade_invokeChain__(request, env, ctx, dispatch, middlewareChain) {
   return head(request, env, ctx, middlewareCtx);
 }
 __name(__facade_invokeChain__, "__facade_invokeChain__");
+__name2(__facade_invokeChain__, "__facade_invokeChain__");
 function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
   return __facade_invokeChain__(request, env, ctx, dispatch, [
     ...__facade_middleware__,
@@ -4971,16 +5014,18 @@ function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
   ]);
 }
 __name(__facade_invoke__, "__facade_invoke__");
-
-// ../.wrangler/tmp/bundle-xKWMM0/middleware-loader.entry.ts
+__name2(__facade_invoke__, "__facade_invoke__");
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
+  static {
+    __name(this, "___Facade_ScheduledController__");
+  }
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;
     this.cron = cron;
     this.#noRetry = noRetry;
   }
   static {
-    __name(this, "__Facade_ScheduledController__");
+    __name2(this, "__Facade_ScheduledController__");
   }
   #noRetry;
   noRetry() {
@@ -4997,7 +5042,7 @@ function wrapExportedHandler(worker) {
   for (const middleware of __INTERNAL_WRANGLER_MIDDLEWARE__) {
     __facade_register__(middleware);
   }
-  const fetchDispatcher = /* @__PURE__ */ __name(function(request, env, ctx) {
+  const fetchDispatcher = /* @__PURE__ */ __name2(function(request, env, ctx) {
     if (worker.fetch === void 0) {
       throw new Error("Handler does not export a fetch() function.");
     }
@@ -5006,7 +5051,7 @@ function wrapExportedHandler(worker) {
   return {
     ...worker,
     fetch(request, env, ctx) {
-      const dispatcher = /* @__PURE__ */ __name(function(type, init) {
+      const dispatcher = /* @__PURE__ */ __name2(function(type, init) {
         if (type === "scheduled" && worker.scheduled !== void 0) {
           const controller = new __Facade_ScheduledController__(
             Date.now(),
@@ -5022,6 +5067,7 @@ function wrapExportedHandler(worker) {
   };
 }
 __name(wrapExportedHandler, "wrapExportedHandler");
+__name2(wrapExportedHandler, "wrapExportedHandler");
 function wrapWorkerEntrypoint(klass) {
   if (__INTERNAL_WRANGLER_MIDDLEWARE__ === void 0 || __INTERNAL_WRANGLER_MIDDLEWARE__.length === 0) {
     return klass;
@@ -5030,7 +5076,7 @@ function wrapWorkerEntrypoint(klass) {
     __facade_register__(middleware);
   }
   return class extends klass {
-    #fetchDispatcher = /* @__PURE__ */ __name((request, env, ctx) => {
+    #fetchDispatcher = /* @__PURE__ */ __name2((request, env, ctx) => {
       this.env = env;
       this.ctx = ctx;
       if (super.fetch === void 0) {
@@ -5038,7 +5084,7 @@ function wrapWorkerEntrypoint(klass) {
       }
       return super.fetch(request);
     }, "#fetchDispatcher");
-    #dispatcher = /* @__PURE__ */ __name((type, init) => {
+    #dispatcher = /* @__PURE__ */ __name2((type, init) => {
       if (type === "scheduled" && super.scheduled !== void 0) {
         const controller = new __Facade_ScheduledController__(
           Date.now(),
@@ -5061,6 +5107,7 @@ function wrapWorkerEntrypoint(klass) {
   };
 }
 __name(wrapWorkerEntrypoint, "wrapWorkerEntrypoint");
+__name2(wrapWorkerEntrypoint, "wrapWorkerEntrypoint");
 var WRAPPED_ENTRY;
 if (typeof middleware_insertion_facade_default === "object") {
   WRAPPED_ENTRY = wrapExportedHandler(middleware_insertion_facade_default);
@@ -5068,8 +5115,232 @@ if (typeof middleware_insertion_facade_default === "object") {
   WRAPPED_ENTRY = wrapWorkerEntrypoint(middleware_insertion_facade_default);
 }
 var middleware_loader_entry_default = WRAPPED_ENTRY;
-export {
-  __INTERNAL_WRANGLER_MIDDLEWARE__,
-  middleware_loader_entry_default as default
+
+// ../../../usr/lib/node_modules/wrangler/templates/pages-dev-util.ts
+function isRoutingRuleMatch(pathname, routingRule) {
+  if (!pathname) {
+    throw new Error("Pathname is undefined.");
+  }
+  if (!routingRule) {
+    throw new Error("Routing rule is undefined.");
+  }
+  const ruleRegExp = transformRoutingRuleToRegExp(routingRule);
+  return pathname.match(ruleRegExp) !== null;
+}
+__name(isRoutingRuleMatch, "isRoutingRuleMatch");
+function transformRoutingRuleToRegExp(rule) {
+  let transformedRule;
+  if (rule === "/" || rule === "/*") {
+    transformedRule = rule;
+  } else if (rule.endsWith("/*")) {
+    transformedRule = `${rule.substring(0, rule.length - 2)}(/*)?`;
+  } else if (rule.endsWith("/")) {
+    transformedRule = `${rule.substring(0, rule.length - 1)}(/)?`;
+  } else if (rule.endsWith("*")) {
+    transformedRule = rule;
+  } else {
+    transformedRule = `${rule}(/)?`;
+  }
+  transformedRule = `^${transformedRule.replaceAll(/\./g, "\\.").replaceAll(/\*/g, ".*")}$`;
+  return new RegExp(transformedRule);
+}
+__name(transformRoutingRuleToRegExp, "transformRoutingRuleToRegExp");
+
+// .wrangler/tmp/pages-bVKx5k/frb8cbhc3in.js
+var define_ROUTES_default = { version: 1, include: ["/*"], exclude: [] };
+var routes = define_ROUTES_default;
+var pages_dev_pipeline_default = {
+  fetch(request, env, context) {
+    const { pathname } = new URL(request.url);
+    for (const exclude of routes.exclude) {
+      if (isRoutingRuleMatch(pathname, exclude)) {
+        return env.ASSETS.fetch(request);
+      }
+    }
+    for (const include of routes.include) {
+      if (isRoutingRuleMatch(pathname, include)) {
+        const workerAsHandler = middleware_loader_entry_default;
+        if (workerAsHandler.fetch === void 0) {
+          throw new TypeError("Entry point missing `fetch` handler");
+        }
+        return workerAsHandler.fetch(request, env, context);
+      }
+    }
+    return env.ASSETS.fetch(request);
+  }
 };
-//# sourceMappingURL=bundledWorker-0.1957138806929153.mjs.map
+
+// ../../../usr/lib/node_modules/wrangler/templates/middleware/middleware-ensure-req-body-drained.ts
+var drainBody2 = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx) => {
+  try {
+    return await middlewareCtx.next(request, env);
+  } finally {
+    try {
+      if (request.body !== null && !request.bodyUsed) {
+        const reader = request.body.getReader();
+        while (!(await reader.read()).done) {
+        }
+      }
+    } catch (e) {
+      console.error("Failed to drain the unused request body.", e);
+    }
+  }
+}, "drainBody");
+var middleware_ensure_req_body_drained_default2 = drainBody2;
+
+// ../../../usr/lib/node_modules/wrangler/templates/middleware/middleware-miniflare3-json-error.ts
+function reduceError2(e) {
+  return {
+    name: e?.name,
+    message: e?.message ?? String(e),
+    stack: e?.stack,
+    cause: e?.cause === void 0 ? void 0 : reduceError2(e.cause)
+  };
+}
+__name(reduceError2, "reduceError");
+var jsonError2 = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx) => {
+  try {
+    return await middlewareCtx.next(request, env);
+  } catch (e) {
+    const error = reduceError2(e);
+    return Response.json(error, {
+      status: 500,
+      headers: { "MF-Experimental-Error-Stack": "true" }
+    });
+  }
+}, "jsonError");
+var middleware_miniflare3_json_error_default2 = jsonError2;
+
+// .wrangler/tmp/bundle-FO8RJe/middleware-insertion-facade.js
+var __INTERNAL_WRANGLER_MIDDLEWARE__2 = [
+  middleware_ensure_req_body_drained_default2,
+  middleware_miniflare3_json_error_default2
+];
+var middleware_insertion_facade_default2 = pages_dev_pipeline_default;
+
+// ../../../usr/lib/node_modules/wrangler/templates/middleware/common.ts
+var __facade_middleware__2 = [];
+function __facade_register__2(...args) {
+  __facade_middleware__2.push(...args.flat());
+}
+__name(__facade_register__2, "__facade_register__");
+function __facade_invokeChain__2(request, env, ctx, dispatch, middlewareChain) {
+  const [head, ...tail] = middlewareChain;
+  const middlewareCtx = {
+    dispatch,
+    next(newRequest, newEnv) {
+      return __facade_invokeChain__2(newRequest, newEnv, ctx, dispatch, tail);
+    }
+  };
+  return head(request, env, ctx, middlewareCtx);
+}
+__name(__facade_invokeChain__2, "__facade_invokeChain__");
+function __facade_invoke__2(request, env, ctx, dispatch, finalMiddleware) {
+  return __facade_invokeChain__2(request, env, ctx, dispatch, [
+    ...__facade_middleware__2,
+    finalMiddleware
+  ]);
+}
+__name(__facade_invoke__2, "__facade_invoke__");
+
+// .wrangler/tmp/bundle-FO8RJe/middleware-loader.entry.ts
+var __Facade_ScheduledController__2 = class ___Facade_ScheduledController__2 {
+  constructor(scheduledTime, cron, noRetry) {
+    this.scheduledTime = scheduledTime;
+    this.cron = cron;
+    this.#noRetry = noRetry;
+  }
+  static {
+    __name(this, "__Facade_ScheduledController__");
+  }
+  #noRetry;
+  noRetry() {
+    if (!(this instanceof ___Facade_ScheduledController__2)) {
+      throw new TypeError("Illegal invocation");
+    }
+    this.#noRetry();
+  }
+};
+function wrapExportedHandler2(worker) {
+  if (__INTERNAL_WRANGLER_MIDDLEWARE__2 === void 0 || __INTERNAL_WRANGLER_MIDDLEWARE__2.length === 0) {
+    return worker;
+  }
+  for (const middleware of __INTERNAL_WRANGLER_MIDDLEWARE__2) {
+    __facade_register__2(middleware);
+  }
+  const fetchDispatcher = /* @__PURE__ */ __name(function(request, env, ctx) {
+    if (worker.fetch === void 0) {
+      throw new Error("Handler does not export a fetch() function.");
+    }
+    return worker.fetch(request, env, ctx);
+  }, "fetchDispatcher");
+  return {
+    ...worker,
+    fetch(request, env, ctx) {
+      const dispatcher = /* @__PURE__ */ __name(function(type, init) {
+        if (type === "scheduled" && worker.scheduled !== void 0) {
+          const controller = new __Facade_ScheduledController__2(
+            Date.now(),
+            init.cron ?? "",
+            () => {
+            }
+          );
+          return worker.scheduled(controller, env, ctx);
+        }
+      }, "dispatcher");
+      return __facade_invoke__2(request, env, ctx, dispatcher, fetchDispatcher);
+    }
+  };
+}
+__name(wrapExportedHandler2, "wrapExportedHandler");
+function wrapWorkerEntrypoint2(klass) {
+  if (__INTERNAL_WRANGLER_MIDDLEWARE__2 === void 0 || __INTERNAL_WRANGLER_MIDDLEWARE__2.length === 0) {
+    return klass;
+  }
+  for (const middleware of __INTERNAL_WRANGLER_MIDDLEWARE__2) {
+    __facade_register__2(middleware);
+  }
+  return class extends klass {
+    #fetchDispatcher = /* @__PURE__ */ __name((request, env, ctx) => {
+      this.env = env;
+      this.ctx = ctx;
+      if (super.fetch === void 0) {
+        throw new Error("Entrypoint class does not define a fetch() function.");
+      }
+      return super.fetch(request);
+    }, "#fetchDispatcher");
+    #dispatcher = /* @__PURE__ */ __name((type, init) => {
+      if (type === "scheduled" && super.scheduled !== void 0) {
+        const controller = new __Facade_ScheduledController__2(
+          Date.now(),
+          init.cron ?? "",
+          () => {
+          }
+        );
+        return super.scheduled(controller);
+      }
+    }, "#dispatcher");
+    fetch(request) {
+      return __facade_invoke__2(
+        request,
+        this.env,
+        this.ctx,
+        this.#dispatcher,
+        this.#fetchDispatcher
+      );
+    }
+  };
+}
+__name(wrapWorkerEntrypoint2, "wrapWorkerEntrypoint");
+var WRAPPED_ENTRY2;
+if (typeof middleware_insertion_facade_default2 === "object") {
+  WRAPPED_ENTRY2 = wrapExportedHandler2(middleware_insertion_facade_default2);
+} else if (typeof middleware_insertion_facade_default2 === "function") {
+  WRAPPED_ENTRY2 = wrapWorkerEntrypoint2(middleware_insertion_facade_default2);
+}
+var middleware_loader_entry_default2 = WRAPPED_ENTRY2;
+export {
+  __INTERNAL_WRANGLER_MIDDLEWARE__2 as __INTERNAL_WRANGLER_MIDDLEWARE__,
+  middleware_loader_entry_default2 as default
+};
+//# sourceMappingURL=frb8cbhc3in.js.map

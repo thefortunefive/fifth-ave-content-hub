@@ -135,21 +135,30 @@ app.post('/api/generate-image', async (c) => {
   return c.json(await res.json())
 })
 
-// API: Generate image with Z-Image (for text overlay - excellent text rendering)
-app.post('/api/generate-image-zimage', async (c) => {
+// API: Generate image with Ideogram V3 Remix (for text overlay - best text rendering)
+app.post('/api/generate-image-ideogram', async (c) => {
   const { prompt, imageUrl, aspectRatio } = await c.req.json()
   
+  // Map aspect ratio to Ideogram format
+  let imageSize = 'landscape_16_9'
+  if (aspectRatio === '9:16') imageSize = 'portrait_9_16'
+  else if (aspectRatio === '1:1') imageSize = 'square_hd'
+  
   const requestBody = {
-    model: 'fal-ai/z-image/turbo',
+    model: 'ideogram/character-remix',
     input: {
       prompt,
-      image_url: imageUrl, // The base image to add text to
-      aspect_ratio: aspectRatio || '16:9',
-      output_format: 'png'
+      image_url: imageUrl, // The base image to remix/add text to
+      image_size: imageSize,
+      rendering_speed: 'BALANCED',
+      style: 'REALISTIC',
+      expand_prompt: false, // Don't expand - we want exact text
+      num_images: '1',
+      strength: 0.3 // Low strength to keep original image mostly intact, just add text
     }
   }
   
-  console.log('Z-Image Request (text overlay):', JSON.stringify(requestBody, null, 2))
+  console.log('Ideogram V3 Remix Request (text overlay):', JSON.stringify(requestBody, null, 2))
   
   const res = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
     method: 'POST',
@@ -2533,8 +2542,8 @@ app.get('/', (c) => {
       let finalUrl = url;
       
       if (addHeadlineText && shortHeadline) {
-        // Step 2: Add text overlay using Z-Image AI (excellent text rendering)
-        document.getElementById('statusText').textContent = 'Step 2: Adding headline with Z-Image AI...';
+        // Step 2: Add text overlay using Ideogram V3 (best text rendering)
+        document.getElementById('statusText').textContent = 'Step 2: Adding headline with Ideogram V3...';
         try {
           finalUrl = await addTextOverlayWithZImage(url, shortHeadline, finalRatio);
         } catch (err) {
@@ -2751,34 +2760,34 @@ app.get('/', (c) => {
       });
     }
     
-    // Add text overlay to image using Z-Image AI (excellent text rendering)
+    // Add text overlay to image using Ideogram V3 (best text rendering in the industry)
     async function addTextOverlayWithZImage(imageUrl, headline, ratio) {
       // Format the headline for the aspect ratio
       const formattedHeadline = formatHeadlineForRatio(headline, ratio);
       
-      // Create a specific prompt for Z-Image to add text overlay
-      const textPrompt = \`Add a professional news headline banner to this image. 
-      
-At the bottom of the image, add a dark semi-transparent banner (85% opacity black) spanning the full width.
+      // Create a specific prompt for Ideogram to add text overlay
+      // Ideogram excels at text rendering - be very specific about what we want
+      const textPrompt = \`Keep this exact image but add a professional news headline banner at the bottom.
 
-Inside the banner, add this headline text in WHITE, bold Helvetica font:
-"\${formattedHeadline}"
+BANNER SPECIFICATIONS:
+- Position: Bottom 12-15% of the image
+- Background: Dark semi-transparent black banner (85% opacity) spanning full width
+- Text content: "\${formattedHeadline}"
+- Text style: Bold white Helvetica/sans-serif font, left-aligned with padding
+- Text size: Large enough to be easily readable but fitting within the banner
+- Logo: Small golden crown icon labeled "5th Ave Crypto" in bottom-right of banner
 
-The text should be:
-- Left-aligned with padding from the edge
-- Properly sized to fit the banner (not too big, not too small)
-- Clear, crisp, and highly readable
-- Professional news/media style typography
+CRITICAL: 
+- Do NOT change the main image content AT ALL
+- Only ADD the text banner overlay at the bottom
+- The headline text must be EXACTLY as written above - letter perfect
+- Text must be crisp, clear, and professional\`;
 
-In the bottom-right corner of the banner, add a small "5th Ave Crypto" logo (gold/amber colored crown icon).
-
-Keep the original image EXACTLY as-is - only add the banner and text at the bottom. Do not modify anything else.\`;
-
-      console.log('Z-Image text overlay prompt:', textPrompt);
+      console.log('Ideogram V3 text overlay prompt:', textPrompt);
       
       try {
-        // Call Z-Image API
-        const createRes = await fetch('/api/generate-image-zimage', {
+        // Call Ideogram API
+        const createRes = await fetch('/api/generate-image-ideogram', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
@@ -2789,17 +2798,17 @@ Keep the original image EXACTLY as-is - only add the banner and text at the bott
         });
         const createData = await createRes.json();
 
-        console.log('Z-Image create response:', createData);
+        console.log('Ideogram V3 create response:', createData);
 
         if (createData.code !== 200) {
-          throw new Error(createData.msg || 'Failed to create Z-Image task');
+          throw new Error(createData.msg || 'Failed to create Ideogram task');
         }
 
         const taskId = createData.data.taskId;
 
         // Poll for completion
         let attempts = 0;
-        while (attempts < 60) {
+        while (attempts < 90) { // Ideogram may take longer
           await new Promise(r => setTimeout(r, 2000));
           const statusRes = await fetch('/api/task-status/' + taskId);
           const statusData = await statusRes.json();
@@ -2807,17 +2816,17 @@ Keep the original image EXACTLY as-is - only add the banner and text at the bott
           if (statusData.data?.state === 'success') {
             const resultJson = JSON.parse(statusData.data.resultJson);
             const finalImageUrl = resultJson.resultUrls[0];
-            console.log('Z-Image text overlay complete:', finalImageUrl);
+            console.log('Ideogram V3 text overlay complete:', finalImageUrl);
             return finalImageUrl;
           } else if (statusData.data?.state === 'failed') {
-            throw new Error(statusData.data.failMsg || 'Z-Image text overlay failed');
+            throw new Error(statusData.data.failMsg || 'Ideogram text overlay failed');
           }
           attempts++;
         }
-        throw new Error('Z-Image text overlay timed out');
+        throw new Error('Ideogram text overlay timed out');
       } catch (err) {
-        console.error('Z-Image text overlay error:', err);
-        // Fall back to canvas overlay if Z-Image fails
+        console.error('Ideogram text overlay error:', err);
+        // Fall back to canvas overlay if Ideogram fails
         console.log('Falling back to canvas text overlay...');
         return await addTextOverlayWithCanvas(imageUrl, headline, ratio);
       }
