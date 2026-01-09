@@ -135,33 +135,34 @@ app.post('/api/generate-image', async (c) => {
   return c.json(await res.json())
 })
 
-// API: Generate image with Ideogram (for text overlay - excellent text rendering)
+// Pre-made mask URLs for text banner area (black = edit area at bottom, white = preserve)
+const MASK_URLS = {
+  '16:9': 'https://iili.io/fk9ypqB.png',  // 15% bottom banner
+  '9:16': 'https://iili.io/fk9yy0P.png',  // 12% bottom banner
+  '1:1': 'https://iili.io/fkH99g1.png'    // 14% bottom banner
+}
+
+// API: Generate image with Ideogram character-edit (for text overlay - uses mask to preserve image)
 app.post('/api/generate-image-ideogram', async (c) => {
   const { prompt, imageUrl, aspectRatio } = await c.req.json()
   
-  // Map aspect ratio to Ideogram format
-  let imageSize = 'landscape_16_9'
-  if (aspectRatio === '9:16') {
-    imageSize = 'portrait_9_16'
-  } else if (aspectRatio === '1:1') {
-    imageSize = 'square_hd'
-  }
+  // Get the appropriate mask for this aspect ratio
+  const maskUrl = MASK_URLS[aspectRatio] || MASK_URLS['16:9']
   
   const requestBody = {
-    model: 'ideogram/character-remix',
+    model: 'ideogram/character-edit',
     input: {
       prompt,
-      image_url: imageUrl, // The base image to add text to
-      image_size: imageSize,
+      image_url: imageUrl,      // The base image to add text to
+      mask_url: maskUrl,        // Mask: black area at bottom = where text goes
       rendering_speed: 'BALANCED',
-      style: 'REALISTIC',
-      expand_prompt: false, // Don't expand - we want exact text
-      num_images: '1',
-      strength: 0.3 // Low strength to keep original image mostly intact, just add text
+      style: 'AUTO',
+      expand_prompt: false,     // Don't expand - we want exact text
+      num_images: '1'
     }
   }
   
-  console.log('Ideogram Request (text overlay):', JSON.stringify(requestBody, null, 2))
+  console.log('Ideogram character-edit Request (text overlay):', JSON.stringify(requestBody, null, 2))
   
   const res = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
     method: 'POST',
