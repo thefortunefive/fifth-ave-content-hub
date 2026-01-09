@@ -1551,8 +1551,17 @@ app.get('/', (c) => {
         compositionGuide = 'COMPOSITION: Square format (1:1). Frame Angel centered, suitable for Instagram feed posts. ';
       }
       
-      // Always generate clean images without text - text will be added via canvas overlay
-      const textInstructions = '\\n\\nIMPORTANT: Absolutely NO text anywhere in the image. No words, no letters, no signs, no screens with text, no logos, no watermarks, no headlines, no captions. Clean visual only - text overlay will be added programmatically later.';
+      // Check if logo reference is enabled for current ratio
+      const logoRefs = references['logo'];
+      const hasLogoRef = logoRefs && (logoRefs[ratio]?.url && logoRefs[ratio]?.enabled);
+      
+      // Include logo watermark instruction if logo reference is enabled
+      const logoInstruction = hasLogoRef ? 
+        '\\n\\nLOGO WATERMARK: Place the 5th Ave Crypto logo from the logo reference image in the TOP-RIGHT corner as a small, subtle watermark. The logo should be semi-transparent and unobtrusive, about 5-8% of the image width.' : 
+        '';
+      
+      // Text will be added via canvas overlay - no text in base image
+      const textInstructions = '\\n\\nIMPORTANT: No text anywhere in the image except the logo watermark if specified. No words, no letters, no signs, no screens with text, no headlines, no captions. Clean visual only - text overlay will be added programmatically later.';
       
       const prompt = compositionGuide + 'Professional crypto news image featuring Angel, the 5th Ave Crypto educator and mentor - an elegant, confident woman ' + settings.setting + '.\\n\\n' +
         'OUTFIT: ' + outfitDescription + '. She is looking directly at the camera with an approachable yet authoritative expression.' + customContext + '\\n\\n' +
@@ -1560,7 +1569,7 @@ app.get('/', (c) => {
         'Visual context: ' + headlineContext + '\\n\\n' +
         'Mood: ' + settings.mood + '\\n' +
         'Lighting: ' + settings.lighting + '\\n\\n' +
-        'Style: High-quality editorial photography, modern and polished. Angel should appear as a real person - relatable yet aspirational.' + textInstructions;
+        'Style: High-quality editorial photography, modern and polished. Angel should appear as a real person - relatable yet aspirational.' + logoInstruction + textInstructions;
 
       return prompt;
     }
@@ -2557,8 +2566,9 @@ app.get('/', (c) => {
       let finalUrl = url;
       
       if (addHeadlineText && shortHeadline) {
-        // Step 2: Add text overlay using Ideogram (excellent text rendering)
-        document.getElementById('statusText').textContent = 'Step 2: Adding headline with Ideogram...';
+        // Step 2: Add text banner overlay using canvas (reliable, template-based)
+        // Logo watermark is already in the image from Nano Banana (top-right)
+        document.getElementById('statusText').textContent = 'Step 2: Adding headline banner...';
         try {
           finalUrl = await addTextOverlayWithZImage(url, shortHeadline, finalRatio);
         } catch (err) {
@@ -2775,110 +2785,12 @@ app.get('/', (c) => {
       });
     }
     
-    // Add text overlay to image using Ideogram (excellent text rendering, preserves dimensions)
+    // Add text overlay to image using canvas (reliable text rendering with template-based sizing)
+    // Logo is now added in the Nano Banana step as a reference image watermark
     async function addTextOverlayWithZImage(imageUrl, headline, ratio) {
-      // Format the headline for the aspect ratio
-      const formattedHeadline = formatHeadlineForRatio(headline, ratio);
-      
-      // Get ratio-specific text layout instructions
-      let ratioInstructions = '';
-      let bannerHeight = '';
-      let textSize = '';
-      let lineBreakHint = '';
-      
-      if (ratio === '16:9') {
-        // Wide landscape - plenty of horizontal space
-        bannerHeight = '12-15% of image height';
-        textSize = 'LARGE bold text (about 5% of image height)';
-        lineBreakHint = 'Text should fit on 1-2 lines maximum across the wide banner';
-        ratioInstructions = 'This is a WIDE 16:9 landscape image. The banner spans a wide area so text can be larger and fit on fewer lines.';
-      } else if (ratio === '9:16') {
-        // Tall portrait - narrow horizontal space
-        bannerHeight = '10-12% of image height';
-        textSize = 'MEDIUM text (about 4% of image WIDTH since it is narrow)';
-        lineBreakHint = 'Text MUST wrap to 3-4 shorter lines to fit the NARROW width. Each line should be only 3-4 words.';
-        ratioInstructions = 'This is a TALL NARROW 9:16 portrait image (like Instagram Stories). The banner is NARROW so text must be SMALLER and wrap to MULTIPLE LINES to fit.';
-      } else if (ratio === '1:1') {
-        // Square - moderate space
-        bannerHeight = '12-14% of image height';
-        textSize = 'MEDIUM-LARGE text (about 4.5% of image width)';
-        lineBreakHint = 'Text should wrap to 2-3 lines of moderate length (4-5 words per line)';
-        ratioInstructions = 'This is a SQUARE 1:1 image. The banner has moderate width so text should be medium sized and wrap to 2-3 lines.';
-      }
-      
-      // Create a specific prompt for Ideogram to add text overlay
-      // Ideogram excels at text rendering - be very specific about what we want
-      const textPrompt = \`Keep this exact image but add a professional news headline banner at the bottom.
-
-ASPECT RATIO CONTEXT:
-\${ratioInstructions}
-
-BANNER SPECIFICATIONS:
-- Position: Bottom \${bannerHeight}
-- Background: Dark semi-transparent black banner (85% opacity) spanning full width
-- Text content: "\${formattedHeadline}"
-- Text style: Bold white Helvetica/sans-serif font, left-aligned with padding
-- Text size: \${textSize}
-- Line breaks: \${lineBreakHint}
-CRITICAL: 
-- Do NOT change the main image content AT ALL
-- Only ADD the text banner overlay at the bottom
-- Do NOT add any logo or icon - just the text banner
-- The headline text must be EXACTLY as written above - letter perfect
-- Text must be crisp, clear, and professional
-- TEXT MUST FIT WITHIN THE BANNER - adjust size and line breaks as needed for this aspect ratio\`;
-
-      console.log('Ideogram text overlay prompt:', textPrompt);
-      
-      try {
-        // Call Ideogram API (no logo - text only)
-        const createRes = await fetch('/api/generate-image-ideogram', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            prompt: textPrompt, 
-            imageUrl: imageUrl,
-            aspectRatio: ratio
-          })
-        });
-        const createData = await createRes.json();
-
-        console.log('Ideogram create response:', createData);
-
-        if (createData.code !== 200) {
-          throw new Error(createData.msg || 'Failed to create Ideogram task');
-        }
-
-        const taskId = createData.data.taskId;
-
-        // Poll for completion
-        let attempts = 0;
-        while (attempts < 90) { // Ideogram may take longer
-          await new Promise(r => setTimeout(r, 2000));
-          const statusRes = await fetch('/api/task-status/' + taskId);
-          const statusData = await statusRes.json();
-
-          if (statusData.data?.state === 'success') {
-            const resultJson = JSON.parse(statusData.data.resultJson);
-            const textOnlyUrl = resultJson.resultUrls[0];
-            console.log('Ideogram text overlay complete, now adding logo...');
-            
-            // Step 3: Add logo via canvas (GPT can't reliably place logos)
-            const finalImageUrl = await addLogoToImage(textOnlyUrl, ratio);
-            console.log('Logo added, final image:', finalImageUrl);
-            return finalImageUrl;
-          } else if (statusData.data?.state === 'failed') {
-            throw new Error(statusData.data.failMsg || 'Ideogram text overlay failed');
-          }
-          attempts++;
-        }
-        throw new Error('Ideogram text overlay timed out');
-      } catch (err) {
-        console.error('Ideogram text overlay error:', err);
-        // Fall back to canvas overlay if Ideogram fails
-        console.log('Falling back to canvas text overlay...');
-        return await addTextOverlayWithCanvas(imageUrl, headline, ratio);
-      }
+      console.log('Adding text overlay via canvas template system for ratio:', ratio);
+      // Use the improved canvas overlay directly (Ideogram was unreliable)
+      return await addTextOverlayWithCanvas(imageUrl, headline, ratio);
     }
     
     // Add logo to image in bottom-right corner (after GPT adds text)
@@ -2928,8 +2840,12 @@ CRITICAL:
       }
     }
     
-    // Add text overlay to image using canvas (fallback method)
+    // Add text overlay to image using canvas with template-based sizing
+    // Logo is placed in the TOP-RIGHT via Nano Banana reference image
+    // Banner is at the BOTTOM with text only (no logo in banner)
     async function addTextOverlayWithCanvas(imageUrl, headline, ratio) {
+      console.log('Canvas text overlay - ratio:', ratio, 'headline:', headline);
+      
       // Load the original image
       const img = await loadImage(imageUrl);
       
@@ -2939,47 +2855,57 @@ CRITICAL:
       canvas.width = img.width;
       canvas.height = img.height;
       
-      // Draw the original image
+      // Draw the original image (which should already have logo watermark from Nano Banana)
       ctx.drawImage(img, 0, 0);
       
-      // Calculate banner dimensions based on aspect ratio
-      let bannerHeightPercent, maxWordsPerLine, fontSize, lineHeight, padding;
+      // TEMPLATE-BASED SIZING for consistent results across all images
+      // These values are based on standard output dimensions:
+      // 16:9 = 1920x1080, 9:16 = 1080x1920, 1:1 = 1080x1080
+      
+      let bannerHeightPercent, fontSize, lineHeight, padding, maxTextWidth;
       
       if (ratio === '16:9') {
-        bannerHeightPercent = 0.15; // 15% of image height
-        maxWordsPerLine = 10;
-        fontSize = Math.floor(canvas.height * 0.055); // ~5.5% of height
-        lineHeight = fontSize * 1.3;
-        padding = canvas.width * 0.03;
+        // Wide landscape (1920x1080 standard)
+        bannerHeightPercent = 0.14; // ~150px on 1080p
+        fontSize = Math.max(36, Math.floor(canvas.height * 0.042)); // ~45px on 1080p
+        lineHeight = fontSize * 1.35;
+        padding = Math.floor(canvas.width * 0.025); // ~48px padding
+        maxTextWidth = canvas.width - (padding * 2); // Full width for text
       } else if (ratio === '9:16') {
-        bannerHeightPercent = 0.12; // 12% for tall images
-        maxWordsPerLine = 4;
-        fontSize = Math.floor(canvas.width * 0.065); // ~6.5% of width (narrower)
-        lineHeight = fontSize * 1.25;
-        padding = canvas.width * 0.05;
+        // Tall portrait (1080x1920 standard)
+        bannerHeightPercent = 0.10; // ~192px on 1920p height
+        fontSize = Math.max(28, Math.floor(canvas.width * 0.042)); // ~45px on 1080 width
+        lineHeight = fontSize * 1.30;
+        padding = Math.floor(canvas.width * 0.04); // ~43px padding
+        maxTextWidth = canvas.width - (padding * 2); // Full width for text
       } else { // 1:1
-        bannerHeightPercent = 0.15;
-        maxWordsPerLine = 6;
-        fontSize = Math.floor(canvas.width * 0.05); // ~5% of width
-        lineHeight = fontSize * 1.3;
-        padding = canvas.width * 0.04;
+        // Square (1080x1080 standard)
+        bannerHeightPercent = 0.13; // ~140px on 1080p
+        fontSize = Math.max(32, Math.floor(canvas.width * 0.040)); // ~43px on 1080p
+        lineHeight = fontSize * 1.32;
+        padding = Math.floor(canvas.width * 0.035); // ~38px padding
+        maxTextWidth = canvas.width - (padding * 2); // Full width for text
       }
       
-      // Word wrap the headline
-      const words = headline.split(/\s+/);
+      // Set font for text measurement
+      const fontFamily = '"Helvetica Neue", Helvetica, Arial, sans-serif';
+      ctx.font = 'bold ' + fontSize + 'px ' + fontFamily;
+      
+      // Word wrap the headline based on actual measured width
+      const words = headline.split(/\\s+/);
       const lines = [];
       let currentLine = '';
       
       for (const word of words) {
         const testLine = currentLine ? currentLine + ' ' + word : word;
-        ctx.font = 'bold ' + fontSize + 'px "Helvetica Neue", Helvetica, Arial, sans-serif';
         const testWidth = ctx.measureText(testLine).width;
         
-        if (testWidth > canvas.width - (padding * 2) - 60) { // 60px reserved for logo
+        if (testWidth > maxTextWidth) {
           if (currentLine) {
             lines.push(currentLine);
             currentLine = word;
           } else {
+            // Single word too long - just use it
             lines.push(word);
           }
         } else {
@@ -2990,48 +2916,48 @@ CRITICAL:
         lines.push(currentLine);
       }
       
-      // Calculate banner height based on number of lines
+      console.log('Text wrapped into', lines.length, 'lines:', lines);
+      
+      // Calculate banner height - expand if needed for multiple lines
       const minBannerHeight = canvas.height * bannerHeightPercent;
-      const textHeight = lines.length * lineHeight + (padding * 2);
-      const bannerHeight = Math.max(minBannerHeight, textHeight);
+      const textBlockHeight = lines.length * lineHeight;
+      const verticalPadding = padding * 1.5; // More padding top/bottom
+      const neededHeight = textBlockHeight + (verticalPadding * 2);
+      const bannerHeight = Math.max(minBannerHeight, neededHeight);
       const bannerY = canvas.height - bannerHeight;
       
-      // Draw semi-transparent dark banner
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+      // Draw semi-transparent dark banner (no gradient, clean look)
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.82)';
       ctx.fillRect(0, bannerY, canvas.width, bannerHeight);
       
-      // Draw text
+      // Optional: Add subtle top border for polish
+      ctx.fillStyle = 'rgba(212, 175, 55, 0.6)'; // Gold accent
+      ctx.fillRect(0, bannerY, canvas.width, 3);
+      
+      // Draw text - centered vertically in banner
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold ' + fontSize + 'px "Helvetica Neue", Helvetica, Arial, sans-serif';
+      ctx.font = 'bold ' + fontSize + 'px ' + fontFamily;
       ctx.textBaseline = 'middle';
       
       const totalTextHeight = lines.length * lineHeight;
-      const startY = bannerY + (bannerHeight - totalTextHeight) / 2 + lineHeight / 2;
+      const textStartY = bannerY + (bannerHeight - totalTextHeight) / 2 + lineHeight / 2;
       
       lines.forEach((line, index) => {
-        const y = startY + (index * lineHeight);
+        const y = textStartY + (index * lineHeight);
         ctx.fillText(line, padding, y);
       });
       
-      // Add logo in bottom-right corner of the banner
-      try {
-        const logoUrl = 'https://iili.io/fEiEfUB.png';
-        const logoImg = await loadImage(logoUrl);
-        const logoSize = Math.min(bannerHeight * 0.8, fontSize * 1.5); // Logo fits within banner
-        const logoX = canvas.width - padding - logoSize;
-        const logoY = bannerY + (bannerHeight - logoSize) / 2;
-        ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
-      } catch (err) {
-        console.warn('Could not load logo:', err);
-      }
+      // NO LOGO in banner - logo is in top-right of the main image (from Nano Banana)
       
       // Convert canvas to blob and upload
       return new Promise((resolve, reject) => {
         canvas.toBlob(async (blob) => {
           try {
             const uploadedUrl = await uploadCroppedImage(blob);
+            console.log('Canvas text overlay uploaded:', uploadedUrl);
             resolve(uploadedUrl);
           } catch (err) {
+            console.error('Failed to upload canvas overlay:', err);
             reject(err);
           }
         }, 'image/png', 0.95);

@@ -8,6 +8,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "cloudinary": "^2.8.0",
     "hono": "^4.0.0"
   },
   "devDependencies": {
