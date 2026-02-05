@@ -1832,9 +1832,10 @@ app.get('/', (c) => {
         generationHistory = JSON.parse(savedHistory);
       }
       
-      // Initialize expanded state
+      // Initialize expanded state - Face, Outfit, Background, Logo expanded by default
+      const defaultExpanded = ['face', 'outfit', 'background', 'logo'];
       referenceCategories.forEach(cat => {
-        expandedCategories[cat.id] = false;
+        expandedCategories[cat.id] = defaultExpanded.includes(cat.id);
       });
 
       renderReferenceGridExpanded();
