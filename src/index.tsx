@@ -445,6 +445,34 @@ app.get('/', (c) => {
     .image-drop-zone.has-image:hover::after { opacity: 1; }
     .image-drop-zone img { max-width: 100%; max-height: 200px; border-radius: 8px; }
     
+    /* Remove image button */
+    .remove-image-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 28px;
+      height: 28px;
+      background: rgba(239, 68, 68, 0.9);
+      border: none;
+      border-radius: 50%;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      opacity: 0;
+      transition: opacity 0.2s, transform 0.2s, background 0.2s;
+      z-index: 10;
+    }
+    .remove-image-btn:hover {
+      background: rgba(220, 38, 38, 1);
+      transform: scale(1.1);
+    }
+    .image-drop-zone.has-image:hover .remove-image-btn {
+      opacity: 1;
+    }
+    
     /* Tabs - Larger for Social Content */
     .tab-btn { 
       padding: 12px 20px; 
@@ -2075,28 +2103,18 @@ app.get('/', (c) => {
           document.getElementById('blueskyCount').textContent = (f.blueskyCopy || '').length;
         }
         
-        // Images
+        // Images - load from Airtable with X button to remove
         const imageField = tableFields.find(tf => IMAGE_FIELD_TYPES.includes(tf.type))?.name;
-        const img16x9 = document.getElementById('image16x9');
         
         if (imageField && f[imageField] && f[imageField].length > 0) {
-          img16x9.innerHTML = \`<img src="\${f[imageField][0].url}" alt="Image">\`;
-          img16x9.classList.add('has-image');
-          contentImages['16:9'] = f[imageField][0].url;
+          setContentImage('16:9', f[imageField][0].url);
         } else {
-          img16x9.innerHTML = '<span class="text-gray-500 text-sm">Drop image here</span>';
-          img16x9.classList.remove('has-image');
-          contentImages['16:9'] = null;
+          clearContentImage('16:9');
         }
         
         // Reset other image slots
-        ['image9x16', 'image1x1'].forEach(id => {
-          const el = document.getElementById(id);
-          el.innerHTML = '<span class="text-gray-500 text-sm">Drop image here</span>';
-          el.classList.remove('has-image');
-        });
-        contentImages['9:16'] = null;
-        contentImages['1:1'] = null;
+        clearContentImage('9:16');
+        clearContentImage('1:1');
         
         // Auto-generate image prompt based on headline and category
         const headline = f.sourceHeadline || f.Title || f.Headline || titleValue || '';
@@ -2589,20 +2607,10 @@ app.get('/', (c) => {
       }
       
       const ratio = lastGeneratedRatio;
-      const containerId = 'image' + ratio.replace(':', 'x');
-      const container = document.getElementById(containerId);
+      setContentImage(ratio, lastGeneratedUrl);
       
-      if (container) {
-        container.innerHTML = \`<img src="\${lastGeneratedUrl}" alt="\${ratio}">\`;
-        container.classList.add('has-image');
-        contentImages[ratio] = lastGeneratedUrl;
-        
-        // Show confirmation
-        showSaveIndicator();
-        
-        // Scroll to the content images section
-        document.getElementById('contentImagesSection').scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
+      // Scroll to the content images section
+      document.getElementById('contentImagesSection').scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
     
     // ========================================
@@ -2632,12 +2640,7 @@ app.get('/', (c) => {
       
       try {
         // Use the approved 16:9 image for the 16:9 slot
-        const container16x9 = document.getElementById('image16x9');
-        if (container16x9) {
-          container16x9.innerHTML = '<img src="' + lastGeneratedUrl + '" alt="16:9">';
-          container16x9.classList.add('has-image');
-          contentImages['16:9'] = lastGeneratedUrl;
-        }
+        setContentImage('16:9', lastGeneratedUrl);
         
         // Build a recomposition prompt using the approved image as reference
         const basePrompt = 'Recreate this exact same scene, person, outfit, and lighting in a different aspect ratio. Keep EVERYTHING identical - same woman, same pose, same expression, same clothing, same background, same mood. Only adjust the framing/composition to fit the new aspect ratio. Do NOT change any details.';
@@ -2674,14 +2677,8 @@ app.get('/', (c) => {
             }
           }
           
-          // Set in content images
-          const containerId = 'image' + size.ratio.replace(':', 'x');
-          const container = document.getElementById(containerId);
-          if (container) {
-            container.innerHTML = '<img src="' + finalUrl + '" alt="' + size.ratio + '">';
-            container.classList.add('has-image');
-            contentImages[size.ratio] = finalUrl;
-          }
+          // Set in content images (with X button)
+          setContentImage(size.ratio, finalUrl);
           
           // Add to history
           addToHistory(finalUrl, 'Recomposed from 16:9 to ' + size.ratio);
@@ -3680,9 +3677,19 @@ app.get('/', (c) => {
       const imageUrl = event.dataTransfer.getData('text/plain');
       if (!imageUrl) return;
 
+      setContentImage(aspectRatio, imageUrl);
+    }
+    
+    // Set content image with X button to remove
+    function setContentImage(aspectRatio, imageUrl) {
       const containerId = 'image' + aspectRatio.replace(':', 'x');
       const container = document.getElementById(containerId);
-      container.innerHTML = \`<img src="\${imageUrl}" alt="\${aspectRatio}">\`;
+      container.innerHTML = \`
+        <img src="\${imageUrl}" alt="\${aspectRatio}">
+        <button class="remove-image-btn" onclick="event.stopPropagation(); clearContentImage('\${aspectRatio}')" title="Remove image">
+          <i class="fas fa-times"></i>
+        </button>
+      \`;
       container.classList.add('has-image');
       
       contentImages[aspectRatio] = imageUrl;
@@ -3690,6 +3697,18 @@ app.get('/', (c) => {
       if (currentRecordId && aspectRatio === '16:9') {
         showSaveIndicator();
       }
+    }
+    
+    // Clear/remove content image
+    function clearContentImage(aspectRatio) {
+      const containerId = 'image' + aspectRatio.replace(':', 'x');
+      const container = document.getElementById(containerId);
+      container.innerHTML = '<span class="text-gray-500 text-sm">Drop image here</span>';
+      container.classList.remove('has-image');
+      
+      contentImages[aspectRatio] = null;
+      
+      showSaveIndicator();
     }
 
     // ========================================
