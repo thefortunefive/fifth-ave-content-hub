@@ -2698,10 +2698,10 @@ app.get('/', (c) => {
           // Update status
           document.getElementById(size.statusId).innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>' + size.ratio;
           document.getElementById(size.statusId).className = 'text-amber-400';
-          statusText.textContent = 'Generating ' + size.ratio + ' version...';
+          statusText.textContent = 'Cropping to ' + size.ratio + '...';
           
-          // Generate image with approved image as reference
-          const generatedUrl = await generateImageForRatio(lastGeneratedUrl, basePrompt, size.ratio);
+          // Crop the 16:9 image to the target ratio (Nano Banana ignores aspect ratio with references)
+          const generatedUrl = await cropImageToRatio(referenceUrl, size.ratio);
           
           // Check if headline text should be added
           const addHeadlineText = document.getElementById('addHeadlineText')?.checked;
