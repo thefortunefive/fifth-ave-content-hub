@@ -2655,25 +2655,23 @@ app.get('/', (c) => {
           // Update status
           document.getElementById(size.statusId).innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>' + size.ratio;
           document.getElementById(size.statusId).className = 'text-amber-400';
-          statusText.textContent = 'Cropping to ' + size.ratio + '...';
+          statusText.textContent = 'Generating ' + size.ratio + ' version...';
           
-          // IMPORTANT: Nano Banana ignores aspect ratio when given reference images
-          // So instead, we CROP the 16:9 image to the target ratio
-          // This is more reliable than trying to regenerate
-          const croppedUrl = await cropImageToRatio(lastGeneratedUrl, size.ratio);
+          // Generate image with approved image as reference
+          const generatedUrl = await generateImageForRatio(lastGeneratedUrl, basePrompt, size.ratio);
           
           // Check if headline text should be added
           const addHeadlineText = document.getElementById('addHeadlineText')?.checked;
           const shortHeadline = document.getElementById('shortHeadline')?.value?.trim();
           
-          let finalUrl = croppedUrl;
+          let finalUrl = generatedUrl;
           if (addHeadlineText && shortHeadline) {
             statusText.textContent = 'Adding text to ' + size.ratio + '...';
             try {
-              finalUrl = await addTextOverlayWithZImage(croppedUrl, shortHeadline, size.ratio);
+              finalUrl = await addTextOverlayWithZImage(generatedUrl, shortHeadline, size.ratio);
             } catch (err) {
               console.error('Error adding text overlay:', err);
-              finalUrl = croppedUrl;
+              finalUrl = generatedUrl;
             }
           }
           
