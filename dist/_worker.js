@@ -1,4 +1,4 @@
-var vt=Object.defineProperty;var Ne=e=>{throw TypeError(e)};var yt=(e,t,a)=>t in e?vt(e,t,{enumerable:!0,configurable:!0,writable:!0,value:a}):e[t]=a;var h=(e,t,a)=>yt(e,typeof t!="symbol"?t+"":t,a),De=(e,t,a)=>t.has(e)||Ne("Cannot "+a);var s=(e,t,a)=>(De(e,t,"read from private field"),a?a.call(e):t.get(e)),m=(e,t,a)=>t.has(e)?Ne("Cannot add the same private member more than once"):t instanceof WeakSet?t.add(e):t.set(e,a),f=(e,t,a,r)=>(De(e,t,"write to private field"),r?r.call(e,a):t.set(e,a),a),b=(e,t,a)=>(De(e,t,"access private method"),a);var $e=(e,t,a,r)=>({set _(n){f(e,t,n,a)},get _(){return s(e,t,r)}});var Ge=(e,t,a)=>(r,n)=>{let o=-1;return i(0);async function i(c){if(c<=o)throw new Error("next() called multiple times");o=c;let l,d=!1,u;if(e[c]?(u=e[c][0][0],r.req.routeIndex=c):u=c===e.length&&n||void 0,u)try{l=await u(r,()=>i(c+1))}catch(g){if(g instanceof Error&&t)r.error=g,l=await t(g,r),d=!0;else throw g}else r.finalized===!1&&a&&(l=await a(r));return l&&(r.finalized===!1||d)&&(r.res=l),r}},wt=Symbol(),It=async(e,t=Object.create(null))=>{const{all:a=!1,dot:r=!1}=t,o=(e instanceof ot?e.raw.headers:e.headers).get("Content-Type");return o!=null&&o.startsWith("multipart/form-data")||o!=null&&o.startsWith("application/x-www-form-urlencoded")?Tt(e,{all:a,dot:r}):{}};async function Tt(e,t){const a=await e.formData();return a?Ct(a,t):{}}function Ct(e,t){const a=Object.create(null);return e.forEach((r,n)=>{t.all||n.endsWith("[]")?St(a,n,r):a[n]=r}),t.dot&&Object.entries(a).forEach(([r,n])=>{r.includes(".")&&(Et(a,r,n),delete a[r])}),a}var St=(e,t,a)=>{e[t]!==void 0?Array.isArray(e[t])?e[t].push(a):e[t]=[e[t],a]:t.endsWith("[]")?e[t]=[a]:e[t]=a},Et=(e,t,a)=>{let r=e;const n=t.split(".");n.forEach((o,i)=>{i===n.length-1?r[o]=a:((!r[o]||typeof r[o]!="object"||Array.isArray(r[o])||r[o]instanceof File)&&(r[o]=Object.create(null)),r=r[o])})},et=e=>{const t=e.split("/");return t[0]===""&&t.shift(),t},kt=e=>{const{groups:t,path:a}=Rt(e),r=et(a);return Lt(r,t)},Rt=e=>{const t=[];return e=e.replace(/\{[^}]+\}/g,(a,r)=>{const n=`@${r}`;return t.push([n,a]),n}),{groups:t,path:e}},Lt=(e,t)=>{for(let a=t.length-1;a>=0;a--){const[r]=t[a];for(let n=e.length-1;n>=0;n--)if(e[n].includes(r)){e[n]=e[n].replace(r,t[a][1]);break}}return e},Se={},At=(e,t)=>{if(e==="*")return"*";const a=e.match(/^\:([^\{\}]+)(?:\{(.+)\})?$/);if(a){const r=`${e}#${t}`;return Se[r]||(a[2]?Se[r]=t&&t[0]!==":"&&t[0]!=="*"?[r,a[1],new RegExp(`^${a[2]}(?=/${t})`)]:[e,a[1],new RegExp(`^${a[2]}$`)]:Se[r]=[e,a[1],!0]),Se[r]}return null},Ue=(e,t)=>{try{return t(e)}catch{return e.replace(/(?:%[0-9A-Fa-f]{2})+/g,a=>{try{return t(a)}catch{return a}})}},Bt=e=>Ue(e,decodeURI),tt=e=>{const t=e.url,a=t.indexOf("/",t.indexOf(":")+4);let r=a;for(;r<t.length;r++){const n=t.charCodeAt(r);if(n===37){const o=t.indexOf("?",r),i=t.slice(a,o===-1?void 0:o);return Bt(i.includes("%25")?i.replace(/%25/g,"%2525"):i)}else if(n===63)break}return t.slice(a,r)},Ht=e=>{const t=tt(e);return t.length>1&&t.at(-1)==="/"?t.slice(0,-1):t},re=(e,t,...a)=>(a.length&&(t=re(t,...a)),`${(e==null?void 0:e[0])==="/"?"":"/"}${e}${t==="/"?"":`${(e==null?void 0:e.at(-1))==="/"?"":"/"}${(t==null?void 0:t[0])==="/"?t.slice(1):t}`}`),at=e=>{if(e.charCodeAt(e.length-1)!==63||!e.includes(":"))return null;const t=e.split("/"),a=[];let r="";return t.forEach(n=>{if(n!==""&&!/\:/.test(n))r+="/"+n;else if(/\:/.test(n))if(/\?/.test(n)){a.length===0&&r===""?a.push("/"):a.push(r);const o=n.replace("?","");r+="/"+o,a.push(r)}else r+="/"+n}),a.filter((n,o,i)=>i.indexOf(n)===o)},Oe=e=>/[%+]/.test(e)?(e.indexOf("+")!==-1&&(e=e.replace(/\+/g," ")),e.indexOf("%")!==-1?Ue(e,nt):e):e,rt=(e,t,a)=>{let r;if(!a&&t&&!/[%+]/.test(t)){let i=e.indexOf("?",8);if(i===-1)return;for(e.startsWith(t,i+1)||(i=e.indexOf(`&${t}`,i+1));i!==-1;){const c=e.charCodeAt(i+t.length+1);if(c===61){const l=i+t.length+2,d=e.indexOf("&",l);return Oe(e.slice(l,d===-1?void 0:d))}else if(c==38||isNaN(c))return"";i=e.indexOf(`&${t}`,i+1)}if(r=/[%+]/.test(e),!r)return}const n={};r??(r=/[%+]/.test(e));let o=e.indexOf("?",8);for(;o!==-1;){const i=e.indexOf("&",o+1);let c=e.indexOf("=",o);c>i&&i!==-1&&(c=-1);let l=e.slice(o+1,c===-1?i===-1?void 0:i:c);if(r&&(l=Oe(l)),o=i,l==="")continue;let d;c===-1?d="":(d=e.slice(c+1,i===-1?void 0:i),r&&(d=Oe(d))),a?(n[l]&&Array.isArray(n[l])||(n[l]=[]),n[l].push(d)):n[l]??(n[l]=d)}return t?n[t]:n},Dt=rt,Ot=(e,t)=>rt(e,t,!0),nt=decodeURIComponent,_e=e=>Ue(e,nt),ie,R,U,it,st,je,$,Ye,ot=(Ye=class{constructor(e,t="/",a=[[]]){m(this,U);h(this,"raw");m(this,ie);m(this,R);h(this,"routeIndex",0);h(this,"path");h(this,"bodyCache",{});m(this,$,e=>{const{bodyCache:t,raw:a}=this,r=t[e];if(r)return r;const n=Object.keys(t)[0];return n?t[n].then(o=>(n==="json"&&(o=JSON.stringify(o)),new Response(o)[e]())):t[e]=a[e]()});this.raw=e,this.path=t,f(this,R,a),f(this,ie,{})}param(e){return e?b(this,U,it).call(this,e):b(this,U,st).call(this)}query(e){return Dt(this.url,e)}queries(e){return Ot(this.url,e)}header(e){if(e)return this.raw.headers.get(e)??void 0;const t={};return this.raw.headers.forEach((a,r)=>{t[r]=a}),t}async parseBody(e){var t;return(t=this.bodyCache).parsedBody??(t.parsedBody=await It(this,e))}json(){return s(this,$).call(this,"text").then(e=>JSON.parse(e))}text(){return s(this,$).call(this,"text")}arrayBuffer(){return s(this,$).call(this,"arrayBuffer")}blob(){return s(this,$).call(this,"blob")}formData(){return s(this,$).call(this,"formData")}addValidatedData(e,t){s(this,ie)[e]=t}valid(e){return s(this,ie)[e]}get url(){return this.raw.url}get method(){return this.raw.method}get[wt](){return s(this,R)}get matchedRoutes(){return s(this,R)[0].map(([[,e]])=>e)}get routePath(){return s(this,R)[0].map(([[,e]])=>e)[this.routeIndex].path}},ie=new WeakMap,R=new WeakMap,U=new WeakSet,it=function(e){const t=s(this,R)[0][this.routeIndex][1][e],a=b(this,U,je).call(this,t);return a&&/\%/.test(a)?_e(a):a},st=function(){const e={},t=Object.keys(s(this,R)[0][this.routeIndex][1]);for(const a of t){const r=b(this,U,je).call(this,s(this,R)[0][this.routeIndex][1][a]);r!==void 0&&(e[a]=/\%/.test(r)?_e(r):r)}return e},je=function(e){return s(this,R)[1]?s(this,R)[1][e]:e},$=new WeakMap,Ye),Ft={Stringify:1},lt=async(e,t,a,r,n)=>{typeof e=="object"&&!(e instanceof String)&&(e instanceof Promise||(e=e.toString()),e instanceof Promise&&(e=await e));const o=e.callbacks;return o!=null&&o.length?(n?n[0]+=e:n=[e],Promise.all(o.map(c=>c({phase:t,buffer:n,context:r}))).then(c=>Promise.all(c.filter(Boolean).map(l=>lt(l,t,!1,r,n))).then(()=>n[0]))):Promise.resolve(e)},Pt="text/plain; charset=UTF-8",Fe=(e,t)=>({"Content-Type":e,...t}),be,xe,O,se,F,S,ve,le,de,K,ye,we,G,ne,Xe,jt=(Xe=class{constructor(e,t){m(this,G);m(this,be);m(this,xe);h(this,"env",{});m(this,O);h(this,"finalized",!1);h(this,"error");m(this,se);m(this,F);m(this,S);m(this,ve);m(this,le);m(this,de);m(this,K);m(this,ye);m(this,we);h(this,"render",(...e)=>(s(this,le)??f(this,le,t=>this.html(t)),s(this,le).call(this,...e)));h(this,"setLayout",e=>f(this,ve,e));h(this,"getLayout",()=>s(this,ve));h(this,"setRenderer",e=>{f(this,le,e)});h(this,"header",(e,t,a)=>{this.finalized&&f(this,S,new Response(s(this,S).body,s(this,S)));const r=s(this,S)?s(this,S).headers:s(this,K)??f(this,K,new Headers);t===void 0?r.delete(e):a!=null&&a.append?r.append(e,t):r.set(e,t)});h(this,"status",e=>{f(this,se,e)});h(this,"set",(e,t)=>{s(this,O)??f(this,O,new Map),s(this,O).set(e,t)});h(this,"get",e=>s(this,O)?s(this,O).get(e):void 0);h(this,"newResponse",(...e)=>b(this,G,ne).call(this,...e));h(this,"body",(e,t,a)=>b(this,G,ne).call(this,e,t,a));h(this,"text",(e,t,a)=>!s(this,K)&&!s(this,se)&&!t&&!a&&!this.finalized?new Response(e):b(this,G,ne).call(this,e,t,Fe(Pt,a)));h(this,"json",(e,t,a)=>b(this,G,ne).call(this,JSON.stringify(e),t,Fe("application/json",a)));h(this,"html",(e,t,a)=>{const r=n=>b(this,G,ne).call(this,n,t,Fe("text/html; charset=UTF-8",a));return typeof e=="object"?lt(e,Ft.Stringify,!1,{}).then(r):r(e)});h(this,"redirect",(e,t)=>{const a=String(e);return this.header("Location",/[^\x00-\xFF]/.test(a)?encodeURI(a):a),this.newResponse(null,t??302)});h(this,"notFound",()=>(s(this,de)??f(this,de,()=>new Response),s(this,de).call(this,this)));f(this,be,e),t&&(f(this,F,t.executionCtx),this.env=t.env,f(this,de,t.notFoundHandler),f(this,we,t.path),f(this,ye,t.matchResult))}get req(){return s(this,xe)??f(this,xe,new ot(s(this,be),s(this,we),s(this,ye))),s(this,xe)}get event(){if(s(this,F)&&"respondWith"in s(this,F))return s(this,F);throw Error("This context has no FetchEvent")}get executionCtx(){if(s(this,F))return s(this,F);throw Error("This context has no ExecutionContext")}get res(){return s(this,S)||f(this,S,new Response(null,{headers:s(this,K)??f(this,K,new Headers)}))}set res(e){if(s(this,S)&&e){e=new Response(e.body,e);for(const[t,a]of s(this,S).headers.entries())if(t!=="content-type")if(t==="set-cookie"){const r=s(this,S).headers.getSetCookie();e.headers.delete("set-cookie");for(const n of r)e.headers.append("set-cookie",n)}else e.headers.set(t,a)}f(this,S,e),this.finalized=!0}get var(){return s(this,O)?Object.fromEntries(s(this,O)):{}}},be=new WeakMap,xe=new WeakMap,O=new WeakMap,se=new WeakMap,F=new WeakMap,S=new WeakMap,ve=new WeakMap,le=new WeakMap,de=new WeakMap,K=new WeakMap,ye=new WeakMap,we=new WeakMap,G=new WeakSet,ne=function(e,t,a){const r=s(this,S)?new Headers(s(this,S).headers):s(this,K)??new Headers;if(typeof t=="object"&&"headers"in t){const o=t.headers instanceof Headers?t.headers:new Headers(t.headers);for(const[i,c]of o)i.toLowerCase()==="set-cookie"?r.append(i,c):r.set(i,c)}if(a)for(const[o,i]of Object.entries(a))if(typeof i=="string")r.set(o,i);else{r.delete(o);for(const c of i)r.append(o,c)}const n=typeof t=="number"?t:(t==null?void 0:t.status)??s(this,se);return new Response(e,{status:n,headers:r})},Xe),y="ALL",Ut="all",Mt=["get","post","put","delete","options","patch"],dt="Can not add a route since the matcher is already built.",ct=class extends Error{},zt="__COMPOSED_HANDLER",Nt=e=>e.text("404 Not Found",404),qe=(e,t)=>{if("getResponse"in e){const a=e.getResponse();return t.newResponse(a.body,a)}return console.error(e),t.text("Internal Server Error",500)},L,w,ut,A,Y,Ee,ke,ce,$t=(ce=class{constructor(t={}){m(this,w);h(this,"get");h(this,"post");h(this,"put");h(this,"delete");h(this,"options");h(this,"patch");h(this,"all");h(this,"on");h(this,"use");h(this,"router");h(this,"getPath");h(this,"_basePath","/");m(this,L,"/");h(this,"routes",[]);m(this,A,Nt);h(this,"errorHandler",qe);h(this,"onError",t=>(this.errorHandler=t,this));h(this,"notFound",t=>(f(this,A,t),this));h(this,"fetch",(t,...a)=>b(this,w,ke).call(this,t,a[1],a[0],t.method));h(this,"request",(t,a,r,n)=>t instanceof Request?this.fetch(a?new Request(t,a):t,r,n):(t=t.toString(),this.fetch(new Request(/^https?:\/\//.test(t)?t:`http://localhost${re("/",t)}`,a),r,n)));h(this,"fire",()=>{addEventListener("fetch",t=>{t.respondWith(b(this,w,ke).call(this,t.request,t,void 0,t.request.method))})});[...Mt,Ut].forEach(o=>{this[o]=(i,...c)=>(typeof i=="string"?f(this,L,i):b(this,w,Y).call(this,o,s(this,L),i),c.forEach(l=>{b(this,w,Y).call(this,o,s(this,L),l)}),this)}),this.on=(o,i,...c)=>{for(const l of[i].flat()){f(this,L,l);for(const d of[o].flat())c.map(u=>{b(this,w,Y).call(this,d.toUpperCase(),s(this,L),u)})}return this},this.use=(o,...i)=>(typeof o=="string"?f(this,L,o):(f(this,L,"*"),i.unshift(o)),i.forEach(c=>{b(this,w,Y).call(this,y,s(this,L),c)}),this);const{strict:r,...n}=t;Object.assign(this,n),this.getPath=r??!0?t.getPath??tt:Ht}route(t,a){const r=this.basePath(t);return a.routes.map(n=>{var i;let o;a.errorHandler===qe?o=n.handler:(o=async(c,l)=>(await Ge([],a.errorHandler)(c,()=>n.handler(c,l))).res,o[zt]=n.handler),b(i=r,w,Y).call(i,n.method,n.path,o)}),this}basePath(t){const a=b(this,w,ut).call(this);return a._basePath=re(this._basePath,t),a}mount(t,a,r){let n,o;r&&(typeof r=="function"?o=r:(o=r.optionHandler,r.replaceRequest===!1?n=l=>l:n=r.replaceRequest));const i=o?l=>{const d=o(l);return Array.isArray(d)?d:[d]}:l=>{let d;try{d=l.executionCtx}catch{}return[l.env,d]};n||(n=(()=>{const l=re(this._basePath,t),d=l==="/"?0:l.length;return u=>{const g=new URL(u.url);return g.pathname=g.pathname.slice(d)||"/",new Request(g,u)}})());const c=async(l,d)=>{const u=await a(n(l.req.raw),...i(l));if(u)return u;await d()};return b(this,w,Y).call(this,y,re(t,"*"),c),this}},L=new WeakMap,w=new WeakSet,ut=function(){const t=new ce({router:this.router,getPath:this.getPath});return t.errorHandler=this.errorHandler,f(t,A,s(this,A)),t.routes=this.routes,t},A=new WeakMap,Y=function(t,a,r){t=t.toUpperCase(),a=re(this._basePath,a);const n={basePath:this._basePath,path:a,method:t,handler:r};this.router.add(t,a,[r,n]),this.routes.push(n)},Ee=function(t,a){if(t instanceof Error)return this.errorHandler(t,a);throw t},ke=function(t,a,r,n){if(n==="HEAD")return(async()=>new Response(null,await b(this,w,ke).call(this,t,a,r,"GET")))();const o=this.getPath(t,{env:r}),i=this.router.match(n,o),c=new jt(t,{path:o,matchResult:i,env:r,executionCtx:a,notFoundHandler:s(this,A)});if(i[0].length===1){let d;try{d=i[0][0][0][0](c,async()=>{c.res=await s(this,A).call(this,c)})}catch(u){return b(this,w,Ee).call(this,u,c)}return d instanceof Promise?d.then(u=>u||(c.finalized?c.res:s(this,A).call(this,c))).catch(u=>b(this,w,Ee).call(this,u,c)):d??s(this,A).call(this,c)}const l=Ge(i[0],this.errorHandler,s(this,A));return(async()=>{try{const d=await l(c);if(!d.finalized)throw new Error("Context is not finalized. Did you forget to return a Response object or `await next()`?");return d.res}catch(d){return b(this,w,Ee).call(this,d,c)}})()},ce),gt=[];function Gt(e,t){const a=this.buildAllMatchers(),r=(n,o)=>{const i=a[n]||a[y],c=i[2][o];if(c)return c;const l=o.match(i[0]);if(!l)return[[],gt];const d=l.indexOf("",1);return[i[1][d],l]};return this.match=r,r(e,t)}var Le="[^/]+",me=".*",pe="(?:|/.*)",oe=Symbol(),_t=new Set(".\\+*[^]$()");function qt(e,t){return e.length===1?t.length===1?e<t?-1:1:-1:t.length===1||e===me||e===pe?1:t===me||t===pe?-1:e===Le?1:t===Le?-1:e.length===t.length?e<t?-1:1:t.length-e.length}var J,V,B,te,Zt=(te=class{constructor(){m(this,J);m(this,V);m(this,B,Object.create(null))}insert(t,a,r,n,o){if(t.length===0){if(s(this,J)!==void 0)throw oe;if(o)return;f(this,J,a);return}const[i,...c]=t,l=i==="*"?c.length===0?["","",me]:["","",Le]:i==="/*"?["","",pe]:i.match(/^\:([^\{\}]+)(?:\{(.+)\})?$/);let d;if(l){const u=l[1];let g=l[2]||Le;if(u&&l[2]&&(g===".*"||(g=g.replace(/^\((?!\?:)(?=[^)]+\)$)/,"(?:"),/\((?!\?:)/.test(g))))throw oe;if(d=s(this,B)[g],!d){if(Object.keys(s(this,B)).some(p=>p!==me&&p!==pe))throw oe;if(o)return;d=s(this,B)[g]=new te,u!==""&&f(d,V,n.varIndex++)}!o&&u!==""&&r.push([u,s(d,V)])}else if(d=s(this,B)[i],!d){if(Object.keys(s(this,B)).some(u=>u.length>1&&u!==me&&u!==pe))throw oe;if(o)return;d=s(this,B)[i]=new te}d.insert(c,a,r,n,o)}buildRegExpStr(){const a=Object.keys(s(this,B)).sort(qt).map(r=>{const n=s(this,B)[r];return(typeof s(n,V)=="number"?`(${r})@${s(n,V)}`:_t.has(r)?`\\${r}`:r)+n.buildRegExpStr()});return typeof s(this,J)=="number"&&a.unshift(`#${s(this,J)}`),a.length===0?"":a.length===1?a[0]:"(?:"+a.join("|")+")"}},J=new WeakMap,V=new WeakMap,B=new WeakMap,te),Ae,Ie,Ke,Wt=(Ke=class{constructor(){m(this,Ae,{varIndex:0});m(this,Ie,new Zt)}insert(e,t,a){const r=[],n=[];for(let i=0;;){let c=!1;if(e=e.replace(/\{[^}]+\}/g,l=>{const d=`@\\${i}`;return n[i]=[d,l],i++,c=!0,d}),!c)break}const o=e.match(/(?::[^\/]+)|(?:\/\*$)|./g)||[];for(let i=n.length-1;i>=0;i--){const[c]=n[i];for(let l=o.length-1;l>=0;l--)if(o[l].indexOf(c)!==-1){o[l]=o[l].replace(c,n[i][1]);break}}return s(this,Ie).insert(o,t,r,s(this,Ae),a),r}buildRegExp(){let e=s(this,Ie).buildRegExpStr();if(e==="")return[/^$/,[],[]];let t=0;const a=[],r=[];return e=e.replace(/#(\d+)|@(\d+)|\.\*\$/g,(n,o,i)=>o!==void 0?(a[++t]=Number(o),"$()"):(i!==void 0&&(r[Number(i)]=++t),"")),[new RegExp(`^${e}`),a,r]}},Ae=new WeakMap,Ie=new WeakMap,Ke),Yt=[/^$/,[],Object.create(null)],Re=Object.create(null);function ft(e){return Re[e]??(Re[e]=new RegExp(e==="*"?"":`^${e.replace(/\/\*$|([.\\+*[^\]$()])/g,(t,a)=>a?`\\${a}`:"(?:|/.*)")}$`))}function Xt(){Re=Object.create(null)}function Kt(e){var d;const t=new Wt,a=[];if(e.length===0)return Yt;const r=e.map(u=>[!/\*|\/:/.test(u[0]),...u]).sort(([u,g],[p,v])=>u?1:p?-1:g.length-v.length),n=Object.create(null);for(let u=0,g=-1,p=r.length;u<p;u++){const[v,E,M]=r[u];v?n[E]=[M.map(([C])=>[C,Object.create(null)]),gt]:g++;let x;try{x=t.insert(E,g,v)}catch(C){throw C===oe?new ct(E):C}v||(a[g]=M.map(([C,z])=>{const Te=Object.create(null);for(z-=1;z>=0;z--){const[Ce,H]=x[z];Te[Ce]=H}return[C,Te]}))}const[o,i,c]=t.buildRegExp();for(let u=0,g=a.length;u<g;u++)for(let p=0,v=a[u].length;p<v;p++){const E=(d=a[u][p])==null?void 0:d[1];if(!E)continue;const M=Object.keys(E);for(let x=0,C=M.length;x<C;x++)E[M[x]]=c[E[M[x]]]}const l=[];for(const u in i)l[u]=a[i[u]];return[o,l,n]}function ae(e,t){if(e){for(const a of Object.keys(e).sort((r,n)=>n.length-r.length))if(ft(a).test(t))return[...e[a]]}}var _,q,Be,ht,Je,Jt=(Je=class{constructor(){m(this,Be);h(this,"name","RegExpRouter");m(this,_);m(this,q);h(this,"match",Gt);f(this,_,{[y]:Object.create(null)}),f(this,q,{[y]:Object.create(null)})}add(e,t,a){var c;const r=s(this,_),n=s(this,q);if(!r||!n)throw new Error(dt);r[e]||[r,n].forEach(l=>{l[e]=Object.create(null),Object.keys(l[y]).forEach(d=>{l[e][d]=[...l[y][d]]})}),t==="/*"&&(t="*");const o=(t.match(/\/:/g)||[]).length;if(/\*$/.test(t)){const l=ft(t);e===y?Object.keys(r).forEach(d=>{var u;(u=r[d])[t]||(u[t]=ae(r[d],t)||ae(r[y],t)||[])}):(c=r[e])[t]||(c[t]=ae(r[e],t)||ae(r[y],t)||[]),Object.keys(r).forEach(d=>{(e===y||e===d)&&Object.keys(r[d]).forEach(u=>{l.test(u)&&r[d][u].push([a,o])})}),Object.keys(n).forEach(d=>{(e===y||e===d)&&Object.keys(n[d]).forEach(u=>l.test(u)&&n[d][u].push([a,o]))});return}const i=at(t)||[t];for(let l=0,d=i.length;l<d;l++){const u=i[l];Object.keys(n).forEach(g=>{var p;(e===y||e===g)&&((p=n[g])[u]||(p[u]=[...ae(r[g],u)||ae(r[y],u)||[]]),n[g][u].push([a,o-d+l+1]))})}}buildAllMatchers(){const e=Object.create(null);return Object.keys(s(this,q)).concat(Object.keys(s(this,_))).forEach(t=>{e[t]||(e[t]=b(this,Be,ht).call(this,t))}),f(this,_,f(this,q,void 0)),Xt(),e}},_=new WeakMap,q=new WeakMap,Be=new WeakSet,ht=function(e){const t=[];let a=e===y;return[s(this,_),s(this,q)].forEach(r=>{const n=r[e]?Object.keys(r[e]).map(o=>[o,r[e][o]]):[];n.length!==0?(a||(a=!0),t.push(...n)):e!==y&&t.push(...Object.keys(r[y]).map(o=>[o,r[y][o]]))}),a?Kt(t):null},Je),Z,P,Ve,Vt=(Ve=class{constructor(e){h(this,"name","SmartRouter");m(this,Z,[]);m(this,P,[]);f(this,Z,e.routers)}add(e,t,a){if(!s(this,P))throw new Error(dt);s(this,P).push([e,t,a])}match(e,t){if(!s(this,P))throw new Error("Fatal error");const a=s(this,Z),r=s(this,P),n=a.length;let o=0,i;for(;o<n;o++){const c=a[o];try{for(let l=0,d=r.length;l<d;l++)c.add(...r[l]);i=c.match(e,t)}catch(l){if(l instanceof ct)continue;throw l}this.match=c.match.bind(c),f(this,Z,[c]),f(this,P,void 0);break}if(o===n)throw new Error("Fatal error");return this.name=`SmartRouter + ${this.activeRouter.name}`,i}get activeRouter(){if(s(this,P)||s(this,Z).length!==1)throw new Error("No active router has been determined yet.");return s(this,Z)[0]}},Z=new WeakMap,P=new WeakMap,Ve),he=Object.create(null),W,T,Q,ue,I,j,X,ge,Qt=(ge=class{constructor(t,a,r){m(this,j);m(this,W);m(this,T);m(this,Q);m(this,ue,0);m(this,I,he);if(f(this,T,r||Object.create(null)),f(this,W,[]),t&&a){const n=Object.create(null);n[t]={handler:a,possibleKeys:[],score:0},f(this,W,[n])}f(this,Q,[])}insert(t,a,r){f(this,ue,++$e(this,ue)._);let n=this;const o=kt(a),i=[];for(let c=0,l=o.length;c<l;c++){const d=o[c],u=o[c+1],g=At(d,u),p=Array.isArray(g)?g[0]:d;if(p in s(n,T)){n=s(n,T)[p],g&&i.push(g[1]);continue}s(n,T)[p]=new ge,g&&(s(n,Q).push(g),i.push(g[1])),n=s(n,T)[p]}return s(n,W).push({[t]:{handler:r,possibleKeys:i.filter((c,l,d)=>d.indexOf(c)===l),score:s(this,ue)}}),n}search(t,a){var l;const r=[];f(this,I,he);let o=[this];const i=et(a),c=[];for(let d=0,u=i.length;d<u;d++){const g=i[d],p=d===u-1,v=[];for(let E=0,M=o.length;E<M;E++){const x=o[E],C=s(x,T)[g];C&&(f(C,I,s(x,I)),p?(s(C,T)["*"]&&r.push(...b(this,j,X).call(this,s(C,T)["*"],t,s(x,I))),r.push(...b(this,j,X).call(this,C,t,s(x,I)))):v.push(C));for(let z=0,Te=s(x,Q).length;z<Te;z++){const Ce=s(x,Q)[z],H=s(x,I)===he?{}:{...s(x,I)};if(Ce==="*"){const N=s(x,T)["*"];N&&(r.push(...b(this,j,X).call(this,N,t,s(x,I))),f(N,I,H),v.push(N));continue}const[bt,ze,fe]=Ce;if(!g&&!(fe instanceof RegExp))continue;const D=s(x,T)[bt],xt=i.slice(d).join("/");if(fe instanceof RegExp){const N=fe.exec(xt);if(N){if(H[ze]=N[0],r.push(...b(this,j,X).call(this,D,t,s(x,I),H)),Object.keys(s(D,T)).length){f(D,I,H);const He=((l=N[0].match(/\//))==null?void 0:l.length)??0;(c[He]||(c[He]=[])).push(D)}continue}}(fe===!0||fe.test(g))&&(H[ze]=g,p?(r.push(...b(this,j,X).call(this,D,t,H,s(x,I))),s(D,T)["*"]&&r.push(...b(this,j,X).call(this,s(D,T)["*"],t,H,s(x,I)))):(f(D,I,H),v.push(D)))}}o=v.concat(c.shift()??[])}return r.length>1&&r.sort((d,u)=>d.score-u.score),[r.map(({handler:d,params:u})=>[d,u])]}},W=new WeakMap,T=new WeakMap,Q=new WeakMap,ue=new WeakMap,I=new WeakMap,j=new WeakSet,X=function(t,a,r,n){const o=[];for(let i=0,c=s(t,W).length;i<c;i++){const l=s(t,W)[i],d=l[a]||l[y],u={};if(d!==void 0&&(d.params=Object.create(null),o.push(d),r!==he||n&&n!==he))for(let g=0,p=d.possibleKeys.length;g<p;g++){const v=d.possibleKeys[g],E=u[d.score];d.params[v]=n!=null&&n[v]&&!E?n[v]:r[v]??(n==null?void 0:n[v]),u[d.score]=!0}}return o},ge),ee,Qe,ea=(Qe=class{constructor(){h(this,"name","TrieRouter");m(this,ee);f(this,ee,new Qt)}add(e,t,a){const r=at(t);if(r){for(let n=0,o=r.length;n<o;n++)s(this,ee).insert(e,r[n],a);return}s(this,ee).insert(e,t,a)}match(e,t){return s(this,ee).search(e,t)}},ee=new WeakMap,Qe),mt=class extends $t{constructor(e={}){super(e),this.router=e.router??new Vt({routers:[new Jt,new ea]})}},ta=e=>{const a={...{origin:"*",allowMethods:["GET","HEAD","PUT","POST","DELETE","PATCH"],allowHeaders:[],exposeHeaders:[]},...e},r=(o=>typeof o=="string"?o==="*"?()=>o:i=>o===i?i:null:typeof o=="function"?o:i=>o.includes(i)?i:null)(a.origin),n=(o=>typeof o=="function"?o:Array.isArray(o)?()=>o:()=>[])(a.allowMethods);return async function(i,c){var u;function l(g,p){i.res.headers.set(g,p)}const d=await r(i.req.header("origin")||"",i);if(d&&l("Access-Control-Allow-Origin",d),a.credentials&&l("Access-Control-Allow-Credentials","true"),(u=a.exposeHeaders)!=null&&u.length&&l("Access-Control-Expose-Headers",a.exposeHeaders.join(",")),i.req.method==="OPTIONS"){a.origin!=="*"&&l("Vary","Origin"),a.maxAge!=null&&l("Access-Control-Max-Age",a.maxAge.toString());const g=await n(i.req.header("origin")||"",i);g.length&&l("Access-Control-Allow-Methods",g.join(","));let p=a.allowHeaders;if(!(p!=null&&p.length)){const v=i.req.header("Access-Control-Request-Headers");v&&(p=v.split(/\s*,\s*/))}return p!=null&&p.length&&(l("Access-Control-Allow-Headers",p.join(",")),i.res.headers.append("Vary","Access-Control-Request-Headers")),i.res.headers.delete("Content-Length"),i.res.headers.delete("Content-Type"),new Response(null,{headers:i.res.headers,status:204,statusText:"No Content"})}await c(),a.origin!=="*"&&i.header("Vary","Origin",{append:!0})}};const k=new mt;k.use("/api/*",ta());const Me="cf2a50987a92a698e89d5efeb80cde82",Pe={face:"https://iili.io/fM9hV6B.png",outfit:"https://iili.io/fM99P3l.png",logo:"https://iili.io/fEiEfUB.png"};k.get("/api/bases",async e=>{const t=e.req.header("X-Airtable-Token");if(!t)return e.json({error:"Missing Airtable token"},401);const a=await fetch("https://api.airtable.com/v0/meta/bases",{headers:{Authorization:`Bearer ${t}`}});return e.json(await a.json())});k.get("/api/bases/:baseId/tables",async e=>{const t=e.req.header("X-Airtable-Token");if(!t)return e.json({error:"Missing Airtable token"},401);const a=e.req.param("baseId"),r=await fetch(`https://api.airtable.com/v0/meta/bases/${a}/tables`,{headers:{Authorization:`Bearer ${t}`}});return e.json(await r.json())});k.get("/api/records",async e=>{const t=e.req.header("X-Airtable-Token");if(!t)return e.json({error:"Missing Airtable token"},401);const a=e.req.query("baseId"),r=e.req.query("tableId"),n=e.req.query("filter")||"";if(!a||!r)return e.json({error:"Missing baseId or tableId"},400);let o=`https://api.airtable.com/v0/${a}/${r}?pageSize=50`;n&&n!=="all"&&(o+=`&filterByFormula={Status}='${n}'`);const i=await fetch(o,{headers:{Authorization:`Bearer ${t}`}});return e.json(await i.json())});k.get("/api/records/:id",async e=>{const t=e.req.header("X-Airtable-Token");if(!t)return e.json({error:"Missing Airtable token"},401);const a=e.req.query("baseId"),r=e.req.query("tableId"),n=e.req.param("id");if(!a||!r)return e.json({error:"Missing baseId or tableId"},400);const o=await fetch(`https://api.airtable.com/v0/${a}/${r}/${n}`,{headers:{Authorization:`Bearer ${t}`}});return e.json(await o.json())});k.patch("/api/records/:id",async e=>{const t=e.req.header("X-Airtable-Token");if(!t)return e.json({error:"Missing Airtable token"},401);const a=e.req.query("baseId"),r=e.req.query("tableId"),n=e.req.param("id"),o=await e.req.json();if(!a||!r)return e.json({error:"Missing baseId or tableId"},400);const i=await fetch(`https://api.airtable.com/v0/${a}/${r}/${n}`,{method:"PATCH",headers:{Authorization:`Bearer ${t}`,"Content-Type":"application/json"},body:JSON.stringify({fields:o})});return e.json(await i.json())});k.post("/api/generate-image",async e=>{const{prompt:t,imageUrls:a,aspectRatio:r}=await e.req.json(),n={model:"google/nano-banana",input:{prompt:t,image_urls:a||[Pe.face,Pe.outfit,Pe.logo],image_size:r||"16:9",output_format:"png"}};console.log("KieAI Nano Banana Request:",JSON.stringify(n,null,2));const o=await fetch("https://api.kie.ai/api/v1/jobs/createTask",{method:"POST",headers:{Authorization:`Bearer ${Me}`,"Content-Type":"application/json"},body:JSON.stringify(n)});return e.json(await o.json())});const Ze={"16:9":"https://iili.io/fk9ypqB.png","9:16":"https://iili.io/fk9yy0P.png","1:1":"https://iili.io/fkH99g1.png"};k.post("/api/generate-image-ideogram",async e=>{const{prompt:t,imageUrl:a,aspectRatio:r}=await e.req.json(),n=Ze[r]||Ze["16:9"],o={model:"ideogram/character-edit",input:{prompt:t,image_url:a,mask_url:n,rendering_speed:"BALANCED",style:"AUTO",expand_prompt:!1,num_images:"1"}};console.log("Ideogram character-edit Request (text overlay):",JSON.stringify(o,null,2));const i=await fetch("https://api.kie.ai/api/v1/jobs/createTask",{method:"POST",headers:{Authorization:`Bearer ${Me}`,"Content-Type":"application/json"},body:JSON.stringify(o)});return e.json(await i.json())});k.get("/api/task-status/:taskId",async e=>{const t=e.req.param("taskId"),a=await fetch(`https://api.kie.ai/api/v1/jobs/recordInfo?taskId=${t}`,{headers:{Authorization:`Bearer ${Me}`}});return e.json(await a.json())});k.post("/api/upload-image",async e=>{const{base64Image:t}=await e.req.json(),a=new FormData;a.append("key","6d207e02198a847aa98d0a2a901485a5"),a.append("action","upload"),a.append("source",t),a.append("format","json");const r=await fetch("https://freeimage.host/api/1/upload",{method:"POST",body:a});return e.json(await r.json())});k.post("/api/proxy-image",async e=>{try{const{imageUrl:t}=await e.req.json();if(!t)return e.json({error:"Missing imageUrl"},400);const a=await fetch(t);if(!a.ok)return e.json({error:"Failed to fetch image: "+a.status},500);const r=await a.arrayBuffer(),n=new Uint8Array(r);let o="";for(let l=0;l<n.length;l++)o+=String.fromCharCode(n[l]);const i=btoa(o),c=a.headers.get("content-type")||"image/png";return e.json({success:!0,base64:i,contentType:c,dataUrl:"data:"+c+";base64,"+i})}catch(t){return e.json({error:"Proxy error: "+t.message},500)}});k.get("/",e=>e.html(`
+var vt=Object.defineProperty;var Ne=e=>{throw TypeError(e)};var yt=(e,t,a)=>t in e?vt(e,t,{enumerable:!0,configurable:!0,writable:!0,value:a}):e[t]=a;var m=(e,t,a)=>yt(e,typeof t!="symbol"?t+"":t,a),De=(e,t,a)=>t.has(e)||Ne("Cannot "+a);var s=(e,t,a)=>(De(e,t,"read from private field"),a?a.call(e):t.get(e)),h=(e,t,a)=>t.has(e)?Ne("Cannot add the same private member more than once"):t instanceof WeakSet?t.add(e):t.set(e,a),f=(e,t,a,r)=>(De(e,t,"write to private field"),r?r.call(e,a):t.set(e,a),a),b=(e,t,a)=>(De(e,t,"access private method"),a);var $e=(e,t,a,r)=>({set _(n){f(e,t,n,a)},get _(){return s(e,t,r)}});var Ge=(e,t,a)=>(r,n)=>{let o=-1;return i(0);async function i(c){if(c<=o)throw new Error("next() called multiple times");o=c;let l,d=!1,u;if(e[c]?(u=e[c][0][0],r.req.routeIndex=c):u=c===e.length&&n||void 0,u)try{l=await u(r,()=>i(c+1))}catch(g){if(g instanceof Error&&t)r.error=g,l=await t(g,r),d=!0;else throw g}else r.finalized===!1&&a&&(l=await a(r));return l&&(r.finalized===!1||d)&&(r.res=l),r}},wt=Symbol(),It=async(e,t=Object.create(null))=>{const{all:a=!1,dot:r=!1}=t,o=(e instanceof ot?e.raw.headers:e.headers).get("Content-Type");return o!=null&&o.startsWith("multipart/form-data")||o!=null&&o.startsWith("application/x-www-form-urlencoded")?Tt(e,{all:a,dot:r}):{}};async function Tt(e,t){const a=await e.formData();return a?Ct(a,t):{}}function Ct(e,t){const a=Object.create(null);return e.forEach((r,n)=>{t.all||n.endsWith("[]")?Et(a,n,r):a[n]=r}),t.dot&&Object.entries(a).forEach(([r,n])=>{r.includes(".")&&(St(a,r,n),delete a[r])}),a}var Et=(e,t,a)=>{e[t]!==void 0?Array.isArray(e[t])?e[t].push(a):e[t]=[e[t],a]:t.endsWith("[]")?e[t]=[a]:e[t]=a},St=(e,t,a)=>{let r=e;const n=t.split(".");n.forEach((o,i)=>{i===n.length-1?r[o]=a:((!r[o]||typeof r[o]!="object"||Array.isArray(r[o])||r[o]instanceof File)&&(r[o]=Object.create(null)),r=r[o])})},et=e=>{const t=e.split("/");return t[0]===""&&t.shift(),t},Rt=e=>{const{groups:t,path:a}=kt(e),r=et(a);return Lt(r,t)},kt=e=>{const t=[];return e=e.replace(/\{[^}]+\}/g,(a,r)=>{const n=`@${r}`;return t.push([n,a]),n}),{groups:t,path:e}},Lt=(e,t)=>{for(let a=t.length-1;a>=0;a--){const[r]=t[a];for(let n=e.length-1;n>=0;n--)if(e[n].includes(r)){e[n]=e[n].replace(r,t[a][1]);break}}return e},Ee={},At=(e,t)=>{if(e==="*")return"*";const a=e.match(/^\:([^\{\}]+)(?:\{(.+)\})?$/);if(a){const r=`${e}#${t}`;return Ee[r]||(a[2]?Ee[r]=t&&t[0]!==":"&&t[0]!=="*"?[r,a[1],new RegExp(`^${a[2]}(?=/${t})`)]:[e,a[1],new RegExp(`^${a[2]}$`)]:Ee[r]=[e,a[1],!0]),Ee[r]}return null},je=(e,t)=>{try{return t(e)}catch{return e.replace(/(?:%[0-9A-Fa-f]{2})+/g,a=>{try{return t(a)}catch{return a}})}},Bt=e=>je(e,decodeURI),tt=e=>{const t=e.url,a=t.indexOf("/",t.indexOf(":")+4);let r=a;for(;r<t.length;r++){const n=t.charCodeAt(r);if(n===37){const o=t.indexOf("?",r),i=t.slice(a,o===-1?void 0:o);return Bt(i.includes("%25")?i.replace(/%25/g,"%2525"):i)}else if(n===63)break}return t.slice(a,r)},Ht=e=>{const t=tt(e);return t.length>1&&t.at(-1)==="/"?t.slice(0,-1):t},re=(e,t,...a)=>(a.length&&(t=re(t,...a)),`${(e==null?void 0:e[0])==="/"?"":"/"}${e}${t==="/"?"":`${(e==null?void 0:e.at(-1))==="/"?"":"/"}${(t==null?void 0:t[0])==="/"?t.slice(1):t}`}`),at=e=>{if(e.charCodeAt(e.length-1)!==63||!e.includes(":"))return null;const t=e.split("/"),a=[];let r="";return t.forEach(n=>{if(n!==""&&!/\:/.test(n))r+="/"+n;else if(/\:/.test(n))if(/\?/.test(n)){a.length===0&&r===""?a.push("/"):a.push(r);const o=n.replace("?","");r+="/"+o,a.push(r)}else r+="/"+n}),a.filter((n,o,i)=>i.indexOf(n)===o)},Oe=e=>/[%+]/.test(e)?(e.indexOf("+")!==-1&&(e=e.replace(/\+/g," ")),e.indexOf("%")!==-1?je(e,nt):e):e,rt=(e,t,a)=>{let r;if(!a&&t&&!/[%+]/.test(t)){let i=e.indexOf("?",8);if(i===-1)return;for(e.startsWith(t,i+1)||(i=e.indexOf(`&${t}`,i+1));i!==-1;){const c=e.charCodeAt(i+t.length+1);if(c===61){const l=i+t.length+2,d=e.indexOf("&",l);return Oe(e.slice(l,d===-1?void 0:d))}else if(c==38||isNaN(c))return"";i=e.indexOf(`&${t}`,i+1)}if(r=/[%+]/.test(e),!r)return}const n={};r??(r=/[%+]/.test(e));let o=e.indexOf("?",8);for(;o!==-1;){const i=e.indexOf("&",o+1);let c=e.indexOf("=",o);c>i&&i!==-1&&(c=-1);let l=e.slice(o+1,c===-1?i===-1?void 0:i:c);if(r&&(l=Oe(l)),o=i,l==="")continue;let d;c===-1?d="":(d=e.slice(c+1,i===-1?void 0:i),r&&(d=Oe(d))),a?(n[l]&&Array.isArray(n[l])||(n[l]=[]),n[l].push(d)):n[l]??(n[l]=d)}return t?n[t]:n},Dt=rt,Ot=(e,t)=>rt(e,t,!0),nt=decodeURIComponent,_e=e=>je(e,nt),ie,k,j,it,st,Ue,$,Ye,ot=(Ye=class{constructor(e,t="/",a=[[]]){h(this,j);m(this,"raw");h(this,ie);h(this,k);m(this,"routeIndex",0);m(this,"path");m(this,"bodyCache",{});h(this,$,e=>{const{bodyCache:t,raw:a}=this,r=t[e];if(r)return r;const n=Object.keys(t)[0];return n?t[n].then(o=>(n==="json"&&(o=JSON.stringify(o)),new Response(o)[e]())):t[e]=a[e]()});this.raw=e,this.path=t,f(this,k,a),f(this,ie,{})}param(e){return e?b(this,j,it).call(this,e):b(this,j,st).call(this)}query(e){return Dt(this.url,e)}queries(e){return Ot(this.url,e)}header(e){if(e)return this.raw.headers.get(e)??void 0;const t={};return this.raw.headers.forEach((a,r)=>{t[r]=a}),t}async parseBody(e){var t;return(t=this.bodyCache).parsedBody??(t.parsedBody=await It(this,e))}json(){return s(this,$).call(this,"text").then(e=>JSON.parse(e))}text(){return s(this,$).call(this,"text")}arrayBuffer(){return s(this,$).call(this,"arrayBuffer")}blob(){return s(this,$).call(this,"blob")}formData(){return s(this,$).call(this,"formData")}addValidatedData(e,t){s(this,ie)[e]=t}valid(e){return s(this,ie)[e]}get url(){return this.raw.url}get method(){return this.raw.method}get[wt](){return s(this,k)}get matchedRoutes(){return s(this,k)[0].map(([[,e]])=>e)}get routePath(){return s(this,k)[0].map(([[,e]])=>e)[this.routeIndex].path}},ie=new WeakMap,k=new WeakMap,j=new WeakSet,it=function(e){const t=s(this,k)[0][this.routeIndex][1][e],a=b(this,j,Ue).call(this,t);return a&&/\%/.test(a)?_e(a):a},st=function(){const e={},t=Object.keys(s(this,k)[0][this.routeIndex][1]);for(const a of t){const r=b(this,j,Ue).call(this,s(this,k)[0][this.routeIndex][1][a]);r!==void 0&&(e[a]=/\%/.test(r)?_e(r):r)}return e},Ue=function(e){return s(this,k)[1]?s(this,k)[1][e]:e},$=new WeakMap,Ye),Ft={Stringify:1},lt=async(e,t,a,r,n)=>{typeof e=="object"&&!(e instanceof String)&&(e instanceof Promise||(e=e.toString()),e instanceof Promise&&(e=await e));const o=e.callbacks;return o!=null&&o.length?(n?n[0]+=e:n=[e],Promise.all(o.map(c=>c({phase:t,buffer:n,context:r}))).then(c=>Promise.all(c.filter(Boolean).map(l=>lt(l,t,!1,r,n))).then(()=>n[0]))):Promise.resolve(e)},Pt="text/plain; charset=UTF-8",Fe=(e,t)=>({"Content-Type":e,...t}),be,xe,O,se,F,E,ve,le,de,K,ye,we,G,ne,Xe,Ut=(Xe=class{constructor(e,t){h(this,G);h(this,be);h(this,xe);m(this,"env",{});h(this,O);m(this,"finalized",!1);m(this,"error");h(this,se);h(this,F);h(this,E);h(this,ve);h(this,le);h(this,de);h(this,K);h(this,ye);h(this,we);m(this,"render",(...e)=>(s(this,le)??f(this,le,t=>this.html(t)),s(this,le).call(this,...e)));m(this,"setLayout",e=>f(this,ve,e));m(this,"getLayout",()=>s(this,ve));m(this,"setRenderer",e=>{f(this,le,e)});m(this,"header",(e,t,a)=>{this.finalized&&f(this,E,new Response(s(this,E).body,s(this,E)));const r=s(this,E)?s(this,E).headers:s(this,K)??f(this,K,new Headers);t===void 0?r.delete(e):a!=null&&a.append?r.append(e,t):r.set(e,t)});m(this,"status",e=>{f(this,se,e)});m(this,"set",(e,t)=>{s(this,O)??f(this,O,new Map),s(this,O).set(e,t)});m(this,"get",e=>s(this,O)?s(this,O).get(e):void 0);m(this,"newResponse",(...e)=>b(this,G,ne).call(this,...e));m(this,"body",(e,t,a)=>b(this,G,ne).call(this,e,t,a));m(this,"text",(e,t,a)=>!s(this,K)&&!s(this,se)&&!t&&!a&&!this.finalized?new Response(e):b(this,G,ne).call(this,e,t,Fe(Pt,a)));m(this,"json",(e,t,a)=>b(this,G,ne).call(this,JSON.stringify(e),t,Fe("application/json",a)));m(this,"html",(e,t,a)=>{const r=n=>b(this,G,ne).call(this,n,t,Fe("text/html; charset=UTF-8",a));return typeof e=="object"?lt(e,Ft.Stringify,!1,{}).then(r):r(e)});m(this,"redirect",(e,t)=>{const a=String(e);return this.header("Location",/[^\x00-\xFF]/.test(a)?encodeURI(a):a),this.newResponse(null,t??302)});m(this,"notFound",()=>(s(this,de)??f(this,de,()=>new Response),s(this,de).call(this,this)));f(this,be,e),t&&(f(this,F,t.executionCtx),this.env=t.env,f(this,de,t.notFoundHandler),f(this,we,t.path),f(this,ye,t.matchResult))}get req(){return s(this,xe)??f(this,xe,new ot(s(this,be),s(this,we),s(this,ye))),s(this,xe)}get event(){if(s(this,F)&&"respondWith"in s(this,F))return s(this,F);throw Error("This context has no FetchEvent")}get executionCtx(){if(s(this,F))return s(this,F);throw Error("This context has no ExecutionContext")}get res(){return s(this,E)||f(this,E,new Response(null,{headers:s(this,K)??f(this,K,new Headers)}))}set res(e){if(s(this,E)&&e){e=new Response(e.body,e);for(const[t,a]of s(this,E).headers.entries())if(t!=="content-type")if(t==="set-cookie"){const r=s(this,E).headers.getSetCookie();e.headers.delete("set-cookie");for(const n of r)e.headers.append("set-cookie",n)}else e.headers.set(t,a)}f(this,E,e),this.finalized=!0}get var(){return s(this,O)?Object.fromEntries(s(this,O)):{}}},be=new WeakMap,xe=new WeakMap,O=new WeakMap,se=new WeakMap,F=new WeakMap,E=new WeakMap,ve=new WeakMap,le=new WeakMap,de=new WeakMap,K=new WeakMap,ye=new WeakMap,we=new WeakMap,G=new WeakSet,ne=function(e,t,a){const r=s(this,E)?new Headers(s(this,E).headers):s(this,K)??new Headers;if(typeof t=="object"&&"headers"in t){const o=t.headers instanceof Headers?t.headers:new Headers(t.headers);for(const[i,c]of o)i.toLowerCase()==="set-cookie"?r.append(i,c):r.set(i,c)}if(a)for(const[o,i]of Object.entries(a))if(typeof i=="string")r.set(o,i);else{r.delete(o);for(const c of i)r.append(o,c)}const n=typeof t=="number"?t:(t==null?void 0:t.status)??s(this,se);return new Response(e,{status:n,headers:r})},Xe),y="ALL",jt="all",zt=["get","post","put","delete","options","patch"],dt="Can not add a route since the matcher is already built.",ct=class extends Error{},Mt="__COMPOSED_HANDLER",Nt=e=>e.text("404 Not Found",404),qe=(e,t)=>{if("getResponse"in e){const a=e.getResponse();return t.newResponse(a.body,a)}return console.error(e),t.text("Internal Server Error",500)},L,w,ut,A,Y,Se,Re,ce,$t=(ce=class{constructor(t={}){h(this,w);m(this,"get");m(this,"post");m(this,"put");m(this,"delete");m(this,"options");m(this,"patch");m(this,"all");m(this,"on");m(this,"use");m(this,"router");m(this,"getPath");m(this,"_basePath","/");h(this,L,"/");m(this,"routes",[]);h(this,A,Nt);m(this,"errorHandler",qe);m(this,"onError",t=>(this.errorHandler=t,this));m(this,"notFound",t=>(f(this,A,t),this));m(this,"fetch",(t,...a)=>b(this,w,Re).call(this,t,a[1],a[0],t.method));m(this,"request",(t,a,r,n)=>t instanceof Request?this.fetch(a?new Request(t,a):t,r,n):(t=t.toString(),this.fetch(new Request(/^https?:\/\//.test(t)?t:`http://localhost${re("/",t)}`,a),r,n)));m(this,"fire",()=>{addEventListener("fetch",t=>{t.respondWith(b(this,w,Re).call(this,t.request,t,void 0,t.request.method))})});[...zt,jt].forEach(o=>{this[o]=(i,...c)=>(typeof i=="string"?f(this,L,i):b(this,w,Y).call(this,o,s(this,L),i),c.forEach(l=>{b(this,w,Y).call(this,o,s(this,L),l)}),this)}),this.on=(o,i,...c)=>{for(const l of[i].flat()){f(this,L,l);for(const d of[o].flat())c.map(u=>{b(this,w,Y).call(this,d.toUpperCase(),s(this,L),u)})}return this},this.use=(o,...i)=>(typeof o=="string"?f(this,L,o):(f(this,L,"*"),i.unshift(o)),i.forEach(c=>{b(this,w,Y).call(this,y,s(this,L),c)}),this);const{strict:r,...n}=t;Object.assign(this,n),this.getPath=r??!0?t.getPath??tt:Ht}route(t,a){const r=this.basePath(t);return a.routes.map(n=>{var i;let o;a.errorHandler===qe?o=n.handler:(o=async(c,l)=>(await Ge([],a.errorHandler)(c,()=>n.handler(c,l))).res,o[Mt]=n.handler),b(i=r,w,Y).call(i,n.method,n.path,o)}),this}basePath(t){const a=b(this,w,ut).call(this);return a._basePath=re(this._basePath,t),a}mount(t,a,r){let n,o;r&&(typeof r=="function"?o=r:(o=r.optionHandler,r.replaceRequest===!1?n=l=>l:n=r.replaceRequest));const i=o?l=>{const d=o(l);return Array.isArray(d)?d:[d]}:l=>{let d;try{d=l.executionCtx}catch{}return[l.env,d]};n||(n=(()=>{const l=re(this._basePath,t),d=l==="/"?0:l.length;return u=>{const g=new URL(u.url);return g.pathname=g.pathname.slice(d)||"/",new Request(g,u)}})());const c=async(l,d)=>{const u=await a(n(l.req.raw),...i(l));if(u)return u;await d()};return b(this,w,Y).call(this,y,re(t,"*"),c),this}},L=new WeakMap,w=new WeakSet,ut=function(){const t=new ce({router:this.router,getPath:this.getPath});return t.errorHandler=this.errorHandler,f(t,A,s(this,A)),t.routes=this.routes,t},A=new WeakMap,Y=function(t,a,r){t=t.toUpperCase(),a=re(this._basePath,a);const n={basePath:this._basePath,path:a,method:t,handler:r};this.router.add(t,a,[r,n]),this.routes.push(n)},Se=function(t,a){if(t instanceof Error)return this.errorHandler(t,a);throw t},Re=function(t,a,r,n){if(n==="HEAD")return(async()=>new Response(null,await b(this,w,Re).call(this,t,a,r,"GET")))();const o=this.getPath(t,{env:r}),i=this.router.match(n,o),c=new Ut(t,{path:o,matchResult:i,env:r,executionCtx:a,notFoundHandler:s(this,A)});if(i[0].length===1){let d;try{d=i[0][0][0][0](c,async()=>{c.res=await s(this,A).call(this,c)})}catch(u){return b(this,w,Se).call(this,u,c)}return d instanceof Promise?d.then(u=>u||(c.finalized?c.res:s(this,A).call(this,c))).catch(u=>b(this,w,Se).call(this,u,c)):d??s(this,A).call(this,c)}const l=Ge(i[0],this.errorHandler,s(this,A));return(async()=>{try{const d=await l(c);if(!d.finalized)throw new Error("Context is not finalized. Did you forget to return a Response object or `await next()`?");return d.res}catch(d){return b(this,w,Se).call(this,d,c)}})()},ce),gt=[];function Gt(e,t){const a=this.buildAllMatchers(),r=(n,o)=>{const i=a[n]||a[y],c=i[2][o];if(c)return c;const l=o.match(i[0]);if(!l)return[[],gt];const d=l.indexOf("",1);return[i[1][d],l]};return this.match=r,r(e,t)}var Le="[^/]+",he=".*",pe="(?:|/.*)",oe=Symbol(),_t=new Set(".\\+*[^]$()");function qt(e,t){return e.length===1?t.length===1?e<t?-1:1:-1:t.length===1||e===he||e===pe?1:t===he||t===pe?-1:e===Le?1:t===Le?-1:e.length===t.length?e<t?-1:1:t.length-e.length}var J,V,B,te,Zt=(te=class{constructor(){h(this,J);h(this,V);h(this,B,Object.create(null))}insert(t,a,r,n,o){if(t.length===0){if(s(this,J)!==void 0)throw oe;if(o)return;f(this,J,a);return}const[i,...c]=t,l=i==="*"?c.length===0?["","",he]:["","",Le]:i==="/*"?["","",pe]:i.match(/^\:([^\{\}]+)(?:\{(.+)\})?$/);let d;if(l){const u=l[1];let g=l[2]||Le;if(u&&l[2]&&(g===".*"||(g=g.replace(/^\((?!\?:)(?=[^)]+\)$)/,"(?:"),/\((?!\?:)/.test(g))))throw oe;if(d=s(this,B)[g],!d){if(Object.keys(s(this,B)).some(p=>p!==he&&p!==pe))throw oe;if(o)return;d=s(this,B)[g]=new te,u!==""&&f(d,V,n.varIndex++)}!o&&u!==""&&r.push([u,s(d,V)])}else if(d=s(this,B)[i],!d){if(Object.keys(s(this,B)).some(u=>u.length>1&&u!==he&&u!==pe))throw oe;if(o)return;d=s(this,B)[i]=new te}d.insert(c,a,r,n,o)}buildRegExpStr(){const a=Object.keys(s(this,B)).sort(qt).map(r=>{const n=s(this,B)[r];return(typeof s(n,V)=="number"?`(${r})@${s(n,V)}`:_t.has(r)?`\\${r}`:r)+n.buildRegExpStr()});return typeof s(this,J)=="number"&&a.unshift(`#${s(this,J)}`),a.length===0?"":a.length===1?a[0]:"(?:"+a.join("|")+")"}},J=new WeakMap,V=new WeakMap,B=new WeakMap,te),Ae,Ie,Ke,Wt=(Ke=class{constructor(){h(this,Ae,{varIndex:0});h(this,Ie,new Zt)}insert(e,t,a){const r=[],n=[];for(let i=0;;){let c=!1;if(e=e.replace(/\{[^}]+\}/g,l=>{const d=`@\\${i}`;return n[i]=[d,l],i++,c=!0,d}),!c)break}const o=e.match(/(?::[^\/]+)|(?:\/\*$)|./g)||[];for(let i=n.length-1;i>=0;i--){const[c]=n[i];for(let l=o.length-1;l>=0;l--)if(o[l].indexOf(c)!==-1){o[l]=o[l].replace(c,n[i][1]);break}}return s(this,Ie).insert(o,t,r,s(this,Ae),a),r}buildRegExp(){let e=s(this,Ie).buildRegExpStr();if(e==="")return[/^$/,[],[]];let t=0;const a=[],r=[];return e=e.replace(/#(\d+)|@(\d+)|\.\*\$/g,(n,o,i)=>o!==void 0?(a[++t]=Number(o),"$()"):(i!==void 0&&(r[Number(i)]=++t),"")),[new RegExp(`^${e}`),a,r]}},Ae=new WeakMap,Ie=new WeakMap,Ke),Yt=[/^$/,[],Object.create(null)],ke=Object.create(null);function ft(e){return ke[e]??(ke[e]=new RegExp(e==="*"?"":`^${e.replace(/\/\*$|([.\\+*[^\]$()])/g,(t,a)=>a?`\\${a}`:"(?:|/.*)")}$`))}function Xt(){ke=Object.create(null)}function Kt(e){var d;const t=new Wt,a=[];if(e.length===0)return Yt;const r=e.map(u=>[!/\*|\/:/.test(u[0]),...u]).sort(([u,g],[p,v])=>u?1:p?-1:g.length-v.length),n=Object.create(null);for(let u=0,g=-1,p=r.length;u<p;u++){const[v,S,z]=r[u];v?n[S]=[z.map(([C])=>[C,Object.create(null)]),gt]:g++;let x;try{x=t.insert(S,g,v)}catch(C){throw C===oe?new ct(S):C}v||(a[g]=z.map(([C,M])=>{const Te=Object.create(null);for(M-=1;M>=0;M--){const[Ce,H]=x[M];Te[Ce]=H}return[C,Te]}))}const[o,i,c]=t.buildRegExp();for(let u=0,g=a.length;u<g;u++)for(let p=0,v=a[u].length;p<v;p++){const S=(d=a[u][p])==null?void 0:d[1];if(!S)continue;const z=Object.keys(S);for(let x=0,C=z.length;x<C;x++)S[z[x]]=c[S[z[x]]]}const l=[];for(const u in i)l[u]=a[i[u]];return[o,l,n]}function ae(e,t){if(e){for(const a of Object.keys(e).sort((r,n)=>n.length-r.length))if(ft(a).test(t))return[...e[a]]}}var _,q,Be,mt,Je,Jt=(Je=class{constructor(){h(this,Be);m(this,"name","RegExpRouter");h(this,_);h(this,q);m(this,"match",Gt);f(this,_,{[y]:Object.create(null)}),f(this,q,{[y]:Object.create(null)})}add(e,t,a){var c;const r=s(this,_),n=s(this,q);if(!r||!n)throw new Error(dt);r[e]||[r,n].forEach(l=>{l[e]=Object.create(null),Object.keys(l[y]).forEach(d=>{l[e][d]=[...l[y][d]]})}),t==="/*"&&(t="*");const o=(t.match(/\/:/g)||[]).length;if(/\*$/.test(t)){const l=ft(t);e===y?Object.keys(r).forEach(d=>{var u;(u=r[d])[t]||(u[t]=ae(r[d],t)||ae(r[y],t)||[])}):(c=r[e])[t]||(c[t]=ae(r[e],t)||ae(r[y],t)||[]),Object.keys(r).forEach(d=>{(e===y||e===d)&&Object.keys(r[d]).forEach(u=>{l.test(u)&&r[d][u].push([a,o])})}),Object.keys(n).forEach(d=>{(e===y||e===d)&&Object.keys(n[d]).forEach(u=>l.test(u)&&n[d][u].push([a,o]))});return}const i=at(t)||[t];for(let l=0,d=i.length;l<d;l++){const u=i[l];Object.keys(n).forEach(g=>{var p;(e===y||e===g)&&((p=n[g])[u]||(p[u]=[...ae(r[g],u)||ae(r[y],u)||[]]),n[g][u].push([a,o-d+l+1]))})}}buildAllMatchers(){const e=Object.create(null);return Object.keys(s(this,q)).concat(Object.keys(s(this,_))).forEach(t=>{e[t]||(e[t]=b(this,Be,mt).call(this,t))}),f(this,_,f(this,q,void 0)),Xt(),e}},_=new WeakMap,q=new WeakMap,Be=new WeakSet,mt=function(e){const t=[];let a=e===y;return[s(this,_),s(this,q)].forEach(r=>{const n=r[e]?Object.keys(r[e]).map(o=>[o,r[e][o]]):[];n.length!==0?(a||(a=!0),t.push(...n)):e!==y&&t.push(...Object.keys(r[y]).map(o=>[o,r[y][o]]))}),a?Kt(t):null},Je),Z,P,Ve,Vt=(Ve=class{constructor(e){m(this,"name","SmartRouter");h(this,Z,[]);h(this,P,[]);f(this,Z,e.routers)}add(e,t,a){if(!s(this,P))throw new Error(dt);s(this,P).push([e,t,a])}match(e,t){if(!s(this,P))throw new Error("Fatal error");const a=s(this,Z),r=s(this,P),n=a.length;let o=0,i;for(;o<n;o++){const c=a[o];try{for(let l=0,d=r.length;l<d;l++)c.add(...r[l]);i=c.match(e,t)}catch(l){if(l instanceof ct)continue;throw l}this.match=c.match.bind(c),f(this,Z,[c]),f(this,P,void 0);break}if(o===n)throw new Error("Fatal error");return this.name=`SmartRouter + ${this.activeRouter.name}`,i}get activeRouter(){if(s(this,P)||s(this,Z).length!==1)throw new Error("No active router has been determined yet.");return s(this,Z)[0]}},Z=new WeakMap,P=new WeakMap,Ve),me=Object.create(null),W,T,Q,ue,I,U,X,ge,Qt=(ge=class{constructor(t,a,r){h(this,U);h(this,W);h(this,T);h(this,Q);h(this,ue,0);h(this,I,me);if(f(this,T,r||Object.create(null)),f(this,W,[]),t&&a){const n=Object.create(null);n[t]={handler:a,possibleKeys:[],score:0},f(this,W,[n])}f(this,Q,[])}insert(t,a,r){f(this,ue,++$e(this,ue)._);let n=this;const o=Rt(a),i=[];for(let c=0,l=o.length;c<l;c++){const d=o[c],u=o[c+1],g=At(d,u),p=Array.isArray(g)?g[0]:d;if(p in s(n,T)){n=s(n,T)[p],g&&i.push(g[1]);continue}s(n,T)[p]=new ge,g&&(s(n,Q).push(g),i.push(g[1])),n=s(n,T)[p]}return s(n,W).push({[t]:{handler:r,possibleKeys:i.filter((c,l,d)=>d.indexOf(c)===l),score:s(this,ue)}}),n}search(t,a){var l;const r=[];f(this,I,me);let o=[this];const i=et(a),c=[];for(let d=0,u=i.length;d<u;d++){const g=i[d],p=d===u-1,v=[];for(let S=0,z=o.length;S<z;S++){const x=o[S],C=s(x,T)[g];C&&(f(C,I,s(x,I)),p?(s(C,T)["*"]&&r.push(...b(this,U,X).call(this,s(C,T)["*"],t,s(x,I))),r.push(...b(this,U,X).call(this,C,t,s(x,I)))):v.push(C));for(let M=0,Te=s(x,Q).length;M<Te;M++){const Ce=s(x,Q)[M],H=s(x,I)===me?{}:{...s(x,I)};if(Ce==="*"){const N=s(x,T)["*"];N&&(r.push(...b(this,U,X).call(this,N,t,s(x,I))),f(N,I,H),v.push(N));continue}const[bt,Me,fe]=Ce;if(!g&&!(fe instanceof RegExp))continue;const D=s(x,T)[bt],xt=i.slice(d).join("/");if(fe instanceof RegExp){const N=fe.exec(xt);if(N){if(H[Me]=N[0],r.push(...b(this,U,X).call(this,D,t,s(x,I),H)),Object.keys(s(D,T)).length){f(D,I,H);const He=((l=N[0].match(/\//))==null?void 0:l.length)??0;(c[He]||(c[He]=[])).push(D)}continue}}(fe===!0||fe.test(g))&&(H[Me]=g,p?(r.push(...b(this,U,X).call(this,D,t,H,s(x,I))),s(D,T)["*"]&&r.push(...b(this,U,X).call(this,s(D,T)["*"],t,H,s(x,I)))):(f(D,I,H),v.push(D)))}}o=v.concat(c.shift()??[])}return r.length>1&&r.sort((d,u)=>d.score-u.score),[r.map(({handler:d,params:u})=>[d,u])]}},W=new WeakMap,T=new WeakMap,Q=new WeakMap,ue=new WeakMap,I=new WeakMap,U=new WeakSet,X=function(t,a,r,n){const o=[];for(let i=0,c=s(t,W).length;i<c;i++){const l=s(t,W)[i],d=l[a]||l[y],u={};if(d!==void 0&&(d.params=Object.create(null),o.push(d),r!==me||n&&n!==me))for(let g=0,p=d.possibleKeys.length;g<p;g++){const v=d.possibleKeys[g],S=u[d.score];d.params[v]=n!=null&&n[v]&&!S?n[v]:r[v]??(n==null?void 0:n[v]),u[d.score]=!0}}return o},ge),ee,Qe,ea=(Qe=class{constructor(){m(this,"name","TrieRouter");h(this,ee);f(this,ee,new Qt)}add(e,t,a){const r=at(t);if(r){for(let n=0,o=r.length;n<o;n++)s(this,ee).insert(e,r[n],a);return}s(this,ee).insert(e,t,a)}match(e,t){return s(this,ee).search(e,t)}},ee=new WeakMap,Qe),ht=class extends $t{constructor(e={}){super(e),this.router=e.router??new Vt({routers:[new Jt,new ea]})}},ta=e=>{const a={...{origin:"*",allowMethods:["GET","HEAD","PUT","POST","DELETE","PATCH"],allowHeaders:[],exposeHeaders:[]},...e},r=(o=>typeof o=="string"?o==="*"?()=>o:i=>o===i?i:null:typeof o=="function"?o:i=>o.includes(i)?i:null)(a.origin),n=(o=>typeof o=="function"?o:Array.isArray(o)?()=>o:()=>[])(a.allowMethods);return async function(i,c){var u;function l(g,p){i.res.headers.set(g,p)}const d=await r(i.req.header("origin")||"",i);if(d&&l("Access-Control-Allow-Origin",d),a.credentials&&l("Access-Control-Allow-Credentials","true"),(u=a.exposeHeaders)!=null&&u.length&&l("Access-Control-Expose-Headers",a.exposeHeaders.join(",")),i.req.method==="OPTIONS"){a.origin!=="*"&&l("Vary","Origin"),a.maxAge!=null&&l("Access-Control-Max-Age",a.maxAge.toString());const g=await n(i.req.header("origin")||"",i);g.length&&l("Access-Control-Allow-Methods",g.join(","));let p=a.allowHeaders;if(!(p!=null&&p.length)){const v=i.req.header("Access-Control-Request-Headers");v&&(p=v.split(/\s*,\s*/))}return p!=null&&p.length&&(l("Access-Control-Allow-Headers",p.join(",")),i.res.headers.append("Vary","Access-Control-Request-Headers")),i.res.headers.delete("Content-Length"),i.res.headers.delete("Content-Type"),new Response(null,{headers:i.res.headers,status:204,statusText:"No Content"})}await c(),a.origin!=="*"&&i.header("Vary","Origin",{append:!0})}};const R=new ht;R.use("/api/*",ta());const ze="cf2a50987a92a698e89d5efeb80cde82",Pe={face:"https://iili.io/fM9hV6B.png",outfit:"https://iili.io/fM99P3l.png",logo:"https://iili.io/fEiEfUB.png"};R.get("/api/bases",async e=>{const t=e.req.header("X-Airtable-Token");if(!t)return e.json({error:"Missing Airtable token"},401);const a=await fetch("https://api.airtable.com/v0/meta/bases",{headers:{Authorization:`Bearer ${t}`}});return e.json(await a.json())});R.get("/api/bases/:baseId/tables",async e=>{const t=e.req.header("X-Airtable-Token");if(!t)return e.json({error:"Missing Airtable token"},401);const a=e.req.param("baseId"),r=await fetch(`https://api.airtable.com/v0/meta/bases/${a}/tables`,{headers:{Authorization:`Bearer ${t}`}});return e.json(await r.json())});R.get("/api/records",async e=>{const t=e.req.header("X-Airtable-Token");if(!t)return e.json({error:"Missing Airtable token"},401);const a=e.req.query("baseId"),r=e.req.query("tableId"),n=e.req.query("filter")||"";if(!a||!r)return e.json({error:"Missing baseId or tableId"},400);let o=`https://api.airtable.com/v0/${a}/${r}?pageSize=50`;n&&n!=="all"&&(o+=`&filterByFormula={Status}='${n}'`);const i=await fetch(o,{headers:{Authorization:`Bearer ${t}`}});return e.json(await i.json())});R.get("/api/records/:id",async e=>{const t=e.req.header("X-Airtable-Token");if(!t)return e.json({error:"Missing Airtable token"},401);const a=e.req.query("baseId"),r=e.req.query("tableId"),n=e.req.param("id");if(!a||!r)return e.json({error:"Missing baseId or tableId"},400);const o=await fetch(`https://api.airtable.com/v0/${a}/${r}/${n}`,{headers:{Authorization:`Bearer ${t}`}});return e.json(await o.json())});R.patch("/api/records/:id",async e=>{const t=e.req.header("X-Airtable-Token");if(!t)return e.json({error:"Missing Airtable token"},401);const a=e.req.query("baseId"),r=e.req.query("tableId"),n=e.req.param("id"),o=await e.req.json();if(!a||!r)return e.json({error:"Missing baseId or tableId"},400);const i=await fetch(`https://api.airtable.com/v0/${a}/${r}/${n}`,{method:"PATCH",headers:{Authorization:`Bearer ${t}`,"Content-Type":"application/json"},body:JSON.stringify({fields:o})});return e.json(await i.json())});R.post("/api/generate-image",async e=>{const{prompt:t,imageUrls:a,aspectRatio:r}=await e.req.json(),n={model:"google/nano-banana",input:{prompt:t,image_urls:a||[Pe.face,Pe.outfit,Pe.logo],image_size:r||"16:9",output_format:"png"}};console.log("KieAI Nano Banana Request:",JSON.stringify(n,null,2));const o=await fetch("https://api.kie.ai/api/v1/jobs/createTask",{method:"POST",headers:{Authorization:`Bearer ${ze}`,"Content-Type":"application/json"},body:JSON.stringify(n)});return e.json(await o.json())});const Ze={"16:9":"https://iili.io/fk9ypqB.png","9:16":"https://iili.io/fk9yy0P.png","1:1":"https://iili.io/fkH99g1.png"};R.post("/api/generate-image-ideogram",async e=>{const{prompt:t,imageUrl:a,aspectRatio:r}=await e.req.json(),n=Ze[r]||Ze["16:9"],o={model:"ideogram/character-edit",input:{prompt:t,image_url:a,mask_url:n,rendering_speed:"BALANCED",style:"AUTO",expand_prompt:!1,num_images:"1"}};console.log("Ideogram character-edit Request (text overlay):",JSON.stringify(o,null,2));const i=await fetch("https://api.kie.ai/api/v1/jobs/createTask",{method:"POST",headers:{Authorization:`Bearer ${ze}`,"Content-Type":"application/json"},body:JSON.stringify(o)});return e.json(await i.json())});R.get("/api/task-status/:taskId",async e=>{const t=e.req.param("taskId"),a=await fetch(`https://api.kie.ai/api/v1/jobs/recordInfo?taskId=${t}`,{headers:{Authorization:`Bearer ${ze}`}});return e.json(await a.json())});R.post("/api/upload-image",async e=>{const{base64Image:t}=await e.req.json(),a=new FormData;a.append("key","6d207e02198a847aa98d0a2a901485a5"),a.append("action","upload"),a.append("source",t),a.append("format","json");const r=await fetch("https://freeimage.host/api/1/upload",{method:"POST",body:a});return e.json(await r.json())});R.post("/api/proxy-image",async e=>{try{const{imageUrl:t}=await e.req.json();if(!t)return e.json({error:"Missing imageUrl"},400);const a=await fetch(t);if(!a.ok)return e.json({error:"Failed to fetch image: "+a.status},500);const r=await a.arrayBuffer(),n=new Uint8Array(r);let o="";for(let l=0;l<n.length;l++)o+=String.fromCharCode(n[l]);const i=btoa(o),c=a.headers.get("content-type")||"image/png";return e.json({success:!0,base64:i,contentType:c,dataUrl:"data:"+c+";base64,"+i})}catch(t){return e.json({error:"Proxy error: "+t.message},500)}});R.get("/",e=>e.html(`
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -691,10 +691,10 @@ var vt=Object.defineProperty;var Ne=e=>{throw TypeError(e)};var yt=(e,t,a)=>t in
         </h2>
         <div class="flex items-center gap-3">
           <div id="processingOrder" class="text-xs text-amber-500 font-mono hidden md:block"></div>
-          <i id="refLibraryToggle" class="fas fa-chevron-down text-gray-400 transition-transform"></i>
+          <i id="refLibraryToggle" class="fas fa-chevron-down text-gray-400 transition-transform" style="transform: rotate(180deg)"></i>
         </div>
       </div>
-      <div id="referenceLibraryContent" class="hidden mt-4">
+      <div id="referenceLibraryContent" class="mt-4">
         <p class="text-xs text-gray-400 mb-4">Each reference type has 3 size variants (16:9, 9:16, 1:1) for aspect-ratio-specific generation.</p>
         <div id="referenceGridExpanded" class="space-y-4"></div>
       </div>
@@ -821,15 +821,37 @@ var vt=Object.defineProperty;var Ne=e=>{throw TypeError(e)};var yt=(e,t,a)=>t in
         <h3 class="text-lg font-semibold flex items-center gap-2">
           <i class="fas fa-images text-amber-500"></i>
           Content Images
-          <span class="text-xs text-gray-400 ml-2">(click to view • drop to add)</span>
+          <span class="text-xs text-gray-400 ml-2">(drag files, URLs, or history images • click to view)</span>
         </h3>
         <div class="flex items-center gap-3">
-          <button onclick="createAllSizes()" 
-                  class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2"
-                  title="Uses your approved image as reference to generate 9:16 and 1:1 versions">
-            <i class="fas fa-magic"></i>
-            Generate 9:16 & 1:1
-          </button>
+          <!-- Resize dropdown -->
+          <div class="relative">
+            <button id="resizeDropdownBtn" onclick="toggleResizeDropdown()" 
+                    class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2">
+              <i class="fas fa-expand-arrows-alt"></i>
+              Resize to All
+              <i class="fas fa-chevron-down text-xs"></i>
+            </button>
+            <div id="resizeDropdown" class="hidden absolute right-0 mt-2 w-64 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50">
+              <div class="p-2">
+                <p class="text-xs text-gray-400 px-3 py-2">Choose resize method:</p>
+                <button onclick="resizeToAllSizes('ai')" class="w-full text-left px-3 py-2 hover:bg-gray-700 rounded-lg flex items-center gap-2 text-sm">
+                  <i class="fas fa-magic text-purple-400"></i>
+                  <div>
+                    <div class="font-medium">AI Regenerate</div>
+                    <div class="text-xs text-gray-400">Best quality, uses Nano Banana (~$0.09/image)</div>
+                  </div>
+                </button>
+                <button onclick="resizeToAllSizes('crop')" class="w-full text-left px-3 py-2 hover:bg-gray-700 rounded-lg flex items-center gap-2 text-sm">
+                  <i class="fas fa-crop-alt text-green-400"></i>
+                  <div>
+                    <div class="font-medium">Smart Crop</div>
+                    <div class="text-xs text-gray-400">Fast, free, center-crops to fit ratio</div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
           <button id="saveImagesToAirtableBtn" onclick="saveImagesToAirtable()" 
                   class="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2">
             <i class="fas fa-cloud-upload-alt"></i>
@@ -848,43 +870,63 @@ var vt=Object.defineProperty;var Ne=e=>{throw TypeError(e)};var yt=(e,t,a)=>t in
           <p class="text-sm text-gray-400 mb-2 flex items-center gap-2">
             <span class="w-3 h-3 rounded-full bg-amber-500"></span>
             16:9 <span class="text-xs text-gray-500">(YouTube/Twitter)</span>
+            <button onclick="event.stopPropagation(); document.getElementById('fileInput16x9').click()" class="ml-auto text-xs text-gray-500 hover:text-amber-400" title="Upload from computer">
+              <i class="fas fa-upload"></i>
+            </button>
           </p>
+          <input type="file" id="fileInput16x9" accept="image/*" class="hidden" onchange="handleFileUpload(event, '16:9')">
           <div id="image16x9" class="image-drop-zone content-image-clickable"
                style="min-height: 220px;"
                ondragover="handleImageDragOver(event)"
                ondragleave="handleImageDragLeave(event)"
-               ondrop="handleImageDrop(event, '16:9')"
+               ondrop="handleContentImageDrop(event, '16:9')"
                onclick="openContentImage('16:9')">
-            <span class="text-gray-500 text-sm">Drop image here</span>
+            <span class="text-gray-500 text-sm">Drop image or click <i class="fas fa-upload"></i> to upload</span>
           </div>
         </div>
         <div>
           <p class="text-sm text-gray-400 mb-2 flex items-center gap-2">
             <span class="w-3 h-3 rounded-full bg-purple-500"></span>
             9:16 <span class="text-xs text-gray-500">(TikTok/Reels)</span>
+            <button onclick="event.stopPropagation(); document.getElementById('fileInput9x16').click()" class="ml-auto text-xs text-gray-500 hover:text-purple-400" title="Upload from computer">
+              <i class="fas fa-upload"></i>
+            </button>
           </p>
+          <input type="file" id="fileInput9x16" accept="image/*" class="hidden" onchange="handleFileUpload(event, '9:16')">
           <div id="image9x16" class="image-drop-zone content-image-clickable"
                style="min-height: 220px;"
                ondragover="handleImageDragOver(event)"
                ondragleave="handleImageDragLeave(event)"
-               ondrop="handleImageDrop(event, '9:16')"
+               ondrop="handleContentImageDrop(event, '9:16')"
                onclick="openContentImage('9:16')">
-            <span class="text-gray-500 text-sm">Drop image here</span>
+            <span class="text-gray-500 text-sm">Drop image or click <i class="fas fa-upload"></i> to upload</span>
           </div>
         </div>
         <div>
           <p class="text-sm text-gray-400 mb-2 flex items-center gap-2">
             <span class="w-3 h-3 rounded-full bg-green-500"></span>
             1:1 <span class="text-xs text-gray-500">(Instagram/FB)</span>
+            <button onclick="event.stopPropagation(); document.getElementById('fileInput1x1').click()" class="ml-auto text-xs text-gray-500 hover:text-green-400" title="Upload from computer">
+              <i class="fas fa-upload"></i>
+            </button>
           </p>
+          <input type="file" id="fileInput1x1" accept="image/*" class="hidden" onchange="handleFileUpload(event, '1:1')">
           <div id="image1x1" class="image-drop-zone content-image-clickable"
                style="min-height: 220px;"
                ondragover="handleImageDragOver(event)"
                ondragleave="handleImageDragLeave(event)"
-               ondrop="handleImageDrop(event, '1:1')"
+               ondrop="handleContentImageDrop(event, '1:1')"
                onclick="openContentImage('1:1')">
-            <span class="text-gray-500 text-sm">Drop image here</span>
+            <span class="text-gray-500 text-sm">Drop image or click <i class="fas fa-upload"></i> to upload</span>
           </div>
+        </div>
+      </div>
+      
+      <!-- Resize status -->
+      <div id="resizeStatus" class="hidden mt-4 p-3 rounded-lg bg-purple-900/30 border border-purple-500/30">
+        <div class="flex items-center gap-2 text-sm text-purple-300">
+          <i class="fas fa-spinner fa-spin"></i>
+          <span id="resizeStatusText">Resizing images...</span>
         </div>
       </div>
     </div>
@@ -1244,13 +1286,13 @@ var vt=Object.defineProperty;var Ne=e=>{throw TypeError(e)};var yt=(e,t,a)=>t in
     
     const referenceCategories = [
       { id: 'face', name: 'Face', icon: 'fa-user-circle', default: 'https://iili.io/fM9hV6B.png', order: 1 },
-      { id: 'custom', name: 'Custom', icon: 'fa-magic', default: '', order: 2 },
-      { id: 'pose', name: 'Pose', icon: 'fa-walking', default: '', order: 3 },
-      { id: 'outfit', name: 'Outfit', icon: 'fa-tshirt', default: '', order: 4 },
-      { id: 'background', name: 'Background', icon: 'fa-image', default: '', order: 5 },
-      { id: 'props', name: 'Props', icon: 'fa-cube', default: '', order: 6 },
-      { id: 'mood', name: 'Mood', icon: 'fa-palette', default: '', order: 7 },
-      { id: 'logo', name: 'Logo', icon: 'fa-crown', default: 'https://iili.io/fEiEfUB.png', order: 8 }
+      { id: 'outfit', name: 'Outfit', icon: 'fa-tshirt', default: '', order: 2 },
+      { id: 'background', name: 'Background', icon: 'fa-image', default: '', order: 3 },
+      { id: 'logo', name: 'Logo', icon: 'fa-crown', default: 'https://iili.io/fEiEfUB.png', order: 4 },
+      { id: 'props', name: 'Props', icon: 'fa-cube', default: '', order: 5 },
+      { id: 'custom', name: 'Custom', icon: 'fa-magic', default: '', order: 6 },
+      { id: 'pose', name: 'Pose', icon: 'fa-walking', default: '', order: 7 },
+      { id: 'mood', name: 'Mood', icon: 'fa-palette', default: '', order: 8 }
     ];
 
     // Fields to skip/handle specially
@@ -3428,6 +3470,7 @@ var vt=Object.defineProperty;var Ne=e=>{throw TypeError(e)};var yt=(e,t,a)=>t in
       event.currentTarget.classList.remove('drag-over');
     }
 
+    // Original handler for simple URL drops (from Generation History)
     async function handleImageDrop(event, aspectRatio) {
       event.preventDefault();
       event.currentTarget.classList.remove('drag-over');
@@ -3436,6 +3479,95 @@ var vt=Object.defineProperty;var Ne=e=>{throw TypeError(e)};var yt=(e,t,a)=>t in
       if (!imageUrl) return;
 
       setContentImage(aspectRatio, imageUrl);
+    }
+    
+    // Enhanced handler for Content Images - handles files, URLs, and external images
+    async function handleContentImageDrop(event, aspectRatio) {
+      event.preventDefault();
+      event.currentTarget.classList.remove('drag-over');
+      
+      // Check for files first (dragged from computer)
+      if (event.dataTransfer.files && event.dataTransfer.files.length > 0) {
+        const file = event.dataTransfer.files[0];
+        if (file.type.startsWith('image/')) {
+          await uploadAndSetImage(file, aspectRatio);
+          return;
+        }
+      }
+      
+      // Check for URL (dragged from browser or Generation History)
+      const imageUrl = event.dataTransfer.getData('text/plain');
+      if (imageUrl && (imageUrl.startsWith('http') || imageUrl.startsWith('data:'))) {
+        setContentImage(aspectRatio, imageUrl);
+        return;
+      }
+      
+      // Check for HTML with image (dragged from web page)
+      const html = event.dataTransfer.getData('text/html');
+      if (html) {
+        const match = html.match(/src=["']([^"']+)["']/);
+        if (match && match[1]) {
+          setContentImage(aspectRatio, match[1]);
+          return;
+        }
+      }
+    }
+    
+    // Handle file input upload
+    async function handleFileUpload(event, aspectRatio) {
+      const file = event.target.files[0];
+      if (file && file.type.startsWith('image/')) {
+        await uploadAndSetImage(file, aspectRatio);
+      }
+      // Reset file input so same file can be selected again
+      event.target.value = '';
+    }
+    
+    // Upload file and set as content image
+    async function uploadAndSetImage(file, aspectRatio) {
+      const containerId = 'image' + aspectRatio.replace(':', 'x');
+      const container = document.getElementById(containerId);
+      
+      // Show loading state
+      container.innerHTML = '<div class="flex flex-col items-center gap-2"><i class="fas fa-spinner fa-spin text-2xl text-amber-500"></i><span class="text-xs text-gray-400">Uploading...</span></div>';
+      
+      try {
+        // Convert file to base64
+        const base64 = await fileToBase64(file);
+        
+        // Upload to freeimage.host
+        const uploadRes = await fetch('/api/upload-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ base64Image: base64 })
+        });
+        const uploadData = await uploadRes.json();
+        
+        if (uploadData.image?.url) {
+          setContentImage(aspectRatio, uploadData.image.url);
+        } else {
+          throw new Error('Upload failed');
+        }
+      } catch (err) {
+        console.error('Error uploading image:', err);
+        container.innerHTML = '<span class="text-red-400 text-sm">Upload failed - try again</span>';
+        setTimeout(() => {
+          container.innerHTML = '<span class="text-gray-500 text-sm">Drop image or click <i class="fas fa-upload"></i> to upload</span>';
+        }, 2000);
+      }
+    }
+    
+    // Convert file to base64
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64 = reader.result.split(',')[1]; // Remove data:image/...;base64, prefix
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
     }
     
     // Set content image with X button to remove
@@ -3452,7 +3584,7 @@ var vt=Object.defineProperty;var Ne=e=>{throw TypeError(e)};var yt=(e,t,a)=>t in
       
       contentImages[aspectRatio] = imageUrl;
 
-      if (currentRecordId && aspectRatio === '16:9') {
+      if (currentRecordId) {
         showSaveIndicator();
       }
     }
@@ -3461,12 +3593,109 @@ var vt=Object.defineProperty;var Ne=e=>{throw TypeError(e)};var yt=(e,t,a)=>t in
     function clearContentImage(aspectRatio) {
       const containerId = 'image' + aspectRatio.replace(':', 'x');
       const container = document.getElementById(containerId);
-      container.innerHTML = '<span class="text-gray-500 text-sm">Drop image here</span>';
+      container.innerHTML = '<span class="text-gray-500 text-sm">Drop image or click <i class="fas fa-upload"></i> to upload</span>';
       container.classList.remove('has-image');
       
       contentImages[aspectRatio] = null;
       
       showSaveIndicator();
+    }
+    
+    // ========================================
+    // RESIZE TO ALL SIZES
+    // ========================================
+    function toggleResizeDropdown() {
+      const dropdown = document.getElementById('resizeDropdown');
+      dropdown.classList.toggle('hidden');
+      
+      // Close dropdown when clicking outside
+      if (!dropdown.classList.contains('hidden')) {
+        setTimeout(() => {
+          document.addEventListener('click', closeResizeDropdown, { once: true });
+        }, 10);
+      }
+    }
+    
+    function closeResizeDropdown(event) {
+      const dropdown = document.getElementById('resizeDropdown');
+      const btn = document.getElementById('resizeDropdownBtn');
+      if (!dropdown.contains(event.target) && !btn.contains(event.target)) {
+        dropdown.classList.add('hidden');
+      }
+    }
+    
+    async function resizeToAllSizes(method) {
+      // Close dropdown
+      document.getElementById('resizeDropdown').classList.add('hidden');
+      
+      // Find which image we have to use as source
+      // Priority: 16:9 > 9:16 > 1:1
+      let sourceUrl = contentImages['16:9'] || contentImages['9:16'] || contentImages['1:1'];
+      let sourceRatio = contentImages['16:9'] ? '16:9' : (contentImages['9:16'] ? '9:16' : '1:1');
+      
+      if (!sourceUrl) {
+        alert('Please add an image to any slot first, then resize to other sizes.');
+        return;
+      }
+      
+      // Show status
+      const statusDiv = document.getElementById('resizeStatus');
+      const statusText = document.getElementById('resizeStatusText');
+      statusDiv.classList.remove('hidden');
+      
+      // Determine which sizes to generate
+      const allRatios = ['16:9', '9:16', '1:1'];
+      const sizesToGenerate = allRatios.filter(r => r !== sourceRatio || !contentImages[r]);
+      
+      try {
+        for (const targetRatio of sizesToGenerate) {
+          if (contentImages[targetRatio] && targetRatio === sourceRatio) continue; // Skip source
+          
+          statusText.textContent = method === 'ai' 
+            ? 'AI generating ' + targetRatio + '...' 
+            : 'Cropping to ' + targetRatio + '...';
+          
+          let resultUrl;
+          
+          if (method === 'ai') {
+            // Use Nano Banana to regenerate
+            const prompt = 'Recreate this exact same scene, person, outfit, and lighting. Keep EVERYTHING identical - same composition, same pose, same expression, same clothing, same background, same mood. Do NOT change any details.';
+            resultUrl = await generateImageForRatio(sourceUrl, prompt, targetRatio);
+          } else {
+            // Use canvas to crop
+            resultUrl = await cropImageToRatio(sourceUrl, targetRatio);
+          }
+          
+          // Check if headline text should be added
+          const addHeadlineText = document.getElementById('addHeadlineText')?.checked;
+          const shortHeadline = document.getElementById('shortHeadline')?.value?.trim();
+          
+          if (addHeadlineText && shortHeadline) {
+            statusText.textContent = 'Adding text to ' + targetRatio + '...';
+            try {
+              resultUrl = await addTextOverlayWithZImage(resultUrl, shortHeadline, targetRatio);
+            } catch (err) {
+              console.error('Error adding text overlay:', err);
+            }
+          }
+          
+          setContentImage(targetRatio, resultUrl);
+          addToHistory(resultUrl, 'Resized from ' + sourceRatio + ' to ' + targetRatio);
+        }
+        
+        statusText.textContent = 'All sizes created!';
+        setTimeout(() => statusDiv.classList.add('hidden'), 2000);
+        
+        // Auto-save
+        if (currentRecordId && currentBase && currentTable) {
+          await saveImagesToAirtable();
+        }
+        
+      } catch (err) {
+        console.error('Error resizing:', err);
+        statusText.textContent = 'Error: ' + err.message;
+        setTimeout(() => statusDiv.classList.add('hidden'), 3000);
+      }
     }
 
     // ========================================
@@ -4066,4 +4295,4 @@ var vt=Object.defineProperty;var Ne=e=>{throw TypeError(e)};var yt=(e,t,a)=>t in
   <\/script>
 </body>
 </html>
-  `));const We=new mt,aa=Object.assign({"/src/index.tsx":k});let pt=!1;for(const[,e]of Object.entries(aa))e&&(We.route("/",e),We.notFound(e.notFoundHandler),pt=!0);if(!pt)throw new Error("Can't import modules from ['/src/index.tsx','/app/server.ts']");export{We as default};
+  `));const We=new ht,aa=Object.assign({"/src/index.tsx":R});let pt=!1;for(const[,e]of Object.entries(aa))e&&(We.route("/",e),We.notFound(e.notFoundHandler),pt=!0);if(!pt)throw new Error("Can't import modules from ['/src/index.tsx','/app/server.ts']");export{We as default};

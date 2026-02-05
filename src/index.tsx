@@ -931,10 +931,10 @@ app.get('/', (c) => {
         </h2>
         <div class="flex items-center gap-3">
           <div id="processingOrder" class="text-xs text-amber-500 font-mono hidden md:block"></div>
-          <i id="refLibraryToggle" class="fas fa-chevron-down text-gray-400 transition-transform"></i>
+          <i id="refLibraryToggle" class="fas fa-chevron-down text-gray-400 transition-transform" style="transform: rotate(180deg)"></i>
         </div>
       </div>
-      <div id="referenceLibraryContent" class="hidden mt-4">
+      <div id="referenceLibraryContent" class="mt-4">
         <p class="text-xs text-gray-400 mb-4">Each reference type has 3 size variants (16:9, 9:16, 1:1) for aspect-ratio-specific generation.</p>
         <div id="referenceGridExpanded" class="space-y-4"></div>
       </div>
@@ -1061,15 +1061,37 @@ app.get('/', (c) => {
         <h3 class="text-lg font-semibold flex items-center gap-2">
           <i class="fas fa-images text-amber-500"></i>
           Content Images
-          <span class="text-xs text-gray-400 ml-2">(click to view • drop to add)</span>
+          <span class="text-xs text-gray-400 ml-2">(drag files, URLs, or history images • click to view)</span>
         </h3>
         <div class="flex items-center gap-3">
-          <button onclick="createAllSizes()" 
-                  class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2"
-                  title="Uses your approved image as reference to generate 9:16 and 1:1 versions">
-            <i class="fas fa-magic"></i>
-            Generate 9:16 & 1:1
-          </button>
+          <!-- Resize dropdown -->
+          <div class="relative">
+            <button id="resizeDropdownBtn" onclick="toggleResizeDropdown()" 
+                    class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2">
+              <i class="fas fa-expand-arrows-alt"></i>
+              Resize to All
+              <i class="fas fa-chevron-down text-xs"></i>
+            </button>
+            <div id="resizeDropdown" class="hidden absolute right-0 mt-2 w-64 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50">
+              <div class="p-2">
+                <p class="text-xs text-gray-400 px-3 py-2">Choose resize method:</p>
+                <button onclick="resizeToAllSizes('ai')" class="w-full text-left px-3 py-2 hover:bg-gray-700 rounded-lg flex items-center gap-2 text-sm">
+                  <i class="fas fa-magic text-purple-400"></i>
+                  <div>
+                    <div class="font-medium">AI Regenerate</div>
+                    <div class="text-xs text-gray-400">Best quality, uses Nano Banana (~$0.09/image)</div>
+                  </div>
+                </button>
+                <button onclick="resizeToAllSizes('crop')" class="w-full text-left px-3 py-2 hover:bg-gray-700 rounded-lg flex items-center gap-2 text-sm">
+                  <i class="fas fa-crop-alt text-green-400"></i>
+                  <div>
+                    <div class="font-medium">Smart Crop</div>
+                    <div class="text-xs text-gray-400">Fast, free, center-crops to fit ratio</div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
           <button id="saveImagesToAirtableBtn" onclick="saveImagesToAirtable()" 
                   class="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2">
             <i class="fas fa-cloud-upload-alt"></i>
@@ -1088,43 +1110,63 @@ app.get('/', (c) => {
           <p class="text-sm text-gray-400 mb-2 flex items-center gap-2">
             <span class="w-3 h-3 rounded-full bg-amber-500"></span>
             16:9 <span class="text-xs text-gray-500">(YouTube/Twitter)</span>
+            <button onclick="event.stopPropagation(); document.getElementById('fileInput16x9').click()" class="ml-auto text-xs text-gray-500 hover:text-amber-400" title="Upload from computer">
+              <i class="fas fa-upload"></i>
+            </button>
           </p>
+          <input type="file" id="fileInput16x9" accept="image/*" class="hidden" onchange="handleFileUpload(event, '16:9')">
           <div id="image16x9" class="image-drop-zone content-image-clickable"
                style="min-height: 220px;"
                ondragover="handleImageDragOver(event)"
                ondragleave="handleImageDragLeave(event)"
-               ondrop="handleImageDrop(event, '16:9')"
+               ondrop="handleContentImageDrop(event, '16:9')"
                onclick="openContentImage('16:9')">
-            <span class="text-gray-500 text-sm">Drop image here</span>
+            <span class="text-gray-500 text-sm">Drop image or click <i class="fas fa-upload"></i> to upload</span>
           </div>
         </div>
         <div>
           <p class="text-sm text-gray-400 mb-2 flex items-center gap-2">
             <span class="w-3 h-3 rounded-full bg-purple-500"></span>
             9:16 <span class="text-xs text-gray-500">(TikTok/Reels)</span>
+            <button onclick="event.stopPropagation(); document.getElementById('fileInput9x16').click()" class="ml-auto text-xs text-gray-500 hover:text-purple-400" title="Upload from computer">
+              <i class="fas fa-upload"></i>
+            </button>
           </p>
+          <input type="file" id="fileInput9x16" accept="image/*" class="hidden" onchange="handleFileUpload(event, '9:16')">
           <div id="image9x16" class="image-drop-zone content-image-clickable"
                style="min-height: 220px;"
                ondragover="handleImageDragOver(event)"
                ondragleave="handleImageDragLeave(event)"
-               ondrop="handleImageDrop(event, '9:16')"
+               ondrop="handleContentImageDrop(event, '9:16')"
                onclick="openContentImage('9:16')">
-            <span class="text-gray-500 text-sm">Drop image here</span>
+            <span class="text-gray-500 text-sm">Drop image or click <i class="fas fa-upload"></i> to upload</span>
           </div>
         </div>
         <div>
           <p class="text-sm text-gray-400 mb-2 flex items-center gap-2">
             <span class="w-3 h-3 rounded-full bg-green-500"></span>
             1:1 <span class="text-xs text-gray-500">(Instagram/FB)</span>
+            <button onclick="event.stopPropagation(); document.getElementById('fileInput1x1').click()" class="ml-auto text-xs text-gray-500 hover:text-green-400" title="Upload from computer">
+              <i class="fas fa-upload"></i>
+            </button>
           </p>
+          <input type="file" id="fileInput1x1" accept="image/*" class="hidden" onchange="handleFileUpload(event, '1:1')">
           <div id="image1x1" class="image-drop-zone content-image-clickable"
                style="min-height: 220px;"
                ondragover="handleImageDragOver(event)"
                ondragleave="handleImageDragLeave(event)"
-               ondrop="handleImageDrop(event, '1:1')"
+               ondrop="handleContentImageDrop(event, '1:1')"
                onclick="openContentImage('1:1')">
-            <span class="text-gray-500 text-sm">Drop image here</span>
+            <span class="text-gray-500 text-sm">Drop image or click <i class="fas fa-upload"></i> to upload</span>
           </div>
+        </div>
+      </div>
+      
+      <!-- Resize status -->
+      <div id="resizeStatus" class="hidden mt-4 p-3 rounded-lg bg-purple-900/30 border border-purple-500/30">
+        <div class="flex items-center gap-2 text-sm text-purple-300">
+          <i class="fas fa-spinner fa-spin"></i>
+          <span id="resizeStatusText">Resizing images...</span>
         </div>
       </div>
     </div>
@@ -1484,13 +1526,13 @@ app.get('/', (c) => {
     
     const referenceCategories = [
       { id: 'face', name: 'Face', icon: 'fa-user-circle', default: 'https://iili.io/fM9hV6B.png', order: 1 },
-      { id: 'custom', name: 'Custom', icon: 'fa-magic', default: '', order: 2 },
-      { id: 'pose', name: 'Pose', icon: 'fa-walking', default: '', order: 3 },
-      { id: 'outfit', name: 'Outfit', icon: 'fa-tshirt', default: '', order: 4 },
-      { id: 'background', name: 'Background', icon: 'fa-image', default: '', order: 5 },
-      { id: 'props', name: 'Props', icon: 'fa-cube', default: '', order: 6 },
-      { id: 'mood', name: 'Mood', icon: 'fa-palette', default: '', order: 7 },
-      { id: 'logo', name: 'Logo', icon: 'fa-crown', default: 'https://iili.io/fEiEfUB.png', order: 8 }
+      { id: 'outfit', name: 'Outfit', icon: 'fa-tshirt', default: '', order: 2 },
+      { id: 'background', name: 'Background', icon: 'fa-image', default: '', order: 3 },
+      { id: 'logo', name: 'Logo', icon: 'fa-crown', default: 'https://iili.io/fEiEfUB.png', order: 4 },
+      { id: 'props', name: 'Props', icon: 'fa-cube', default: '', order: 5 },
+      { id: 'custom', name: 'Custom', icon: 'fa-magic', default: '', order: 6 },
+      { id: 'pose', name: 'Pose', icon: 'fa-walking', default: '', order: 7 },
+      { id: 'mood', name: 'Mood', icon: 'fa-palette', default: '', order: 8 }
     ];
 
     // Fields to skip/handle specially
@@ -3668,6 +3710,7 @@ app.get('/', (c) => {
       event.currentTarget.classList.remove('drag-over');
     }
 
+    // Original handler for simple URL drops (from Generation History)
     async function handleImageDrop(event, aspectRatio) {
       event.preventDefault();
       event.currentTarget.classList.remove('drag-over');
@@ -3676,6 +3719,95 @@ app.get('/', (c) => {
       if (!imageUrl) return;
 
       setContentImage(aspectRatio, imageUrl);
+    }
+    
+    // Enhanced handler for Content Images - handles files, URLs, and external images
+    async function handleContentImageDrop(event, aspectRatio) {
+      event.preventDefault();
+      event.currentTarget.classList.remove('drag-over');
+      
+      // Check for files first (dragged from computer)
+      if (event.dataTransfer.files && event.dataTransfer.files.length > 0) {
+        const file = event.dataTransfer.files[0];
+        if (file.type.startsWith('image/')) {
+          await uploadAndSetImage(file, aspectRatio);
+          return;
+        }
+      }
+      
+      // Check for URL (dragged from browser or Generation History)
+      const imageUrl = event.dataTransfer.getData('text/plain');
+      if (imageUrl && (imageUrl.startsWith('http') || imageUrl.startsWith('data:'))) {
+        setContentImage(aspectRatio, imageUrl);
+        return;
+      }
+      
+      // Check for HTML with image (dragged from web page)
+      const html = event.dataTransfer.getData('text/html');
+      if (html) {
+        const match = html.match(/src=["']([^"']+)["']/);
+        if (match && match[1]) {
+          setContentImage(aspectRatio, match[1]);
+          return;
+        }
+      }
+    }
+    
+    // Handle file input upload
+    async function handleFileUpload(event, aspectRatio) {
+      const file = event.target.files[0];
+      if (file && file.type.startsWith('image/')) {
+        await uploadAndSetImage(file, aspectRatio);
+      }
+      // Reset file input so same file can be selected again
+      event.target.value = '';
+    }
+    
+    // Upload file and set as content image
+    async function uploadAndSetImage(file, aspectRatio) {
+      const containerId = 'image' + aspectRatio.replace(':', 'x');
+      const container = document.getElementById(containerId);
+      
+      // Show loading state
+      container.innerHTML = '<div class="flex flex-col items-center gap-2"><i class="fas fa-spinner fa-spin text-2xl text-amber-500"></i><span class="text-xs text-gray-400">Uploading...</span></div>';
+      
+      try {
+        // Convert file to base64
+        const base64 = await fileToBase64(file);
+        
+        // Upload to freeimage.host
+        const uploadRes = await fetch('/api/upload-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ base64Image: base64 })
+        });
+        const uploadData = await uploadRes.json();
+        
+        if (uploadData.image?.url) {
+          setContentImage(aspectRatio, uploadData.image.url);
+        } else {
+          throw new Error('Upload failed');
+        }
+      } catch (err) {
+        console.error('Error uploading image:', err);
+        container.innerHTML = '<span class="text-red-400 text-sm">Upload failed - try again</span>';
+        setTimeout(() => {
+          container.innerHTML = '<span class="text-gray-500 text-sm">Drop image or click <i class="fas fa-upload"></i> to upload</span>';
+        }, 2000);
+      }
+    }
+    
+    // Convert file to base64
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64 = reader.result.split(',')[1]; // Remove data:image/...;base64, prefix
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
     }
     
     // Set content image with X button to remove
@@ -3692,7 +3824,7 @@ app.get('/', (c) => {
       
       contentImages[aspectRatio] = imageUrl;
 
-      if (currentRecordId && aspectRatio === '16:9') {
+      if (currentRecordId) {
         showSaveIndicator();
       }
     }
@@ -3701,12 +3833,109 @@ app.get('/', (c) => {
     function clearContentImage(aspectRatio) {
       const containerId = 'image' + aspectRatio.replace(':', 'x');
       const container = document.getElementById(containerId);
-      container.innerHTML = '<span class="text-gray-500 text-sm">Drop image here</span>';
+      container.innerHTML = '<span class="text-gray-500 text-sm">Drop image or click <i class="fas fa-upload"></i> to upload</span>';
       container.classList.remove('has-image');
       
       contentImages[aspectRatio] = null;
       
       showSaveIndicator();
+    }
+    
+    // ========================================
+    // RESIZE TO ALL SIZES
+    // ========================================
+    function toggleResizeDropdown() {
+      const dropdown = document.getElementById('resizeDropdown');
+      dropdown.classList.toggle('hidden');
+      
+      // Close dropdown when clicking outside
+      if (!dropdown.classList.contains('hidden')) {
+        setTimeout(() => {
+          document.addEventListener('click', closeResizeDropdown, { once: true });
+        }, 10);
+      }
+    }
+    
+    function closeResizeDropdown(event) {
+      const dropdown = document.getElementById('resizeDropdown');
+      const btn = document.getElementById('resizeDropdownBtn');
+      if (!dropdown.contains(event.target) && !btn.contains(event.target)) {
+        dropdown.classList.add('hidden');
+      }
+    }
+    
+    async function resizeToAllSizes(method) {
+      // Close dropdown
+      document.getElementById('resizeDropdown').classList.add('hidden');
+      
+      // Find which image we have to use as source
+      // Priority: 16:9 > 9:16 > 1:1
+      let sourceUrl = contentImages['16:9'] || contentImages['9:16'] || contentImages['1:1'];
+      let sourceRatio = contentImages['16:9'] ? '16:9' : (contentImages['9:16'] ? '9:16' : '1:1');
+      
+      if (!sourceUrl) {
+        alert('Please add an image to any slot first, then resize to other sizes.');
+        return;
+      }
+      
+      // Show status
+      const statusDiv = document.getElementById('resizeStatus');
+      const statusText = document.getElementById('resizeStatusText');
+      statusDiv.classList.remove('hidden');
+      
+      // Determine which sizes to generate
+      const allRatios = ['16:9', '9:16', '1:1'];
+      const sizesToGenerate = allRatios.filter(r => r !== sourceRatio || !contentImages[r]);
+      
+      try {
+        for (const targetRatio of sizesToGenerate) {
+          if (contentImages[targetRatio] && targetRatio === sourceRatio) continue; // Skip source
+          
+          statusText.textContent = method === 'ai' 
+            ? 'AI generating ' + targetRatio + '...' 
+            : 'Cropping to ' + targetRatio + '...';
+          
+          let resultUrl;
+          
+          if (method === 'ai') {
+            // Use Nano Banana to regenerate
+            const prompt = 'Recreate this exact same scene, person, outfit, and lighting. Keep EVERYTHING identical - same composition, same pose, same expression, same clothing, same background, same mood. Do NOT change any details.';
+            resultUrl = await generateImageForRatio(sourceUrl, prompt, targetRatio);
+          } else {
+            // Use canvas to crop
+            resultUrl = await cropImageToRatio(sourceUrl, targetRatio);
+          }
+          
+          // Check if headline text should be added
+          const addHeadlineText = document.getElementById('addHeadlineText')?.checked;
+          const shortHeadline = document.getElementById('shortHeadline')?.value?.trim();
+          
+          if (addHeadlineText && shortHeadline) {
+            statusText.textContent = 'Adding text to ' + targetRatio + '...';
+            try {
+              resultUrl = await addTextOverlayWithZImage(resultUrl, shortHeadline, targetRatio);
+            } catch (err) {
+              console.error('Error adding text overlay:', err);
+            }
+          }
+          
+          setContentImage(targetRatio, resultUrl);
+          addToHistory(resultUrl, 'Resized from ' + sourceRatio + ' to ' + targetRatio);
+        }
+        
+        statusText.textContent = 'All sizes created!';
+        setTimeout(() => statusDiv.classList.add('hidden'), 2000);
+        
+        // Auto-save
+        if (currentRecordId && currentBase && currentTable) {
+          await saveImagesToAirtable();
+        }
+        
+      } catch (err) {
+        console.error('Error resizing:', err);
+        statusText.textContent = 'Error: ' + err.message;
+        setTimeout(() => statusDiv.classList.add('hidden'), 3000);
+      }
     }
 
     // ========================================
