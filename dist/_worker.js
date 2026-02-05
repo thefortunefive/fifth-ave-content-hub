@@ -874,7 +874,7 @@ var vt=Object.defineProperty;var Ne=e=>{throw TypeError(e)};var yt=(e,t,a)=>t in
               <i class="fas fa-upload"></i>
             </button>
           </p>
-          <input type="file" id="fileInput16x9" accept="image/*" class="hidden" onchange="handleFileUpload(event, '16:9')">
+          <input type="file" id="fileInput16x9" accept="image/*" class="hidden" onchange="handleContentFileUpload(event, '16:9')">
           <div id="image16x9" class="image-drop-zone content-image-clickable"
                style="min-height: 220px;"
                ondragover="handleImageDragOver(event)"
@@ -892,7 +892,7 @@ var vt=Object.defineProperty;var Ne=e=>{throw TypeError(e)};var yt=(e,t,a)=>t in
               <i class="fas fa-upload"></i>
             </button>
           </p>
-          <input type="file" id="fileInput9x16" accept="image/*" class="hidden" onchange="handleFileUpload(event, '9:16')">
+          <input type="file" id="fileInput9x16" accept="image/*" class="hidden" onchange="handleContentFileUpload(event, '9:16')">
           <div id="image9x16" class="image-drop-zone content-image-clickable"
                style="min-height: 220px;"
                ondragover="handleImageDragOver(event)"
@@ -910,7 +910,7 @@ var vt=Object.defineProperty;var Ne=e=>{throw TypeError(e)};var yt=(e,t,a)=>t in
               <i class="fas fa-upload"></i>
             </button>
           </p>
-          <input type="file" id="fileInput1x1" accept="image/*" class="hidden" onchange="handleFileUpload(event, '1:1')">
+          <input type="file" id="fileInput1x1" accept="image/*" class="hidden" onchange="handleContentFileUpload(event, '1:1')">
           <div id="image1x1" class="image-drop-zone content-image-clickable"
                style="min-height: 220px;"
                ondragover="handleImageDragOver(event)"
@@ -3514,8 +3514,8 @@ var vt=Object.defineProperty;var Ne=e=>{throw TypeError(e)};var yt=(e,t,a)=>t in
       }
     }
     
-    // Handle file input upload
-    async function handleFileUpload(event, aspectRatio) {
+    // Handle file input upload for content images
+    async function handleContentFileUpload(event, aspectRatio) {
       const file = event.target.files[0];
       if (file && file.type.startsWith('image/')) {
         await uploadAndSetImage(file, aspectRatio);
