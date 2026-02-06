@@ -1,13 +1,7 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 
-// Type bindings for environment variables
-type Bindings = {
-  PERPLEXITY_API_KEY?: string
-  OPENAI_API_KEY?: string
-}
-
-const app = new Hono<{ Bindings: Bindings }>()
+const app = new Hono()
 
 app.use('/api/*', cors())
 
@@ -291,167 +285,49 @@ const VALID_SOCIAL_CHANNELS = ['Twitter', 'LinkedIn', 'Blog', 'Instagram', 'Face
 const EXTENSION_AIRTABLE_TOKEN = 'patzmYCtUSKROFbsw.ebdd70b78b2f422fd5a6da1aa867be11f690a795117c9e13d9d4747708018921'
 
 // ============================================
-// INSTANT CONTENT PROCESSING ENGINE
+// INSTANT PROCESSING: n8n Webhook Triggers
 // ============================================
 
-// Perplexity: Research and enrich a URL
-async function enrichFromUrl(sourceURL: string, sourceHeadline: string, sourceSummary: string, topic: string, perplexityKey: string): Promise<string> {
-  const topicLabel = topic === 'ai' ? 'AI/technology' : 'crypto'
-  
-  const res = await fetch('https://api.perplexity.ai/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${perplexityKey}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      model: 'sonar-pro',
-      messages: [{
-        role: 'user',
-        content: `You are a professional ${topicLabel} news researcher.\n\nGiven this article URL and headline, research and provide a comprehensive summary.\n\nURL: ${sourceURL}\nHEADLINE: ${sourceHeadline}\nUSER NOTES: ${sourceSummary || ''}\n\nTASK:\n1. Read and analyze the article at the URL\n2. Provide a detailed, factual summary\n3. Identify the key ${topicLabel} angle\n4. Explain why this matters\n\nReturn a detailed summary (3-5 paragraphs) that covers:\n- What happened (facts, data, quotes)\n- Why it matters for ${topicLabel}\n- Broader implications\n- Key takeaways\n\nWrite in clear, factual prose. No JSON needed - just a well-written report.`
-      }]
-    })
-  })
-  
-  const data: any = await res.json()
-  return data.choices?.[0]?.message?.content || ''
+// n8n webhook URLs for instant pickup processing
+const N8N_WEBHOOKS: Record<string, string> = {
+  crypto: 'https://fifthaveai.app.n8n.cloud/webhook/crypto-pickup',
+  ai: 'https://fifthaveai.app.n8n.cloud/webhook/ai-pickup'
 }
 
-// OpenAI: Generate image prompt
-async function generateImagePromptAI(sourceHeadline: string, research: string, topic: string, openaiKey: string): Promise<string> {
-  const systemPrompt = topic === 'ai' 
-    ? `You are "5th Ave Angel", a sharp AI/technology commentator and creative director.\n\nYour job is to create a detailed text-to-image prompt for an AI image generator.\n\nCRITICAL - CHARACTER REQUIREMENT:\nEvery image MUST feature "5th Ave Angel" — a professional woman in her mid-30s with long blonde hair, wearing elegant Ralph Lauren-style business attire.\n\nCATEGORY-SPECIFIC VISUAL THEMES:\n- ai_models: Futuristic tech labs, holographic displays, neural network visualizations\n- ai_regulation: Government buildings, courtrooms, official settings with tech elements\n- ai_workplace: Modern offices, productivity tools, human-AI collaboration scenes\n- ai_research: Research labs, scientific environments, breakthrough moment visuals\n- ai_products: Product launches, consumer tech, sleek modern environments\n- ai_ethics: Balanced scales imagery, human-centered tech, thoughtful compositions\n- ai_robotics: Robotics labs, humanoid robots, advanced manufacturing\n\nCONSTRAINTS:\n- Respond ONLY with valid JSON: {"image_prompt": "..."}\n- 2-4 sentences maximum\n- ALWAYS include the blonde woman as the main subject\n- Style: cinematic, editorial, professional, photorealistic, 16:9`
-    : `You are "5th Ave Angel", a sharp crypto commentator and creative director.\n\nYour job is to create a detailed text-to-image prompt for an AI image generator.\n\nCRITICAL - CHARACTER REQUIREMENT:\nEvery image MUST feature "5th Ave Angel" — a professional woman in her mid-30s with long blonde hair, wearing elegant Ralph Lauren-style business attire.\n\nCATEGORY-SPECIFIC VISUAL THEMES:\n- self_banking: Vaults, banks, physical cash, digital wallets, freedom imagery\n- bitcoin_adoption: Cities, government buildings, corporate offices, global map\n- crypto_regulation: Courtrooms, Capitol buildings, legal documents, gavels\n- infra_dev: Server rooms, blockchain visualizations, code screens, hardware\n- macro_market: Stock tickers, trading floors, economic charts, global finance\n\nCONSTRAINTS:\n- Respond ONLY with valid JSON: {"image_prompt": "..."}\n- 2-4 sentences maximum\n- ALWAYS include the blonde woman as the main subject\n- Style: cinematic, editorial, professional, photorealistic, 16:9`
-
-  const topicLabel = topic === 'ai' ? 'AI/technology' : 'crypto'
-  
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${openaiKey}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      temperature: 0.7,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: `HEADLINE: ${sourceHeadline}\n\nRESEARCH: ${research}\n\nCreate an image prompt featuring 5th Ave Angel in a scene related to this ${topicLabel} story.\n\nReturn ONLY: {"image_prompt": "A professional blonde woman in her mid-30s wearing [attire] [action] in [setting]. [Details]. [Lighting]. Cinematic, editorial, photorealistic, 16:9."}` }
-      ]
-    })
-  })
-  
-  const data: any = await res.json()
-  const content = data.choices?.[0]?.message?.content || ''
-  
-  // Parse the image prompt from JSON response
-  try {
-    const parsed = JSON.parse(content)
-    return parsed.image_prompt || ''
-  } catch {
-    const match = content.match(/"image_prompt"\s*:\s*"([^"]+)"/)
-    return match ? match[1] : content
-  }
-}
-
-// OpenAI: Generate all social media content
-async function generateSocialContent(sourceHeadline: string, research: string, topic: string, openaiKey: string): Promise<Record<string, string>> {
-  const topicLabel = topic === 'ai' ? 'AI technology' : 'crypto'
-  const persona = topic === 'ai'
-    ? `You are "5th Ave Angel" — a sharp, insightful AI technology commentator.\n\nYou speak clearly, confidently, and assume the audience is smart but busy.\nYou care about how AI impacts everyday people, businesses, and society — not just the tech industry hype cycle.`
-    : `You are "5th Ave Angel" — a sharp, no-BS crypto commentator.\n\nYou speak clearly, confidently, and assume the audience is smart but busy.\nYou care about self-banking, Bitcoin adoption, and real-world impact, not price noise.`
-
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${openaiKey}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      temperature: 0.7,
-      messages: [
-        {
-          role: 'system',
-          content: `${persona}\n\nYour job is to take a ${topicLabel} news story and create platform-specific social media content.\n\nRULES:\n- Always return valid JSON only, no markdown, no backticks, no explanation\n- Every field must be populated\n- Be direct, conversational, and insightful`
-        },
-        {
-          role: 'user',
-          content: `HEADLINE: ${sourceHeadline}\n\nRESEARCH:\n${research}\n\nCreate social media content. Return ONLY valid JSON:\n\n{\n  "rewrittenHeadline": "Punchy headline, max 90 characters",\n  "caption": "2-3 sentence hook",\n  "whyItMatters": "1-2 sentences on why a normal person should care",\n  "blogCopy": "3-4 paragraph blog post (400-600 words)",\n  "linkedinCopy": "Professional tone, 150-200 words with hashtags",\n  "facebookCopy": "Conversational, 100-150 words",\n  "instagramCopy": "Punchy, 80-125 words with hashtags",\n  "twitterCopy": "Max 280 characters, no hashtags",\n  "threadsCopy": "Conversational, 100-150 words, no hashtags",\n  "blueskyCopy": "Max 300 characters, no hashtags",\n  "shortScript": "30-45 second video script"\n}`
-        }
-      ]
-    })
-  })
-  
-  const data: any = await res.json()
-  const content = data.choices?.[0]?.message?.content || '{}'
+// Trigger the n8n pickup workflow immediately via webhook
+// Sends record data directly so n8n can process without re-fetching from Airtable
+async function triggerInstantPickup(topic: string, recordId: string, recordData: {
+  sourceURL: string
+  sourceHeadline: string
+  sourceSummary: string
+}): Promise<void> {
+  const webhookUrl = N8N_WEBHOOKS[topic]
+  if (!webhookUrl) return
   
   try {
-    return JSON.parse(content)
-  } catch {
-    const match = content.match(/\{[\s\S]*\}/)
-    return match ? JSON.parse(match[0]) : {}
-  }
-}
-
-// Update Airtable record with enriched content
-async function updateAirtableRecord(recordId: string, baseId: string, tableId: string, fields: Record<string, any>): Promise<void> {
-  await fetch(`https://api.airtable.com/v0/${baseId}/${tableId}/${recordId}`, {
-    method: 'PATCH',
-    headers: {
-      'Authorization': `Bearer ${EXTENSION_AIRTABLE_TOKEN}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ fields })
-  })
-}
-
-// Full instant processing pipeline
-async function processContentInstantly(
-  recordId: string,
-  sourceURL: string,
-  sourceHeadline: string,
-  sourceSummary: string,
-  topic: string,
-  baseId: string,
-  tableId: string,
-  perplexityKey: string,
-  openaiKey: string
-): Promise<void> {
-  try {
-    console.log(`[Instant Process] Starting for record ${recordId} (${topic})`)
+    // Wait 2 seconds for Airtable to fully index the new record
+    await new Promise(resolve => setTimeout(resolve, 2000))
     
-    // Step 1: Enrich from URL via Perplexity
-    console.log('[Instant Process] Step 1: Researching URL via Perplexity...')
-    const research = await enrichFromUrl(sourceURL, sourceHeadline, sourceSummary, topic, perplexityKey)
-    console.log(`[Instant Process] Research complete: ${research.length} chars`)
-    
-    // Step 2: Generate image prompt AND social content in parallel
-    console.log('[Instant Process] Step 2: Generating image prompt + social content in parallel...')
-    const [imagePrompt, socialContent] = await Promise.all([
-      generateImagePromptAI(sourceHeadline, research, topic, openaiKey),
-      generateSocialContent(sourceHeadline, research, topic, openaiKey)
-    ])
-    console.log(`[Instant Process] Image prompt: ${imagePrompt.length} chars`)
-    console.log(`[Instant Process] Social content fields: ${Object.keys(socialContent).length}`)
-    
-    // Step 3: Update Airtable record with all generated content
-    console.log('[Instant Process] Step 3: Saving all content to Airtable...')
-    const updateFields: Record<string, any> = {
-      imagePrompt: imagePrompt,
-      sourceSummary: research,
-      ...socialContent
-    }
-    
-    await updateAirtableRecord(recordId, baseId, tableId, updateFields)
-    console.log(`[Instant Process] DONE! Record ${recordId} fully enriched.`)
-    
+    console.log(`[Instant Pickup] Triggering ${topic} webhook for record ${recordId}`)
+    const res = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        recordId,
+        sourceURL: recordData.sourceURL,
+        sourceHeadline: recordData.sourceHeadline,
+        sourceSummary: recordData.sourceSummary,
+        topic,
+        triggeredAt: new Date().toISOString()
+      })
+    })
+    console.log(`[Instant Pickup] Webhook response: ${res.status}`)
   } catch (err: any) {
-    console.error(`[Instant Process] ERROR for record ${recordId}:`, err.message || err)
+    console.error(`[Instant Pickup] Webhook error:`, err.message)
   }
 }
 
-// API: Save URL from browser extension — with INSTANT content processing
+// API: Save URL from browser extension — with INSTANT n8n webhook processing
 app.post('/api/save', async (c) => {
   try {
     const { url, title, notes, platforms, topic } = await c.req.json()
@@ -515,40 +391,25 @@ app.post('/api/save', async (c) => {
       return c.json({ success: false, error: data.error.message || 'Airtable error' }, 500)
     }
     
-    // ===== INSTANT PROCESSING =====
-    // For crypto/ai topics, immediately enrich the record with research, image prompt, and social content
-    // This runs in the background — the extension gets an immediate response
-    const perplexityKey = c.env?.PERPLEXITY_API_KEY || ''
-    const openaiKey = c.env?.OPENAI_API_KEY || ''
+    // ===== INSTANT PROCESSING via n8n Webhook =====
+    // For crypto/ai topics, immediately trigger the n8n pickup workflow
+    // The workflow uses Perplexity + OpenAI credentials already stored in n8n
     let processingStarted = false
     
-    if ((selectedTopic === 'crypto' || selectedTopic === 'ai') && perplexityKey && openaiKey && data.id) {
+    if ((selectedTopic === 'crypto' || selectedTopic === 'ai') && data.id) {
       processingStarted = true
-      const recordId = data.id
-      const sourceURL = url
-      const sourceHeadline = title || ''
-      const sourceSummary = notes || ''
       
-      // Use waitUntil if available (Cloudflare Workers), otherwise fire-and-forget
-      const processingPromise = processContentInstantly(
-        recordId,
-        sourceURL,
-        sourceHeadline,
-        sourceSummary,
-        selectedTopic,
-        route.baseId,
-        route.tableId,
-        perplexityKey,
-        openaiKey
-      )
+      // Fire the webhook in the background - don't block the response
+      const webhookPromise = triggerInstantPickup(selectedTopic, data.id, {
+        sourceURL: url,
+        sourceHeadline: title || '',
+        sourceSummary: notes || ''
+      })
       
-      // In Cloudflare Workers, c.executionCtx.waitUntil() keeps the worker alive
-      // In dev/local mode, the promise will run but may not complete
       if (c.executionCtx && typeof c.executionCtx.waitUntil === 'function') {
-        c.executionCtx.waitUntil(processingPromise)
+        c.executionCtx.waitUntil(webhookPromise)
       } else {
-        // Local dev fallback: just let it run
-        processingPromise.catch(err => console.error('[Instant Process] Background error:', err))
+        webhookPromise.catch(err => console.error('[Instant Pickup] Background error:', err))
       }
     }
     
@@ -557,7 +418,7 @@ app.post('/api/save', async (c) => {
       record: data,
       topic: selectedTopic,
       table: selectedTopic === 'general' ? 'Content Pipeline' : (selectedTopic === 'crypto' ? 'Social Posts' : 'Social Posts - AI'),
-      processing: processingStarted ? 'started' : (selectedTopic === 'general' ? 'not_applicable' : 'no_api_keys')
+      processing: processingStarted ? 'started' : 'not_applicable'
     })
   } catch (err: any) {
     console.error('Save error:', err)
@@ -611,7 +472,7 @@ app.get('/api/process-status/:recordId', async (c) => {
   }
 })
 
-// API: Manually trigger processing for an existing record
+// API: Manually trigger processing for an existing record via n8n webhook
 app.post('/api/process', async (c) => {
   try {
     const { recordId, topic } = await c.req.json()
@@ -620,43 +481,12 @@ app.post('/api/process', async (c) => {
       return c.json({ error: 'recordId and topic are required' }, 400)
     }
     
-    const route = EXTENSION_ROUTES[topic]
-    if (!route || topic === 'general') {
+    if (topic === 'general') {
       return c.json({ error: 'Processing only available for crypto/ai topics' }, 400)
     }
     
-    const perplexityKey = c.env?.PERPLEXITY_API_KEY || ''
-    const openaiKey = c.env?.OPENAI_API_KEY || ''
-    
-    if (!perplexityKey || !openaiKey) {
-      return c.json({ error: 'API keys not configured. Set PERPLEXITY_API_KEY and OPENAI_API_KEY.' }, 500)
-    }
-    
-    // Fetch the record to get current data
-    const recordRes = await fetch(`https://api.airtable.com/v0/${route.baseId}/${route.tableId}/${recordId}`, {
-      headers: { 'Authorization': `Bearer ${EXTENSION_AIRTABLE_TOKEN}` }
-    })
-    const recordData: any = await recordRes.json()
-    const fields = recordData.fields || {}
-    
-    // Start processing
-    const processingPromise = processContentInstantly(
-      recordId,
-      fields.sourceURL || '',
-      fields.sourceHeadline || '',
-      fields.sourceSummary || '',
-      topic,
-      route.baseId,
-      route.tableId,
-      perplexityKey,
-      openaiKey
-    )
-    
-    if (c.executionCtx && typeof c.executionCtx.waitUntil === 'function') {
-      c.executionCtx.waitUntil(processingPromise)
-    } else {
-      processingPromise.catch(err => console.error('[Manual Process] Background error:', err))
-    }
+    // Trigger the n8n webhook
+    await triggerInstantPickup(topic, recordId)
     
     return c.json({ success: true, status: 'processing_started', recordId })
   } catch (err: any) {
