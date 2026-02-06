@@ -856,6 +856,9 @@ app.get('/', (c) => {
       <h1 class="text-xl font-bold">5th Ave Content Hub</h1>
     </div>
     <div class="flex items-center gap-4">
+      <span id="topicIndicator" class="text-sm px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 font-medium">
+        <i class="fab fa-bitcoin mr-1"></i>Crypto Mode
+      </span>
       <span id="connectionStatus" class="text-sm text-green-400">
         <i class="fas fa-check-circle mr-1"></i>Connected
       </span>
@@ -1582,7 +1585,7 @@ app.get('/', (c) => {
 
     // Generate image prompt based on headline and category
     function generateImagePrompt(headline, category) {
-      const settings = CATEGORY_SETTINGS[category] || CATEGORY_SETTINGS['default'];
+      const settings = getCategorySettings(category);
       const ratio = currentAspectRatio;
       
       // Check if outfit reference is set for current ratio - but NEVER copy exact outfit
@@ -1627,7 +1630,9 @@ app.get('/', (c) => {
       // Text will be added via canvas overlay - no text in base image
       const textInstructions = '\\n\\nIMPORTANT: No text anywhere in the image except the logo watermark if specified. No words, no letters, no signs, no screens with text, no headlines, no captions. Clean visual only - text overlay will be added programmatically later.';
       
-      const prompt = compositionGuide + 'Professional crypto news image featuring Angel, the 5th Ave Crypto educator and mentor - an elegant, confident woman ' + settings.setting + '.\\n\\n' +
+      const topicLabel = currentTopic === 'ai' ? 'AI and technology' : 'crypto';
+      const brandLabel = currentTopic === 'ai' ? '5th Ave AI' : '5th Ave Crypto';
+      const prompt = compositionGuide + 'Professional ' + topicLabel + ' news image featuring Angel, the ' + brandLabel + ' educator and mentor - an elegant, confident woman ' + settings.setting + '.\\n\\n' +
         'OUTFIT: ' + outfitDescription + '. She is looking directly at the camera with an approachable yet authoritative expression.' + customContext + '\\n\\n' +
         'IMPORTANT: Use the face reference for her face ONLY. Do NOT copy the exact clothing from any reference image - create a fresh, different outfit each time.\\n\\n' +
         'Visual context: ' + headlineContext + '\\n\\n' +
@@ -1739,7 +1744,30 @@ app.get('/', (c) => {
       const h = headline.toLowerCase();
       let context = [];
       
-      // Bitcoin/crypto related
+      if (currentTopic === 'ai') {
+        // AI-specific visual context
+        if (h.includes('gpt') || h.includes('chatgpt') || h.includes('openai')) context.push('conversational AI interface elements with chat bubbles');
+        if (h.includes('claude') || h.includes('anthropic')) context.push('clean, thoughtful AI interface design');
+        if (h.includes('gemini') || h.includes('google')) context.push('colorful AI visualization with Google-inspired palette');
+        if (h.includes('llm') || h.includes('language model') || h.includes('foundation model')) context.push('neural network visualization with interconnected nodes');
+        if (h.includes('robot') || h.includes('humanoid')) context.push('sleek robotic elements and mechanical components');
+        if (h.includes('autonomous') || h.includes('self-driving')) context.push('futuristic autonomous vehicle or drone imagery');
+        if (h.includes('image') || h.includes('video') || h.includes('generat')) context.push('creative AI-generated visual art elements');
+        if (h.includes('chip') || h.includes('nvidia') || h.includes('gpu') || h.includes('hardware')) context.push('advanced computing hardware with glowing circuits');
+        if (h.includes('regulation') || h.includes('govern') || h.includes('policy') || h.includes('law') || h.includes('ban')) context.push('formal policy/government setting with tech elements');
+        if (h.includes('safety') || h.includes('alignment') || h.includes('ethics') || h.includes('bias')) context.push('balanced harmony between technology and human values');
+        if (h.includes('job') || h.includes('work') || h.includes('employ') || h.includes('replac')) context.push('workplace transformation with human-AI collaboration');
+        if (h.includes('education') || h.includes('learn') || h.includes('school') || h.includes('student')) context.push('modern classroom with AI-enhanced learning tools');
+        if (h.includes('healthcare') || h.includes('medical') || h.includes('drug') || h.includes('diagnos')) context.push('medical AI interface with health data visualizations');
+        if (h.includes('agent') || h.includes('automat')) context.push('AI agent workflow with interconnected automated processes');
+        if (h.includes('open source') || h.includes('meta') || h.includes('llama')) context.push('community-driven open technology collaboration');
+        if (h.includes('startup') || h.includes('funding') || h.includes('billion') || h.includes('invest')) context.push('dynamic tech startup energy with growth indicators');
+        if (h.includes('breakthrough') || h.includes('discover') || h.includes('research')) context.push('scientific discovery atmosphere with eureka moment energy');
+        
+        return context.length > 0 ? context.join(', ') : 'general artificial intelligence and technology innovation theme';
+      }
+      
+      // Crypto-specific visual context (original)
       if (h.includes('bitcoin') || h.includes('btc')) context.push('Bitcoin imagery like gold coins or subtle orange accents');
       if (h.includes('ethereum') || h.includes('eth')) context.push('Ethereum-inspired purple/blue color accents');
       if (h.includes('crypto')) context.push('cryptocurrency visual elements');
@@ -1787,6 +1815,7 @@ app.get('/', (c) => {
     let saveTimeout = null;
     let contentImages = { '16:9': null, '9:16': null, '1:1': null };
     let expandedCategories = {}; // Track which categories are expanded
+    let currentTopic = 'crypto'; // 'crypto' or 'ai' - auto-detected from table name
 
     // ========================================
     // INITIALIZATION
@@ -1979,6 +2008,26 @@ app.get('/', (c) => {
       const hasSocialFields = tableFields.some(f => SOCIAL_FIELDS.includes(f.name));
       const socialSection = document.getElementById('socialContentSection');
       socialSection.classList.toggle('hidden', !hasSocialFields);
+      
+      // Auto-detect topic from table name
+      const tableName = (currentTable?.name || '').toLowerCase();
+      if (tableName.includes('ai') || tableName.includes('artificial intelligence')) {
+        currentTopic = 'ai';
+      } else {
+        currentTopic = 'crypto';
+      }
+      
+      // Update topic indicator in header
+      const topicIndicator = document.getElementById('topicIndicator');
+      if (topicIndicator) {
+        if (currentTopic === 'ai') {
+          topicIndicator.innerHTML = '<i class=\"fas fa-robot mr-1\"></i>AI Mode';
+          topicIndicator.className = 'text-sm px-3 py-1 rounded-full bg-purple-500/20 text-purple-400 font-medium';
+        } else {
+          topicIndicator.innerHTML = '<i class=\"fab fa-bitcoin mr-1\"></i>Crypto Mode';
+          topicIndicator.className = 'text-sm px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 font-medium';
+        }
+      }
     }
 
     // ========================================

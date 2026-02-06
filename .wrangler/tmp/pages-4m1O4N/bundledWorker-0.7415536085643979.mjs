@@ -1,26 +1,24 @@
 var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
-// .wrangler/tmp/pages-SVGwi6/bundledWorker-0.4049822132705361.mjs
-var __defProp2 = Object.defineProperty;
-var __name2 = /* @__PURE__ */ __name((target, value) => __defProp2(target, "name", { value, configurable: true }), "__name");
+// _worker.js
 var vt = Object.defineProperty;
-var Ne = /* @__PURE__ */ __name2((e) => {
+var Ne = /* @__PURE__ */ __name((e) => {
   throw TypeError(e);
 }, "Ne");
-var yt = /* @__PURE__ */ __name2((e, t, a) => t in e ? vt(e, t, { enumerable: true, configurable: true, writable: true, value: a }) : e[t] = a, "yt");
-var m = /* @__PURE__ */ __name2((e, t, a) => yt(e, typeof t != "symbol" ? t + "" : t, a), "m");
-var De = /* @__PURE__ */ __name2((e, t, a) => t.has(e) || Ne("Cannot " + a), "De");
-var s = /* @__PURE__ */ __name2((e, t, a) => (De(e, t, "read from private field"), a ? a.call(e) : t.get(e)), "s");
-var h = /* @__PURE__ */ __name2((e, t, a) => t.has(e) ? Ne("Cannot add the same private member more than once") : t instanceof WeakSet ? t.add(e) : t.set(e, a), "h");
-var f = /* @__PURE__ */ __name2((e, t, a, r) => (De(e, t, "write to private field"), r ? r.call(e, a) : t.set(e, a), a), "f");
-var b = /* @__PURE__ */ __name2((e, t, a) => (De(e, t, "access private method"), a), "b");
-var $e = /* @__PURE__ */ __name2((e, t, a, r) => ({ set _(n) {
+var yt = /* @__PURE__ */ __name((e, t, a) => t in e ? vt(e, t, { enumerable: true, configurable: true, writable: true, value: a }) : e[t] = a, "yt");
+var h = /* @__PURE__ */ __name((e, t, a) => yt(e, typeof t != "symbol" ? t + "" : t, a), "h");
+var De = /* @__PURE__ */ __name((e, t, a) => t.has(e) || Ne("Cannot " + a), "De");
+var s = /* @__PURE__ */ __name((e, t, a) => (De(e, t, "read from private field"), a ? a.call(e) : t.get(e)), "s");
+var m = /* @__PURE__ */ __name((e, t, a) => t.has(e) ? Ne("Cannot add the same private member more than once") : t instanceof WeakSet ? t.add(e) : t.set(e, a), "m");
+var f = /* @__PURE__ */ __name((e, t, a, r) => (De(e, t, "write to private field"), r ? r.call(e, a) : t.set(e, a), a), "f");
+var b = /* @__PURE__ */ __name((e, t, a) => (De(e, t, "access private method"), a), "b");
+var $e = /* @__PURE__ */ __name((e, t, a, r) => ({ set _(n) {
   f(e, t, n, a);
 }, get _() {
   return s(e, t, r);
 } }), "$e");
-var Ge = /* @__PURE__ */ __name2((e, t, a) => (r, n) => {
+var Ge = /* @__PURE__ */ __name((e, t, a) => (r, n) => {
   let o = -1;
   return i(0);
   async function i(c) {
@@ -37,10 +35,9 @@ var Ge = /* @__PURE__ */ __name2((e, t, a) => (r, n) => {
     return l && (r.finalized === false || d) && (r.res = l), r;
   }
   __name(i, "i");
-  __name2(i, "i");
 }, "Ge");
 var wt = Symbol();
-var It = /* @__PURE__ */ __name2(async (e, t = /* @__PURE__ */ Object.create(null)) => {
+var It = /* @__PURE__ */ __name(async (e, t = /* @__PURE__ */ Object.create(null)) => {
   const { all: a = false, dot: r = false } = t, o = (e instanceof ot ? e.raw.headers : e.headers).get("Content-Type");
   return o != null && o.startsWith("multipart/form-data") || o != null && o.startsWith("application/x-www-form-urlencoded") ? Tt(e, { all: a, dot: r }) : {};
 }, "It");
@@ -49,7 +46,6 @@ async function Tt(e, t) {
   return a ? Ct(a, t) : {};
 }
 __name(Tt, "Tt");
-__name2(Tt, "Tt");
 function Ct(e, t) {
   const a = /* @__PURE__ */ Object.create(null);
   return e.forEach((r, n) => {
@@ -59,33 +55,32 @@ function Ct(e, t) {
   }), a;
 }
 __name(Ct, "Ct");
-__name2(Ct, "Ct");
-var Et = /* @__PURE__ */ __name2((e, t, a) => {
+var Et = /* @__PURE__ */ __name((e, t, a) => {
   e[t] !== void 0 ? Array.isArray(e[t]) ? e[t].push(a) : e[t] = [e[t], a] : t.endsWith("[]") ? e[t] = [a] : e[t] = a;
 }, "Et");
-var St = /* @__PURE__ */ __name2((e, t, a) => {
+var St = /* @__PURE__ */ __name((e, t, a) => {
   let r = e;
   const n = t.split(".");
   n.forEach((o, i) => {
     i === n.length - 1 ? r[o] = a : ((!r[o] || typeof r[o] != "object" || Array.isArray(r[o]) || r[o] instanceof File) && (r[o] = /* @__PURE__ */ Object.create(null)), r = r[o]);
   });
 }, "St");
-var et = /* @__PURE__ */ __name2((e) => {
+var et = /* @__PURE__ */ __name((e) => {
   const t = e.split("/");
   return t[0] === "" && t.shift(), t;
 }, "et");
-var Rt = /* @__PURE__ */ __name2((e) => {
-  const { groups: t, path: a } = kt(e), r = et(a);
+var kt = /* @__PURE__ */ __name((e) => {
+  const { groups: t, path: a } = Rt(e), r = et(a);
   return Lt(r, t);
-}, "Rt");
-var kt = /* @__PURE__ */ __name2((e) => {
+}, "kt");
+var Rt = /* @__PURE__ */ __name((e) => {
   const t = [];
   return e = e.replace(/\{[^}]+\}/g, (a, r) => {
     const n = `@${r}`;
     return t.push([n, a]), n;
   }), { groups: t, path: e };
-}, "kt");
-var Lt = /* @__PURE__ */ __name2((e, t) => {
+}, "Rt");
+var Lt = /* @__PURE__ */ __name((e, t) => {
   for (let a = t.length - 1; a >= 0; a--) {
     const [r] = t[a];
     for (let n = e.length - 1; n >= 0; n--) if (e[n].includes(r)) {
@@ -96,7 +91,7 @@ var Lt = /* @__PURE__ */ __name2((e, t) => {
   return e;
 }, "Lt");
 var Ee = {};
-var At = /* @__PURE__ */ __name2((e, t) => {
+var At = /* @__PURE__ */ __name((e, t) => {
   if (e === "*") return "*";
   const a = e.match(/^\:([^\{\}]+)(?:\{(.+)\})?$/);
   if (a) {
@@ -105,7 +100,7 @@ var At = /* @__PURE__ */ __name2((e, t) => {
   }
   return null;
 }, "At");
-var je = /* @__PURE__ */ __name2((e, t) => {
+var je = /* @__PURE__ */ __name((e, t) => {
   try {
     return t(e);
   } catch {
@@ -118,8 +113,8 @@ var je = /* @__PURE__ */ __name2((e, t) => {
     });
   }
 }, "je");
-var Bt = /* @__PURE__ */ __name2((e) => je(e, decodeURI), "Bt");
-var tt = /* @__PURE__ */ __name2((e) => {
+var Bt = /* @__PURE__ */ __name((e) => je(e, decodeURI), "Bt");
+var tt = /* @__PURE__ */ __name((e) => {
   const t = e.url, a = t.indexOf("/", t.indexOf(":") + 4);
   let r = a;
   for (; r < t.length; r++) {
@@ -131,12 +126,12 @@ var tt = /* @__PURE__ */ __name2((e) => {
   }
   return t.slice(a, r);
 }, "tt");
-var Ht = /* @__PURE__ */ __name2((e) => {
+var Ht = /* @__PURE__ */ __name((e) => {
   const t = tt(e);
   return t.length > 1 && t.at(-1) === "/" ? t.slice(0, -1) : t;
 }, "Ht");
-var re = /* @__PURE__ */ __name2((e, t, ...a) => (a.length && (t = re(t, ...a)), `${(e == null ? void 0 : e[0]) === "/" ? "" : "/"}${e}${t === "/" ? "" : `${(e == null ? void 0 : e.at(-1)) === "/" ? "" : "/"}${(t == null ? void 0 : t[0]) === "/" ? t.slice(1) : t}`}`), "re");
-var at = /* @__PURE__ */ __name2((e) => {
+var re = /* @__PURE__ */ __name((e, t, ...a) => (a.length && (t = re(t, ...a)), `${(e == null ? void 0 : e[0]) === "/" ? "" : "/"}${e}${t === "/" ? "" : `${(e == null ? void 0 : e.at(-1)) === "/" ? "" : "/"}${(t == null ? void 0 : t[0]) === "/" ? t.slice(1) : t}`}`), "re");
+var at = /* @__PURE__ */ __name((e) => {
   if (e.charCodeAt(e.length - 1) !== 63 || !e.includes(":")) return null;
   const t = e.split("/"), a = [];
   let r = "";
@@ -149,8 +144,8 @@ var at = /* @__PURE__ */ __name2((e) => {
     } else r += "/" + n;
   }), a.filter((n, o, i) => i.indexOf(n) === o);
 }, "at");
-var Oe = /* @__PURE__ */ __name2((e) => /[%+]/.test(e) ? (e.indexOf("+") !== -1 && (e = e.replace(/\+/g, " ")), e.indexOf("%") !== -1 ? je(e, nt) : e) : e, "Oe");
-var rt = /* @__PURE__ */ __name2((e, t, a) => {
+var Oe = /* @__PURE__ */ __name((e) => /[%+]/.test(e) ? (e.indexOf("+") !== -1 && (e = e.replace(/\+/g, " ")), e.indexOf("%") !== -1 ? je(e, nt) : e) : e, "Oe");
+var rt = /* @__PURE__ */ __name((e, t, a) => {
   let r;
   if (!a && t && !/[%+]/.test(t)) {
     let i = e.indexOf("?", 8);
@@ -180,11 +175,11 @@ var rt = /* @__PURE__ */ __name2((e, t, a) => {
   return t ? n[t] : n;
 }, "rt");
 var Dt = rt;
-var Ot = /* @__PURE__ */ __name2((e, t) => rt(e, t, true), "Ot");
+var Ot = /* @__PURE__ */ __name((e, t) => rt(e, t, true), "Ot");
 var nt = decodeURIComponent;
-var _e = /* @__PURE__ */ __name2((e) => je(e, nt), "_e");
+var _e = /* @__PURE__ */ __name((e) => je(e, nt), "_e");
 var ie;
-var k;
+var R;
 var j;
 var it;
 var st;
@@ -195,24 +190,21 @@ var ot = (Ye = class {
   static {
     __name(this, "Ye");
   }
-  static {
-    __name2(this, "Ye");
-  }
   constructor(e, t = "/", a = [[]]) {
-    h(this, j);
-    m(this, "raw");
-    h(this, ie);
-    h(this, k);
-    m(this, "routeIndex", 0);
-    m(this, "path");
-    m(this, "bodyCache", {});
-    h(this, $, (e2) => {
+    m(this, j);
+    h(this, "raw");
+    m(this, ie);
+    m(this, R);
+    h(this, "routeIndex", 0);
+    h(this, "path");
+    h(this, "bodyCache", {});
+    m(this, $, (e2) => {
       const { bodyCache: t2, raw: a2 } = this, r = t2[e2];
       if (r) return r;
       const n = Object.keys(t2)[0];
       return n ? t2[n].then((o) => (n === "json" && (o = JSON.stringify(o)), new Response(o)[e2]())) : t2[e2] = a2[e2]();
     });
-    this.raw = e, this.path = t, f(this, k, a), f(this, ie, {});
+    this.raw = e, this.path = t, f(this, R, a), f(this, ie, {});
   }
   param(e) {
     return e ? b(this, j, it).call(this, e) : b(this, j, st).call(this);
@@ -262,35 +254,35 @@ var ot = (Ye = class {
     return this.raw.method;
   }
   get [wt]() {
-    return s(this, k);
+    return s(this, R);
   }
   get matchedRoutes() {
-    return s(this, k)[0].map(([[, e]]) => e);
+    return s(this, R)[0].map(([[, e]]) => e);
   }
   get routePath() {
-    return s(this, k)[0].map(([[, e]]) => e)[this.routeIndex].path;
+    return s(this, R)[0].map(([[, e]]) => e)[this.routeIndex].path;
   }
-}, ie = /* @__PURE__ */ new WeakMap(), k = /* @__PURE__ */ new WeakMap(), j = /* @__PURE__ */ new WeakSet(), it = /* @__PURE__ */ __name2(function(e) {
-  const t = s(this, k)[0][this.routeIndex][1][e], a = b(this, j, Ue).call(this, t);
+}, ie = /* @__PURE__ */ new WeakMap(), R = /* @__PURE__ */ new WeakMap(), j = /* @__PURE__ */ new WeakSet(), it = /* @__PURE__ */ __name(function(e) {
+  const t = s(this, R)[0][this.routeIndex][1][e], a = b(this, j, Ue).call(this, t);
   return a && /\%/.test(a) ? _e(a) : a;
-}, "it"), st = /* @__PURE__ */ __name2(function() {
-  const e = {}, t = Object.keys(s(this, k)[0][this.routeIndex][1]);
+}, "it"), st = /* @__PURE__ */ __name(function() {
+  const e = {}, t = Object.keys(s(this, R)[0][this.routeIndex][1]);
   for (const a of t) {
-    const r = b(this, j, Ue).call(this, s(this, k)[0][this.routeIndex][1][a]);
+    const r = b(this, j, Ue).call(this, s(this, R)[0][this.routeIndex][1][a]);
     r !== void 0 && (e[a] = /\%/.test(r) ? _e(r) : r);
   }
   return e;
-}, "st"), Ue = /* @__PURE__ */ __name2(function(e) {
-  return s(this, k)[1] ? s(this, k)[1][e] : e;
+}, "st"), Ue = /* @__PURE__ */ __name(function(e) {
+  return s(this, R)[1] ? s(this, R)[1][e] : e;
 }, "Ue"), $ = /* @__PURE__ */ new WeakMap(), Ye);
 var Ft = { Stringify: 1 };
-var lt = /* @__PURE__ */ __name2(async (e, t, a, r, n) => {
+var lt = /* @__PURE__ */ __name(async (e, t, a, r, n) => {
   typeof e == "object" && !(e instanceof String) && (e instanceof Promise || (e = e.toString()), e instanceof Promise && (e = await e));
   const o = e.callbacks;
   return o != null && o.length ? (n ? n[0] += e : n = [e], Promise.all(o.map((c) => c({ phase: t, buffer: n, context: r }))).then((c) => Promise.all(c.filter(Boolean).map((l) => lt(l, t, false, r, n))).then(() => n[0]))) : Promise.resolve(e);
 }, "lt");
 var Pt = "text/plain; charset=UTF-8";
-var Fe = /* @__PURE__ */ __name2((e, t) => ({ "Content-Type": e, ...t }), "Fe");
+var Fe = /* @__PURE__ */ __name((e, t) => ({ "Content-Type": e, ...t }), "Fe");
 var be;
 var xe;
 var O;
@@ -310,57 +302,54 @@ var Ut = (Xe = class {
   static {
     __name(this, "Xe");
   }
-  static {
-    __name2(this, "Xe");
-  }
   constructor(e, t) {
-    h(this, G);
-    h(this, be);
-    h(this, xe);
-    m(this, "env", {});
-    h(this, O);
-    m(this, "finalized", false);
-    m(this, "error");
-    h(this, se);
-    h(this, F);
-    h(this, E);
-    h(this, ve);
-    h(this, le);
-    h(this, de);
-    h(this, K);
-    h(this, ye);
-    h(this, we);
-    m(this, "render", (...e2) => (s(this, le) ?? f(this, le, (t2) => this.html(t2)), s(this, le).call(this, ...e2)));
-    m(this, "setLayout", (e2) => f(this, ve, e2));
-    m(this, "getLayout", () => s(this, ve));
-    m(this, "setRenderer", (e2) => {
+    m(this, G);
+    m(this, be);
+    m(this, xe);
+    h(this, "env", {});
+    m(this, O);
+    h(this, "finalized", false);
+    h(this, "error");
+    m(this, se);
+    m(this, F);
+    m(this, E);
+    m(this, ve);
+    m(this, le);
+    m(this, de);
+    m(this, K);
+    m(this, ye);
+    m(this, we);
+    h(this, "render", (...e2) => (s(this, le) ?? f(this, le, (t2) => this.html(t2)), s(this, le).call(this, ...e2)));
+    h(this, "setLayout", (e2) => f(this, ve, e2));
+    h(this, "getLayout", () => s(this, ve));
+    h(this, "setRenderer", (e2) => {
       f(this, le, e2);
     });
-    m(this, "header", (e2, t2, a) => {
+    h(this, "header", (e2, t2, a) => {
       this.finalized && f(this, E, new Response(s(this, E).body, s(this, E)));
       const r = s(this, E) ? s(this, E).headers : s(this, K) ?? f(this, K, new Headers());
       t2 === void 0 ? r.delete(e2) : a != null && a.append ? r.append(e2, t2) : r.set(e2, t2);
     });
-    m(this, "status", (e2) => {
+    h(this, "status", (e2) => {
       f(this, se, e2);
     });
-    m(this, "set", (e2, t2) => {
+    h(this, "set", (e2, t2) => {
       s(this, O) ?? f(this, O, /* @__PURE__ */ new Map()), s(this, O).set(e2, t2);
     });
-    m(this, "get", (e2) => s(this, O) ? s(this, O).get(e2) : void 0);
-    m(this, "newResponse", (...e2) => b(this, G, ne).call(this, ...e2));
-    m(this, "body", (e2, t2, a) => b(this, G, ne).call(this, e2, t2, a));
-    m(this, "text", (e2, t2, a) => !s(this, K) && !s(this, se) && !t2 && !a && !this.finalized ? new Response(e2) : b(this, G, ne).call(this, e2, t2, Fe(Pt, a)));
-    m(this, "json", (e2, t2, a) => b(this, G, ne).call(this, JSON.stringify(e2), t2, Fe("application/json", a)));
-    m(this, "html", (e2, t2, a) => {
-      const r = /* @__PURE__ */ __name2((n) => b(this, G, ne).call(this, n, t2, Fe("text/html; charset=UTF-8", a)), "r");
+    h(this, "get", (e2) => s(this, O) ? s(this, O).get(e2) : void 0);
+    h(this, "newResponse", (...e2) => b(this, G, ne).call(this, ...e2));
+    h(this, "body", (e2, t2, a) => b(this, G, ne).call(this, e2, t2, a));
+    h(this, "text", (e2, t2, a) => !s(this, K) && !s(this, se) && !t2 && !a && !this.finalized ? new Response(e2) : b(this, G, ne).call(this, e2, t2, Fe(Pt, a)));
+    h(this, "json", (e2, t2, a) => b(this, G, ne).call(this, JSON.stringify(e2), t2, Fe("application/json", a)));
+    h(this, "html", (e2, t2, a) => {
+      const r = /* @__PURE__ */ __name((n) => b(this, G, ne).call(this, n, t2, Fe("text/html; charset=UTF-8", a)), "r");
       return typeof e2 == "object" ? lt(e2, Ft.Stringify, false, {}).then(r) : r(e2);
     });
-    m(this, "redirect", (e2, t2) => {
+    h(this, "redirect", (e2, t2) => {
       const a = String(e2);
       return this.header("Location", /[^\x00-\xFF]/.test(a) ? encodeURI(a) : a), this.newResponse(null, t2 ?? 302);
     });
-    m(this, "notFound", () => (s(this, de) ?? f(this, de, () => new Response()), s(this, de).call(this, this)));
+    h(this, "notFound", () => (s(this, de) ?? f(this, de, () => new Response()), s(this, de).call(this, this)));
     f(this, be, e), t && (f(this, F, t.executionCtx), this.env = t.env, f(this, de, t.notFoundHandler), f(this, we, t.path), f(this, ye, t.matchResult));
   }
   get req() {
@@ -391,7 +380,7 @@ var Ut = (Xe = class {
   get var() {
     return s(this, O) ? Object.fromEntries(s(this, O)) : {};
   }
-}, be = /* @__PURE__ */ new WeakMap(), xe = /* @__PURE__ */ new WeakMap(), O = /* @__PURE__ */ new WeakMap(), se = /* @__PURE__ */ new WeakMap(), F = /* @__PURE__ */ new WeakMap(), E = /* @__PURE__ */ new WeakMap(), ve = /* @__PURE__ */ new WeakMap(), le = /* @__PURE__ */ new WeakMap(), de = /* @__PURE__ */ new WeakMap(), K = /* @__PURE__ */ new WeakMap(), ye = /* @__PURE__ */ new WeakMap(), we = /* @__PURE__ */ new WeakMap(), G = /* @__PURE__ */ new WeakSet(), ne = /* @__PURE__ */ __name2(function(e, t, a) {
+}, be = /* @__PURE__ */ new WeakMap(), xe = /* @__PURE__ */ new WeakMap(), O = /* @__PURE__ */ new WeakMap(), se = /* @__PURE__ */ new WeakMap(), F = /* @__PURE__ */ new WeakMap(), E = /* @__PURE__ */ new WeakMap(), ve = /* @__PURE__ */ new WeakMap(), le = /* @__PURE__ */ new WeakMap(), de = /* @__PURE__ */ new WeakMap(), K = /* @__PURE__ */ new WeakMap(), ye = /* @__PURE__ */ new WeakMap(), we = /* @__PURE__ */ new WeakMap(), G = /* @__PURE__ */ new WeakSet(), ne = /* @__PURE__ */ __name(function(e, t, a) {
   const r = s(this, E) ? new Headers(s(this, E).headers) : s(this, K) ?? new Headers();
   if (typeof t == "object" && "headers" in t) {
     const o = t.headers instanceof Headers ? t.headers : new Headers(t.headers);
@@ -413,13 +402,10 @@ var ct = class extends Error {
   static {
     __name(this, "ct");
   }
-  static {
-    __name2(this, "ct");
-  }
 };
 var Mt = "__COMPOSED_HANDLER";
-var Nt = /* @__PURE__ */ __name2((e) => e.text("404 Not Found", 404), "Nt");
-var qe = /* @__PURE__ */ __name2((e, t) => {
+var Nt = /* @__PURE__ */ __name((e) => e.text("404 Not Found", 404), "Nt");
+var qe = /* @__PURE__ */ __name((e, t) => {
   if ("getResponse" in e) {
     const a = e.getResponse();
     return t.newResponse(a.body, a);
@@ -432,40 +418,37 @@ var ut;
 var A;
 var Y;
 var Se;
-var Re;
+var ke;
 var ce;
 var $t = (ce = class {
   static {
     __name(this, "ce");
   }
-  static {
-    __name2(this, "ce");
-  }
   constructor(t = {}) {
-    h(this, w);
-    m(this, "get");
-    m(this, "post");
-    m(this, "put");
-    m(this, "delete");
-    m(this, "options");
-    m(this, "patch");
-    m(this, "all");
-    m(this, "on");
-    m(this, "use");
-    m(this, "router");
-    m(this, "getPath");
-    m(this, "_basePath", "/");
-    h(this, L, "/");
-    m(this, "routes", []);
-    h(this, A, Nt);
-    m(this, "errorHandler", qe);
-    m(this, "onError", (t2) => (this.errorHandler = t2, this));
-    m(this, "notFound", (t2) => (f(this, A, t2), this));
-    m(this, "fetch", (t2, ...a) => b(this, w, Re).call(this, t2, a[1], a[0], t2.method));
-    m(this, "request", (t2, a, r2, n2) => t2 instanceof Request ? this.fetch(a ? new Request(t2, a) : t2, r2, n2) : (t2 = t2.toString(), this.fetch(new Request(/^https?:\/\//.test(t2) ? t2 : `http://localhost${re("/", t2)}`, a), r2, n2)));
-    m(this, "fire", () => {
+    m(this, w);
+    h(this, "get");
+    h(this, "post");
+    h(this, "put");
+    h(this, "delete");
+    h(this, "options");
+    h(this, "patch");
+    h(this, "all");
+    h(this, "on");
+    h(this, "use");
+    h(this, "router");
+    h(this, "getPath");
+    h(this, "_basePath", "/");
+    m(this, L, "/");
+    h(this, "routes", []);
+    m(this, A, Nt);
+    h(this, "errorHandler", qe);
+    h(this, "onError", (t2) => (this.errorHandler = t2, this));
+    h(this, "notFound", (t2) => (f(this, A, t2), this));
+    h(this, "fetch", (t2, ...a) => b(this, w, ke).call(this, t2, a[1], a[0], t2.method));
+    h(this, "request", (t2, a, r2, n2) => t2 instanceof Request ? this.fetch(a ? new Request(t2, a) : t2, r2, n2) : (t2 = t2.toString(), this.fetch(new Request(/^https?:\/\//.test(t2) ? t2 : `http://localhost${re("/", t2)}`, a), r2, n2)));
+    h(this, "fire", () => {
       addEventListener("fetch", (t2) => {
-        t2.respondWith(b(this, w, Re).call(this, t2.request, t2, void 0, t2.request.method));
+        t2.respondWith(b(this, w, ke).call(this, t2.request, t2, void 0, t2.request.method));
       });
     });
     [...zt, jt].forEach((o) => {
@@ -491,7 +474,7 @@ var $t = (ce = class {
     return a.routes.map((n) => {
       var i;
       let o;
-      a.errorHandler === qe ? o = n.handler : (o = /* @__PURE__ */ __name2(async (c, l) => (await Ge([], a.errorHandler)(c, () => n.handler(c, l))).res, "o"), o[Mt] = n.handler), b(i = r, w, Y).call(i, n.method, n.path, o);
+      a.errorHandler === qe ? o = n.handler : (o = /* @__PURE__ */ __name(async (c, l) => (await Ge([], a.errorHandler)(c, () => n.handler(c, l))).res, "o"), o[Mt] = n.handler), b(i = r, w, Y).call(i, n.method, n.path, o);
     }), this;
   }
   basePath(t) {
@@ -500,7 +483,7 @@ var $t = (ce = class {
   }
   mount(t, a, r) {
     let n, o;
-    r && (typeof r == "function" ? o = r : (o = r.optionHandler, r.replaceRequest === false ? n = /* @__PURE__ */ __name2((l) => l, "n") : n = r.replaceRequest));
+    r && (typeof r == "function" ? o = r : (o = r.optionHandler, r.replaceRequest === false ? n = /* @__PURE__ */ __name((l) => l, "n") : n = r.replaceRequest));
     const i = o ? (l) => {
       const d = o(l);
       return Array.isArray(d) ? d : [d];
@@ -519,25 +502,25 @@ var $t = (ce = class {
         return g.pathname = g.pathname.slice(d) || "/", new Request(g, u);
       };
     })());
-    const c = /* @__PURE__ */ __name2(async (l, d) => {
+    const c = /* @__PURE__ */ __name(async (l, d) => {
       const u = await a(n(l.req.raw), ...i(l));
       if (u) return u;
       await d();
     }, "c");
     return b(this, w, Y).call(this, y, re(t, "*"), c), this;
   }
-}, L = /* @__PURE__ */ new WeakMap(), w = /* @__PURE__ */ new WeakSet(), ut = /* @__PURE__ */ __name2(function() {
+}, L = /* @__PURE__ */ new WeakMap(), w = /* @__PURE__ */ new WeakSet(), ut = /* @__PURE__ */ __name(function() {
   const t = new ce({ router: this.router, getPath: this.getPath });
   return t.errorHandler = this.errorHandler, f(t, A, s(this, A)), t.routes = this.routes, t;
-}, "ut"), A = /* @__PURE__ */ new WeakMap(), Y = /* @__PURE__ */ __name2(function(t, a, r) {
+}, "ut"), A = /* @__PURE__ */ new WeakMap(), Y = /* @__PURE__ */ __name(function(t, a, r) {
   t = t.toUpperCase(), a = re(this._basePath, a);
   const n = { basePath: this._basePath, path: a, method: t, handler: r };
   this.router.add(t, a, [r, n]), this.routes.push(n);
-}, "Y"), Se = /* @__PURE__ */ __name2(function(t, a) {
+}, "Y"), Se = /* @__PURE__ */ __name(function(t, a) {
   if (t instanceof Error) return this.errorHandler(t, a);
   throw t;
-}, "Se"), Re = /* @__PURE__ */ __name2(function(t, a, r, n) {
-  if (n === "HEAD") return (async () => new Response(null, await b(this, w, Re).call(this, t, a, r, "GET")))();
+}, "Se"), ke = /* @__PURE__ */ __name(function(t, a, r, n) {
+  if (n === "HEAD") return (async () => new Response(null, await b(this, w, ke).call(this, t, a, r, "GET")))();
   const o = this.getPath(t, { env: r }), i = this.router.match(n, o), c = new Ut(t, { path: o, matchResult: i, env: r, executionCtx: a, notFoundHandler: s(this, A) });
   if (i[0].length === 1) {
     let d;
@@ -560,10 +543,10 @@ var $t = (ce = class {
       return b(this, w, Se).call(this, d, c);
     }
   })();
-}, "Re"), ce);
+}, "ke"), ce);
 var gt = [];
 function Gt(e, t) {
-  const a = this.buildAllMatchers(), r = /* @__PURE__ */ __name2((n, o) => {
+  const a = this.buildAllMatchers(), r = /* @__PURE__ */ __name((n, o) => {
     const i = a[n] || a[y], c = i[2][o];
     if (c) return c;
     const l = o.match(i[0]);
@@ -574,17 +557,15 @@ function Gt(e, t) {
   return this.match = r, r(e, t);
 }
 __name(Gt, "Gt");
-__name2(Gt, "Gt");
 var Le = "[^/]+";
-var he = ".*";
+var me = ".*";
 var pe = "(?:|/.*)";
 var oe = Symbol();
 var _t = new Set(".\\+*[^]$()");
 function qt(e, t) {
-  return e.length === 1 ? t.length === 1 ? e < t ? -1 : 1 : -1 : t.length === 1 || e === he || e === pe ? 1 : t === he || t === pe ? -1 : e === Le ? 1 : t === Le ? -1 : e.length === t.length ? e < t ? -1 : 1 : t.length - e.length;
+  return e.length === 1 ? t.length === 1 ? e < t ? -1 : 1 : -1 : t.length === 1 || e === me || e === pe ? 1 : t === me || t === pe ? -1 : e === Le ? 1 : t === Le ? -1 : e.length === t.length ? e < t ? -1 : 1 : t.length - e.length;
 }
 __name(qt, "qt");
-__name2(qt, "qt");
 var J;
 var V;
 var B;
@@ -593,13 +574,10 @@ var Zt = (te = class {
   static {
     __name(this, "te");
   }
-  static {
-    __name2(this, "te");
-  }
   constructor() {
-    h(this, J);
-    h(this, V);
-    h(this, B, /* @__PURE__ */ Object.create(null));
+    m(this, J);
+    m(this, V);
+    m(this, B, /* @__PURE__ */ Object.create(null));
   }
   insert(t, a, r, n, o) {
     if (t.length === 0) {
@@ -608,20 +586,20 @@ var Zt = (te = class {
       f(this, J, a);
       return;
     }
-    const [i, ...c] = t, l = i === "*" ? c.length === 0 ? ["", "", he] : ["", "", Le] : i === "/*" ? ["", "", pe] : i.match(/^\:([^\{\}]+)(?:\{(.+)\})?$/);
+    const [i, ...c] = t, l = i === "*" ? c.length === 0 ? ["", "", me] : ["", "", Le] : i === "/*" ? ["", "", pe] : i.match(/^\:([^\{\}]+)(?:\{(.+)\})?$/);
     let d;
     if (l) {
       const u = l[1];
       let g = l[2] || Le;
       if (u && l[2] && (g === ".*" || (g = g.replace(/^\((?!\?:)(?=[^)]+\)$)/, "(?:"), /\((?!\?:)/.test(g)))) throw oe;
       if (d = s(this, B)[g], !d) {
-        if (Object.keys(s(this, B)).some((p) => p !== he && p !== pe)) throw oe;
+        if (Object.keys(s(this, B)).some((p) => p !== me && p !== pe)) throw oe;
         if (o) return;
         d = s(this, B)[g] = new te(), u !== "" && f(d, V, n.varIndex++);
       }
       !o && u !== "" && r.push([u, s(d, V)]);
     } else if (d = s(this, B)[i], !d) {
-      if (Object.keys(s(this, B)).some((u) => u.length > 1 && u !== he && u !== pe)) throw oe;
+      if (Object.keys(s(this, B)).some((u) => u.length > 1 && u !== me && u !== pe)) throw oe;
       if (o) return;
       d = s(this, B)[i] = new te();
     }
@@ -642,12 +620,9 @@ var Wt = (Ke = class {
   static {
     __name(this, "Ke");
   }
-  static {
-    __name2(this, "Ke");
-  }
   constructor() {
-    h(this, Ae, { varIndex: 0 });
-    h(this, Ie, new Zt());
+    m(this, Ae, { varIndex: 0 });
+    m(this, Ie, new Zt());
   }
   insert(e, t, a) {
     const r = [], n = [];
@@ -677,17 +652,15 @@ var Wt = (Ke = class {
   }
 }, Ae = /* @__PURE__ */ new WeakMap(), Ie = /* @__PURE__ */ new WeakMap(), Ke);
 var Yt = [/^$/, [], /* @__PURE__ */ Object.create(null)];
-var ke = /* @__PURE__ */ Object.create(null);
+var Re = /* @__PURE__ */ Object.create(null);
 function ft(e) {
-  return ke[e] ?? (ke[e] = new RegExp(e === "*" ? "" : `^${e.replace(/\/\*$|([.\\+*[^\]$()])/g, (t, a) => a ? `\\${a}` : "(?:|/.*)")}$`));
+  return Re[e] ?? (Re[e] = new RegExp(e === "*" ? "" : `^${e.replace(/\/\*$|([.\\+*[^\]$()])/g, (t, a) => a ? `\\${a}` : "(?:|/.*)")}$`));
 }
 __name(ft, "ft");
-__name2(ft, "ft");
 function Xt() {
-  ke = /* @__PURE__ */ Object.create(null);
+  Re = /* @__PURE__ */ Object.create(null);
 }
 __name(Xt, "Xt");
-__name2(Xt, "Xt");
 function Kt(e) {
   var d;
   const t = new Wt(), a = [];
@@ -723,32 +696,27 @@ function Kt(e) {
   return [o, l, n];
 }
 __name(Kt, "Kt");
-__name2(Kt, "Kt");
 function ae(e, t) {
   if (e) {
     for (const a of Object.keys(e).sort((r, n) => n.length - r.length)) if (ft(a).test(t)) return [...e[a]];
   }
 }
 __name(ae, "ae");
-__name2(ae, "ae");
 var _;
 var q;
 var Be;
-var mt;
+var ht;
 var Je;
 var Jt = (Je = class {
   static {
     __name(this, "Je");
   }
-  static {
-    __name2(this, "Je");
-  }
   constructor() {
-    h(this, Be);
-    m(this, "name", "RegExpRouter");
-    h(this, _);
-    h(this, q);
-    m(this, "match", Gt);
+    m(this, Be);
+    h(this, "name", "RegExpRouter");
+    m(this, _);
+    m(this, q);
+    h(this, "match", Gt);
     f(this, _, { [y]: /* @__PURE__ */ Object.create(null) }), f(this, q, { [y]: /* @__PURE__ */ Object.create(null) });
   }
   add(e, t, a) {
@@ -787,17 +755,17 @@ var Jt = (Je = class {
   buildAllMatchers() {
     const e = /* @__PURE__ */ Object.create(null);
     return Object.keys(s(this, q)).concat(Object.keys(s(this, _))).forEach((t) => {
-      e[t] || (e[t] = b(this, Be, mt).call(this, t));
+      e[t] || (e[t] = b(this, Be, ht).call(this, t));
     }), f(this, _, f(this, q, void 0)), Xt(), e;
   }
-}, _ = /* @__PURE__ */ new WeakMap(), q = /* @__PURE__ */ new WeakMap(), Be = /* @__PURE__ */ new WeakSet(), mt = /* @__PURE__ */ __name2(function(e) {
+}, _ = /* @__PURE__ */ new WeakMap(), q = /* @__PURE__ */ new WeakMap(), Be = /* @__PURE__ */ new WeakSet(), ht = /* @__PURE__ */ __name(function(e) {
   const t = [];
   let a = e === y;
   return [s(this, _), s(this, q)].forEach((r) => {
     const n = r[e] ? Object.keys(r[e]).map((o) => [o, r[e][o]]) : [];
     n.length !== 0 ? (a || (a = true), t.push(...n)) : e !== y && t.push(...Object.keys(r[y]).map((o) => [o, r[y][o]]));
   }), a ? Kt(t) : null;
-}, "mt"), Je);
+}, "ht"), Je);
 var Z;
 var P;
 var Ve;
@@ -805,13 +773,10 @@ var Vt = (Ve = class {
   static {
     __name(this, "Ve");
   }
-  static {
-    __name2(this, "Ve");
-  }
   constructor(e) {
-    m(this, "name", "SmartRouter");
-    h(this, Z, []);
-    h(this, P, []);
+    h(this, "name", "SmartRouter");
+    m(this, Z, []);
+    m(this, P, []);
     f(this, Z, e.routers);
   }
   add(e, t, a) {
@@ -842,7 +807,7 @@ var Vt = (Ve = class {
     return s(this, Z)[0];
   }
 }, Z = /* @__PURE__ */ new WeakMap(), P = /* @__PURE__ */ new WeakMap(), Ve);
-var me = /* @__PURE__ */ Object.create(null);
+var he = /* @__PURE__ */ Object.create(null);
 var W;
 var T;
 var Q;
@@ -855,16 +820,13 @@ var Qt = (ge = class {
   static {
     __name(this, "ge");
   }
-  static {
-    __name2(this, "ge");
-  }
   constructor(t, a, r) {
-    h(this, U);
-    h(this, W);
-    h(this, T);
-    h(this, Q);
-    h(this, ue, 0);
-    h(this, I, me);
+    m(this, U);
+    m(this, W);
+    m(this, T);
+    m(this, Q);
+    m(this, ue, 0);
+    m(this, I, he);
     if (f(this, T, r || /* @__PURE__ */ Object.create(null)), f(this, W, []), t && a) {
       const n = /* @__PURE__ */ Object.create(null);
       n[t] = { handler: a, possibleKeys: [], score: 0 }, f(this, W, [n]);
@@ -874,7 +836,7 @@ var Qt = (ge = class {
   insert(t, a, r) {
     f(this, ue, ++$e(this, ue)._);
     let n = this;
-    const o = Rt(a), i = [];
+    const o = kt(a), i = [];
     for (let c = 0, l = o.length; c < l; c++) {
       const d = o[c], u = o[c + 1], g = At(d, u), p = Array.isArray(g) ? g[0] : d;
       if (p in s(n, T)) {
@@ -888,7 +850,7 @@ var Qt = (ge = class {
   search(t, a) {
     var l;
     const r = [];
-    f(this, I, me);
+    f(this, I, he);
     let o = [this];
     const i = et(a), c = [];
     for (let d = 0, u = i.length; d < u; d++) {
@@ -897,7 +859,7 @@ var Qt = (ge = class {
         const x = o[S], C = s(x, T)[g];
         C && (f(C, I, s(x, I)), p ? (s(C, T)["*"] && r.push(...b(this, U, X).call(this, s(C, T)["*"], t, s(x, I))), r.push(...b(this, U, X).call(this, C, t, s(x, I)))) : v.push(C));
         for (let M = 0, Te = s(x, Q).length; M < Te; M++) {
-          const Ce = s(x, Q)[M], H = s(x, I) === me ? {} : { ...s(x, I) };
+          const Ce = s(x, Q)[M], H = s(x, I) === he ? {} : { ...s(x, I) };
           if (Ce === "*") {
             const N = s(x, T)["*"];
             N && (r.push(...b(this, U, X).call(this, N, t, s(x, I))), f(N, I, H), v.push(N));
@@ -924,11 +886,11 @@ var Qt = (ge = class {
     }
     return r.length > 1 && r.sort((d, u) => d.score - u.score), [r.map(({ handler: d, params: u }) => [d, u])];
   }
-}, W = /* @__PURE__ */ new WeakMap(), T = /* @__PURE__ */ new WeakMap(), Q = /* @__PURE__ */ new WeakMap(), ue = /* @__PURE__ */ new WeakMap(), I = /* @__PURE__ */ new WeakMap(), U = /* @__PURE__ */ new WeakSet(), X = /* @__PURE__ */ __name2(function(t, a, r, n) {
+}, W = /* @__PURE__ */ new WeakMap(), T = /* @__PURE__ */ new WeakMap(), Q = /* @__PURE__ */ new WeakMap(), ue = /* @__PURE__ */ new WeakMap(), I = /* @__PURE__ */ new WeakMap(), U = /* @__PURE__ */ new WeakSet(), X = /* @__PURE__ */ __name(function(t, a, r, n) {
   const o = [];
   for (let i = 0, c = s(t, W).length; i < c; i++) {
     const l = s(t, W)[i], d = l[a] || l[y], u = {};
-    if (d !== void 0 && (d.params = /* @__PURE__ */ Object.create(null), o.push(d), r !== me || n && n !== me)) for (let g = 0, p = d.possibleKeys.length; g < p; g++) {
+    if (d !== void 0 && (d.params = /* @__PURE__ */ Object.create(null), o.push(d), r !== he || n && n !== he)) for (let g = 0, p = d.possibleKeys.length; g < p; g++) {
       const v = d.possibleKeys[g], S = u[d.score];
       d.params[v] = n != null && n[v] && !S ? n[v] : r[v] ?? (n == null ? void 0 : n[v]), u[d.score] = true;
     }
@@ -941,12 +903,9 @@ var ea = (Qe = class {
   static {
     __name(this, "Qe");
   }
-  static {
-    __name2(this, "Qe");
-  }
   constructor() {
-    m(this, "name", "TrieRouter");
-    h(this, ee);
+    h(this, "name", "TrieRouter");
+    m(this, ee);
     f(this, ee, new Qt());
   }
   add(e, t, a) {
@@ -961,18 +920,15 @@ var ea = (Qe = class {
     return s(this, ee).search(e, t);
   }
 }, ee = /* @__PURE__ */ new WeakMap(), Qe);
-var ht = class extends $t {
+var mt = class extends $t {
   static {
-    __name(this, "ht");
-  }
-  static {
-    __name2(this, "ht");
+    __name(this, "mt");
   }
   constructor(e = {}) {
     super(e), this.router = e.router ?? new Vt({ routers: [new Jt(), new ea()] });
   }
 };
-var ta = /* @__PURE__ */ __name2((e) => {
+var ta = /* @__PURE__ */ __name((e) => {
   const a = { ...{ origin: "*", allowMethods: ["GET", "HEAD", "PUT", "POST", "DELETE", "PATCH"], allowHeaders: [], exposeHeaders: [] }, ...e }, r = /* @__PURE__ */ ((o) => typeof o == "string" ? o === "*" ? () => o : (i) => o === i ? i : null : typeof o == "function" ? o : (i) => o.includes(i) ? i : null)(a.origin), n = ((o) => typeof o == "function" ? o : Array.isArray(o) ? () => o : () => [])(a.allowMethods);
   return async function(i, c) {
     var u;
@@ -980,7 +936,6 @@ var ta = /* @__PURE__ */ __name2((e) => {
       i.res.headers.set(g, p);
     }
     __name(l, "l");
-    __name2(l, "l");
     const d = await r(i.req.header("origin") || "", i);
     if (d && l("Access-Control-Allow-Origin", d), a.credentials && l("Access-Control-Allow-Credentials", "true"), (u = a.exposeHeaders) != null && u.length && l("Access-Control-Expose-Headers", a.exposeHeaders.join(",")), i.req.method === "OPTIONS") {
       a.origin !== "*" && l("Vary", "Origin"), a.maxAge != null && l("Access-Control-Max-Age", a.maxAge.toString());
@@ -996,23 +951,23 @@ var ta = /* @__PURE__ */ __name2((e) => {
     await c(), a.origin !== "*" && i.header("Vary", "Origin", { append: true });
   };
 }, "ta");
-var R = new ht();
-R.use("/api/*", ta());
+var k = new mt();
+k.use("/api/*", ta());
 var ze = "cf2a50987a92a698e89d5efeb80cde82";
 var Pe = { face: "https://iili.io/fM9hV6B.png", outfit: "https://iili.io/fM99P3l.png", logo: "https://iili.io/fEiEfUB.png" };
-R.get("/api/bases", async (e) => {
+k.get("/api/bases", async (e) => {
   const t = e.req.header("X-Airtable-Token");
   if (!t) return e.json({ error: "Missing Airtable token" }, 401);
   const a = await fetch("https://api.airtable.com/v0/meta/bases", { headers: { Authorization: `Bearer ${t}` } });
   return e.json(await a.json());
 });
-R.get("/api/bases/:baseId/tables", async (e) => {
+k.get("/api/bases/:baseId/tables", async (e) => {
   const t = e.req.header("X-Airtable-Token");
   if (!t) return e.json({ error: "Missing Airtable token" }, 401);
   const a = e.req.param("baseId"), r = await fetch(`https://api.airtable.com/v0/meta/bases/${a}/tables`, { headers: { Authorization: `Bearer ${t}` } });
   return e.json(await r.json());
 });
-R.get("/api/records", async (e) => {
+k.get("/api/records", async (e) => {
   const t = e.req.header("X-Airtable-Token");
   if (!t) return e.json({ error: "Missing Airtable token" }, 401);
   const a = e.req.query("baseId"), r = e.req.query("tableId"), n = e.req.query("filter") || "";
@@ -1022,7 +977,7 @@ R.get("/api/records", async (e) => {
   const i = await fetch(o, { headers: { Authorization: `Bearer ${t}` } });
   return e.json(await i.json());
 });
-R.get("/api/records/:id", async (e) => {
+k.get("/api/records/:id", async (e) => {
   const t = e.req.header("X-Airtable-Token");
   if (!t) return e.json({ error: "Missing Airtable token" }, 401);
   const a = e.req.query("baseId"), r = e.req.query("tableId"), n = e.req.param("id");
@@ -1030,7 +985,7 @@ R.get("/api/records/:id", async (e) => {
   const o = await fetch(`https://api.airtable.com/v0/${a}/${r}/${n}`, { headers: { Authorization: `Bearer ${t}` } });
   return e.json(await o.json());
 });
-R.patch("/api/records/:id", async (e) => {
+k.patch("/api/records/:id", async (e) => {
   const t = e.req.header("X-Airtable-Token");
   if (!t) return e.json({ error: "Missing Airtable token" }, 401);
   const a = e.req.query("baseId"), r = e.req.query("tableId"), n = e.req.param("id"), o = await e.req.json();
@@ -1038,30 +993,30 @@ R.patch("/api/records/:id", async (e) => {
   const i = await fetch(`https://api.airtable.com/v0/${a}/${r}/${n}`, { method: "PATCH", headers: { Authorization: `Bearer ${t}`, "Content-Type": "application/json" }, body: JSON.stringify({ fields: o }) });
   return e.json(await i.json());
 });
-R.post("/api/generate-image", async (e) => {
+k.post("/api/generate-image", async (e) => {
   const { prompt: t, imageUrls: a, aspectRatio: r } = await e.req.json(), n = { model: "google/nano-banana", input: { prompt: t, image_urls: a || [Pe.face, Pe.outfit, Pe.logo], image_size: r || "16:9", output_format: "png" } };
   console.log("KieAI Nano Banana Request:", JSON.stringify(n, null, 2));
   const o = await fetch("https://api.kie.ai/api/v1/jobs/createTask", { method: "POST", headers: { Authorization: `Bearer ${ze}`, "Content-Type": "application/json" }, body: JSON.stringify(n) });
   return e.json(await o.json());
 });
 var Ze = { "16:9": "https://iili.io/fk9ypqB.png", "9:16": "https://iili.io/fk9yy0P.png", "1:1": "https://iili.io/fkH99g1.png" };
-R.post("/api/generate-image-ideogram", async (e) => {
+k.post("/api/generate-image-ideogram", async (e) => {
   const { prompt: t, imageUrl: a, aspectRatio: r } = await e.req.json(), n = Ze[r] || Ze["16:9"], o = { model: "ideogram/character-edit", input: { prompt: t, image_url: a, mask_url: n, rendering_speed: "BALANCED", style: "AUTO", expand_prompt: false, num_images: "1" } };
   console.log("Ideogram character-edit Request (text overlay):", JSON.stringify(o, null, 2));
   const i = await fetch("https://api.kie.ai/api/v1/jobs/createTask", { method: "POST", headers: { Authorization: `Bearer ${ze}`, "Content-Type": "application/json" }, body: JSON.stringify(o) });
   return e.json(await i.json());
 });
-R.get("/api/task-status/:taskId", async (e) => {
+k.get("/api/task-status/:taskId", async (e) => {
   const t = e.req.param("taskId"), a = await fetch(`https://api.kie.ai/api/v1/jobs/recordInfo?taskId=${t}`, { headers: { Authorization: `Bearer ${ze}` } });
   return e.json(await a.json());
 });
-R.post("/api/upload-image", async (e) => {
+k.post("/api/upload-image", async (e) => {
   const { base64Image: t } = await e.req.json(), a = new FormData();
   a.append("key", "6d207e02198a847aa98d0a2a901485a5"), a.append("action", "upload"), a.append("source", t), a.append("format", "json");
   const r = await fetch("https://freeimage.host/api/1/upload", { method: "POST", body: a });
   return e.json(await r.json());
 });
-R.post("/api/proxy-image", async (e) => {
+k.post("/api/proxy-image", async (e) => {
   try {
     const { imageUrl: t } = await e.req.json();
     if (!t) return e.json({ error: "Missing imageUrl" }, 400);
@@ -1076,7 +1031,7 @@ R.post("/api/proxy-image", async (e) => {
     return e.json({ error: "Proxy error: " + t.message }, 500);
   }
 });
-R.get("/", (e) => e.html(`
+k.get("/", (e) => e.html(`
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1694,6 +1649,9 @@ R.get("/", (e) => e.html(`
       <h1 class="text-xl font-bold">5th Ave Content Hub</h1>
     </div>
     <div class="flex items-center gap-4">
+      <span id="topicIndicator" class="text-sm px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 font-medium">
+        <i class="fab fa-bitcoin mr-1"></i>Crypto Mode
+      </span>
       <span id="connectionStatus" class="text-sm text-green-400">
         <i class="fas fa-check-circle mr-1"></i>Connected
       </span>
@@ -2420,7 +2378,7 @@ R.get("/", (e) => e.html(`
 
     // Generate image prompt based on headline and category
     function generateImagePrompt(headline, category) {
-      const settings = CATEGORY_SETTINGS[category] || CATEGORY_SETTINGS['default'];
+      const settings = getCategorySettings(category);
       const ratio = currentAspectRatio;
       
       // Check if outfit reference is set for current ratio - but NEVER copy exact outfit
@@ -2465,7 +2423,9 @@ R.get("/", (e) => e.html(`
       // Text will be added via canvas overlay - no text in base image
       const textInstructions = '\\n\\nIMPORTANT: No text anywhere in the image except the logo watermark if specified. No words, no letters, no signs, no screens with text, no headlines, no captions. Clean visual only - text overlay will be added programmatically later.';
       
-      const prompt = compositionGuide + 'Professional crypto news image featuring Angel, the 5th Ave Crypto educator and mentor - an elegant, confident woman ' + settings.setting + '.\\n\\n' +
+      const topicLabel = currentTopic === 'ai' ? 'AI and technology' : 'crypto';
+      const brandLabel = currentTopic === 'ai' ? '5th Ave AI' : '5th Ave Crypto';
+      const prompt = compositionGuide + 'Professional ' + topicLabel + ' news image featuring Angel, the ' + brandLabel + ' educator and mentor - an elegant, confident woman ' + settings.setting + '.\\n\\n' +
         'OUTFIT: ' + outfitDescription + '. She is looking directly at the camera with an approachable yet authoritative expression.' + customContext + '\\n\\n' +
         'IMPORTANT: Use the face reference for her face ONLY. Do NOT copy the exact clothing from any reference image - create a fresh, different outfit each time.\\n\\n' +
         'Visual context: ' + headlineContext + '\\n\\n' +
@@ -2577,7 +2537,30 @@ R.get("/", (e) => e.html(`
       const h = headline.toLowerCase();
       let context = [];
       
-      // Bitcoin/crypto related
+      if (currentTopic === 'ai') {
+        // AI-specific visual context
+        if (h.includes('gpt') || h.includes('chatgpt') || h.includes('openai')) context.push('conversational AI interface elements with chat bubbles');
+        if (h.includes('claude') || h.includes('anthropic')) context.push('clean, thoughtful AI interface design');
+        if (h.includes('gemini') || h.includes('google')) context.push('colorful AI visualization with Google-inspired palette');
+        if (h.includes('llm') || h.includes('language model') || h.includes('foundation model')) context.push('neural network visualization with interconnected nodes');
+        if (h.includes('robot') || h.includes('humanoid')) context.push('sleek robotic elements and mechanical components');
+        if (h.includes('autonomous') || h.includes('self-driving')) context.push('futuristic autonomous vehicle or drone imagery');
+        if (h.includes('image') || h.includes('video') || h.includes('generat')) context.push('creative AI-generated visual art elements');
+        if (h.includes('chip') || h.includes('nvidia') || h.includes('gpu') || h.includes('hardware')) context.push('advanced computing hardware with glowing circuits');
+        if (h.includes('regulation') || h.includes('govern') || h.includes('policy') || h.includes('law') || h.includes('ban')) context.push('formal policy/government setting with tech elements');
+        if (h.includes('safety') || h.includes('alignment') || h.includes('ethics') || h.includes('bias')) context.push('balanced harmony between technology and human values');
+        if (h.includes('job') || h.includes('work') || h.includes('employ') || h.includes('replac')) context.push('workplace transformation with human-AI collaboration');
+        if (h.includes('education') || h.includes('learn') || h.includes('school') || h.includes('student')) context.push('modern classroom with AI-enhanced learning tools');
+        if (h.includes('healthcare') || h.includes('medical') || h.includes('drug') || h.includes('diagnos')) context.push('medical AI interface with health data visualizations');
+        if (h.includes('agent') || h.includes('automat')) context.push('AI agent workflow with interconnected automated processes');
+        if (h.includes('open source') || h.includes('meta') || h.includes('llama')) context.push('community-driven open technology collaboration');
+        if (h.includes('startup') || h.includes('funding') || h.includes('billion') || h.includes('invest')) context.push('dynamic tech startup energy with growth indicators');
+        if (h.includes('breakthrough') || h.includes('discover') || h.includes('research')) context.push('scientific discovery atmosphere with eureka moment energy');
+        
+        return context.length > 0 ? context.join(', ') : 'general artificial intelligence and technology innovation theme';
+      }
+      
+      // Crypto-specific visual context (original)
       if (h.includes('bitcoin') || h.includes('btc')) context.push('Bitcoin imagery like gold coins or subtle orange accents');
       if (h.includes('ethereum') || h.includes('eth')) context.push('Ethereum-inspired purple/blue color accents');
       if (h.includes('crypto')) context.push('cryptocurrency visual elements');
@@ -2625,6 +2608,7 @@ R.get("/", (e) => e.html(`
     let saveTimeout = null;
     let contentImages = { '16:9': null, '9:16': null, '1:1': null };
     let expandedCategories = {}; // Track which categories are expanded
+    let currentTopic = 'crypto'; // 'crypto' or 'ai' - auto-detected from table name
 
     // ========================================
     // INITIALIZATION
@@ -2817,6 +2801,26 @@ R.get("/", (e) => e.html(`
       const hasSocialFields = tableFields.some(f => SOCIAL_FIELDS.includes(f.name));
       const socialSection = document.getElementById('socialContentSection');
       socialSection.classList.toggle('hidden', !hasSocialFields);
+      
+      // Auto-detect topic from table name
+      const tableName = (currentTable?.name || '').toLowerCase();
+      if (tableName.includes('ai') || tableName.includes('artificial intelligence')) {
+        currentTopic = 'ai';
+      } else {
+        currentTopic = 'crypto';
+      }
+      
+      // Update topic indicator in header
+      const topicIndicator = document.getElementById('topicIndicator');
+      if (topicIndicator) {
+        if (currentTopic === 'ai') {
+          topicIndicator.innerHTML = '<i class="fas fa-robot mr-1"></i>AI Mode';
+          topicIndicator.className = 'text-sm px-3 py-1 rounded-full bg-purple-500/20 text-purple-400 font-medium';
+        } else {
+          topicIndicator.innerHTML = '<i class="fab fa-bitcoin mr-1"></i>Crypto Mode';
+          topicIndicator.className = 'text-sm px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 font-medium';
+        }
+      }
     }
 
     // ========================================
@@ -5375,12 +5379,14 @@ R.get("/", (e) => e.html(`
 </body>
 </html>
   `));
-var We = new ht();
-var aa = Object.assign({ "/src/index.tsx": R });
+var We = new mt();
+var aa = Object.assign({ "/src/index.tsx": k });
 var pt = false;
 for (const [, e] of Object.entries(aa)) e && (We.route("/", e), We.notFound(e.notFoundHandler), pt = true);
 if (!pt) throw new Error("Can't import modules from ['/src/index.tsx','/app/server.ts']");
-var drainBody = /* @__PURE__ */ __name2(async (request, env, _ctx, middlewareCtx) => {
+
+// ../../../../usr/lib/node_modules/wrangler/templates/middleware/middleware-ensure-req-body-drained.ts
+var drainBody = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx) => {
   try {
     return await middlewareCtx.next(request, env);
   } finally {
@@ -5396,6 +5402,8 @@ var drainBody = /* @__PURE__ */ __name2(async (request, env, _ctx, middlewareCtx
   }
 }, "drainBody");
 var middleware_ensure_req_body_drained_default = drainBody;
+
+// ../../../../usr/lib/node_modules/wrangler/templates/middleware/middleware-miniflare3-json-error.ts
 function reduceError(e) {
   return {
     name: e?.name,
@@ -5405,8 +5413,7 @@ function reduceError(e) {
   };
 }
 __name(reduceError, "reduceError");
-__name2(reduceError, "reduceError");
-var jsonError = /* @__PURE__ */ __name2(async (request, env, _ctx, middlewareCtx) => {
+var jsonError = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx) => {
   try {
     return await middlewareCtx.next(request, env);
   } catch (e) {
@@ -5418,17 +5425,20 @@ var jsonError = /* @__PURE__ */ __name2(async (request, env, _ctx, middlewareCtx
   }
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
+
+// ../.wrangler/tmp/bundle-OujBJs/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
 ];
 var middleware_insertion_facade_default = We;
+
+// ../../../../usr/lib/node_modules/wrangler/templates/middleware/common.ts
 var __facade_middleware__ = [];
 function __facade_register__(...args) {
   __facade_middleware__.push(...args.flat());
 }
 __name(__facade_register__, "__facade_register__");
-__name2(__facade_register__, "__facade_register__");
 function __facade_invokeChain__(request, env, ctx, dispatch, middlewareChain) {
   const [head, ...tail] = middlewareChain;
   const middlewareCtx = {
@@ -5440,7 +5450,6 @@ function __facade_invokeChain__(request, env, ctx, dispatch, middlewareChain) {
   return head(request, env, ctx, middlewareCtx);
 }
 __name(__facade_invokeChain__, "__facade_invokeChain__");
-__name2(__facade_invokeChain__, "__facade_invokeChain__");
 function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
   return __facade_invokeChain__(request, env, ctx, dispatch, [
     ...__facade_middleware__,
@@ -5448,18 +5457,16 @@ function __facade_invoke__(request, env, ctx, dispatch, finalMiddleware) {
   ]);
 }
 __name(__facade_invoke__, "__facade_invoke__");
-__name2(__facade_invoke__, "__facade_invoke__");
+
+// ../.wrangler/tmp/bundle-OujBJs/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
-  static {
-    __name(this, "___Facade_ScheduledController__");
-  }
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;
     this.cron = cron;
     this.#noRetry = noRetry;
   }
   static {
-    __name2(this, "__Facade_ScheduledController__");
+    __name(this, "__Facade_ScheduledController__");
   }
   #noRetry;
   noRetry() {
@@ -5476,7 +5483,7 @@ function wrapExportedHandler(worker) {
   for (const middleware of __INTERNAL_WRANGLER_MIDDLEWARE__) {
     __facade_register__(middleware);
   }
-  const fetchDispatcher = /* @__PURE__ */ __name2(function(request, env, ctx) {
+  const fetchDispatcher = /* @__PURE__ */ __name(function(request, env, ctx) {
     if (worker.fetch === void 0) {
       throw new Error("Handler does not export a fetch() function.");
     }
@@ -5485,7 +5492,7 @@ function wrapExportedHandler(worker) {
   return {
     ...worker,
     fetch(request, env, ctx) {
-      const dispatcher = /* @__PURE__ */ __name2(function(type, init) {
+      const dispatcher = /* @__PURE__ */ __name(function(type, init) {
         if (type === "scheduled" && worker.scheduled !== void 0) {
           const controller = new __Facade_ScheduledController__(
             Date.now(),
@@ -5501,7 +5508,6 @@ function wrapExportedHandler(worker) {
   };
 }
 __name(wrapExportedHandler, "wrapExportedHandler");
-__name2(wrapExportedHandler, "wrapExportedHandler");
 function wrapWorkerEntrypoint(klass) {
   if (__INTERNAL_WRANGLER_MIDDLEWARE__ === void 0 || __INTERNAL_WRANGLER_MIDDLEWARE__.length === 0) {
     return klass;
@@ -5510,7 +5516,7 @@ function wrapWorkerEntrypoint(klass) {
     __facade_register__(middleware);
   }
   return class extends klass {
-    #fetchDispatcher = /* @__PURE__ */ __name2((request, env, ctx) => {
+    #fetchDispatcher = /* @__PURE__ */ __name((request, env, ctx) => {
       this.env = env;
       this.ctx = ctx;
       if (super.fetch === void 0) {
@@ -5518,7 +5524,7 @@ function wrapWorkerEntrypoint(klass) {
       }
       return super.fetch(request);
     }, "#fetchDispatcher");
-    #dispatcher = /* @__PURE__ */ __name2((type, init) => {
+    #dispatcher = /* @__PURE__ */ __name((type, init) => {
       if (type === "scheduled" && super.scheduled !== void 0) {
         const controller = new __Facade_ScheduledController__(
           Date.now(),
@@ -5541,7 +5547,6 @@ function wrapWorkerEntrypoint(klass) {
   };
 }
 __name(wrapWorkerEntrypoint, "wrapWorkerEntrypoint");
-__name2(wrapWorkerEntrypoint, "wrapWorkerEntrypoint");
 var WRAPPED_ENTRY;
 if (typeof middleware_insertion_facade_default === "object") {
   WRAPPED_ENTRY = wrapExportedHandler(middleware_insertion_facade_default);
@@ -5549,232 +5554,8 @@ if (typeof middleware_insertion_facade_default === "object") {
   WRAPPED_ENTRY = wrapWorkerEntrypoint(middleware_insertion_facade_default);
 }
 var middleware_loader_entry_default = WRAPPED_ENTRY;
-
-// ../../../usr/lib/node_modules/wrangler/templates/pages-dev-util.ts
-function isRoutingRuleMatch(pathname, routingRule) {
-  if (!pathname) {
-    throw new Error("Pathname is undefined.");
-  }
-  if (!routingRule) {
-    throw new Error("Routing rule is undefined.");
-  }
-  const ruleRegExp = transformRoutingRuleToRegExp(routingRule);
-  return pathname.match(ruleRegExp) !== null;
-}
-__name(isRoutingRuleMatch, "isRoutingRuleMatch");
-function transformRoutingRuleToRegExp(rule) {
-  let transformedRule;
-  if (rule === "/" || rule === "/*") {
-    transformedRule = rule;
-  } else if (rule.endsWith("/*")) {
-    transformedRule = `${rule.substring(0, rule.length - 2)}(/*)?`;
-  } else if (rule.endsWith("/")) {
-    transformedRule = `${rule.substring(0, rule.length - 1)}(/)?`;
-  } else if (rule.endsWith("*")) {
-    transformedRule = rule;
-  } else {
-    transformedRule = `${rule}(/)?`;
-  }
-  transformedRule = `^${transformedRule.replaceAll(/\./g, "\\.").replaceAll(/\*/g, ".*")}$`;
-  return new RegExp(transformedRule);
-}
-__name(transformRoutingRuleToRegExp, "transformRoutingRuleToRegExp");
-
-// .wrangler/tmp/pages-SVGwi6/9vseo4o4se.js
-var define_ROUTES_default = { version: 1, include: ["/*"], exclude: [] };
-var routes = define_ROUTES_default;
-var pages_dev_pipeline_default = {
-  fetch(request, env, context) {
-    const { pathname } = new URL(request.url);
-    for (const exclude of routes.exclude) {
-      if (isRoutingRuleMatch(pathname, exclude)) {
-        return env.ASSETS.fetch(request);
-      }
-    }
-    for (const include of routes.include) {
-      if (isRoutingRuleMatch(pathname, include)) {
-        const workerAsHandler = middleware_loader_entry_default;
-        if (workerAsHandler.fetch === void 0) {
-          throw new TypeError("Entry point missing `fetch` handler");
-        }
-        return workerAsHandler.fetch(request, env, context);
-      }
-    }
-    return env.ASSETS.fetch(request);
-  }
-};
-
-// ../../../usr/lib/node_modules/wrangler/templates/middleware/middleware-ensure-req-body-drained.ts
-var drainBody2 = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx) => {
-  try {
-    return await middlewareCtx.next(request, env);
-  } finally {
-    try {
-      if (request.body !== null && !request.bodyUsed) {
-        const reader = request.body.getReader();
-        while (!(await reader.read()).done) {
-        }
-      }
-    } catch (e) {
-      console.error("Failed to drain the unused request body.", e);
-    }
-  }
-}, "drainBody");
-var middleware_ensure_req_body_drained_default2 = drainBody2;
-
-// ../../../usr/lib/node_modules/wrangler/templates/middleware/middleware-miniflare3-json-error.ts
-function reduceError2(e) {
-  return {
-    name: e?.name,
-    message: e?.message ?? String(e),
-    stack: e?.stack,
-    cause: e?.cause === void 0 ? void 0 : reduceError2(e.cause)
-  };
-}
-__name(reduceError2, "reduceError");
-var jsonError2 = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx) => {
-  try {
-    return await middlewareCtx.next(request, env);
-  } catch (e) {
-    const error = reduceError2(e);
-    return Response.json(error, {
-      status: 500,
-      headers: { "MF-Experimental-Error-Stack": "true" }
-    });
-  }
-}, "jsonError");
-var middleware_miniflare3_json_error_default2 = jsonError2;
-
-// .wrangler/tmp/bundle-bGx3qi/middleware-insertion-facade.js
-var __INTERNAL_WRANGLER_MIDDLEWARE__2 = [
-  middleware_ensure_req_body_drained_default2,
-  middleware_miniflare3_json_error_default2
-];
-var middleware_insertion_facade_default2 = pages_dev_pipeline_default;
-
-// ../../../usr/lib/node_modules/wrangler/templates/middleware/common.ts
-var __facade_middleware__2 = [];
-function __facade_register__2(...args) {
-  __facade_middleware__2.push(...args.flat());
-}
-__name(__facade_register__2, "__facade_register__");
-function __facade_invokeChain__2(request, env, ctx, dispatch, middlewareChain) {
-  const [head, ...tail] = middlewareChain;
-  const middlewareCtx = {
-    dispatch,
-    next(newRequest, newEnv) {
-      return __facade_invokeChain__2(newRequest, newEnv, ctx, dispatch, tail);
-    }
-  };
-  return head(request, env, ctx, middlewareCtx);
-}
-__name(__facade_invokeChain__2, "__facade_invokeChain__");
-function __facade_invoke__2(request, env, ctx, dispatch, finalMiddleware) {
-  return __facade_invokeChain__2(request, env, ctx, dispatch, [
-    ...__facade_middleware__2,
-    finalMiddleware
-  ]);
-}
-__name(__facade_invoke__2, "__facade_invoke__");
-
-// .wrangler/tmp/bundle-bGx3qi/middleware-loader.entry.ts
-var __Facade_ScheduledController__2 = class ___Facade_ScheduledController__2 {
-  constructor(scheduledTime, cron, noRetry) {
-    this.scheduledTime = scheduledTime;
-    this.cron = cron;
-    this.#noRetry = noRetry;
-  }
-  static {
-    __name(this, "__Facade_ScheduledController__");
-  }
-  #noRetry;
-  noRetry() {
-    if (!(this instanceof ___Facade_ScheduledController__2)) {
-      throw new TypeError("Illegal invocation");
-    }
-    this.#noRetry();
-  }
-};
-function wrapExportedHandler2(worker) {
-  if (__INTERNAL_WRANGLER_MIDDLEWARE__2 === void 0 || __INTERNAL_WRANGLER_MIDDLEWARE__2.length === 0) {
-    return worker;
-  }
-  for (const middleware of __INTERNAL_WRANGLER_MIDDLEWARE__2) {
-    __facade_register__2(middleware);
-  }
-  const fetchDispatcher = /* @__PURE__ */ __name(function(request, env, ctx) {
-    if (worker.fetch === void 0) {
-      throw new Error("Handler does not export a fetch() function.");
-    }
-    return worker.fetch(request, env, ctx);
-  }, "fetchDispatcher");
-  return {
-    ...worker,
-    fetch(request, env, ctx) {
-      const dispatcher = /* @__PURE__ */ __name(function(type, init) {
-        if (type === "scheduled" && worker.scheduled !== void 0) {
-          const controller = new __Facade_ScheduledController__2(
-            Date.now(),
-            init.cron ?? "",
-            () => {
-            }
-          );
-          return worker.scheduled(controller, env, ctx);
-        }
-      }, "dispatcher");
-      return __facade_invoke__2(request, env, ctx, dispatcher, fetchDispatcher);
-    }
-  };
-}
-__name(wrapExportedHandler2, "wrapExportedHandler");
-function wrapWorkerEntrypoint2(klass) {
-  if (__INTERNAL_WRANGLER_MIDDLEWARE__2 === void 0 || __INTERNAL_WRANGLER_MIDDLEWARE__2.length === 0) {
-    return klass;
-  }
-  for (const middleware of __INTERNAL_WRANGLER_MIDDLEWARE__2) {
-    __facade_register__2(middleware);
-  }
-  return class extends klass {
-    #fetchDispatcher = /* @__PURE__ */ __name((request, env, ctx) => {
-      this.env = env;
-      this.ctx = ctx;
-      if (super.fetch === void 0) {
-        throw new Error("Entrypoint class does not define a fetch() function.");
-      }
-      return super.fetch(request);
-    }, "#fetchDispatcher");
-    #dispatcher = /* @__PURE__ */ __name((type, init) => {
-      if (type === "scheduled" && super.scheduled !== void 0) {
-        const controller = new __Facade_ScheduledController__2(
-          Date.now(),
-          init.cron ?? "",
-          () => {
-          }
-        );
-        return super.scheduled(controller);
-      }
-    }, "#dispatcher");
-    fetch(request) {
-      return __facade_invoke__2(
-        request,
-        this.env,
-        this.ctx,
-        this.#dispatcher,
-        this.#fetchDispatcher
-      );
-    }
-  };
-}
-__name(wrapWorkerEntrypoint2, "wrapWorkerEntrypoint");
-var WRAPPED_ENTRY2;
-if (typeof middleware_insertion_facade_default2 === "object") {
-  WRAPPED_ENTRY2 = wrapExportedHandler2(middleware_insertion_facade_default2);
-} else if (typeof middleware_insertion_facade_default2 === "function") {
-  WRAPPED_ENTRY2 = wrapWorkerEntrypoint2(middleware_insertion_facade_default2);
-}
-var middleware_loader_entry_default2 = WRAPPED_ENTRY2;
 export {
-  __INTERNAL_WRANGLER_MIDDLEWARE__2 as __INTERNAL_WRANGLER_MIDDLEWARE__,
-  middleware_loader_entry_default2 as default
+  __INTERNAL_WRANGLER_MIDDLEWARE__,
+  middleware_loader_entry_default as default
 };
-//# sourceMappingURL=9vseo4o4se.js.map
+//# sourceMappingURL=bundledWorker-0.7415536085643979.mjs.map
