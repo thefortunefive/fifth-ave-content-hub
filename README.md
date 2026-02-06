@@ -1,6 +1,6 @@
 # 5th Ave Content Hub
 
-A dual-topic content management dashboard for generating AI images, managing social media content, and scheduling posts. Supports both **Crypto News** and **AI News** workflows.
+A dual-topic content management dashboard for generating AI images, managing social media content, and scheduling posts. Supports both **Crypto News** and **AI News** workflows with **instant webhook processing** (no 15-minute wait).
 
 ## Live URL
 **Development**: https://3000-i8wcwhv91wsc5cw1epaap-02b9cc79.sandbox.novita.ai
@@ -22,6 +22,14 @@ pm2 logs --nostream
 ```
 
 ## Features
+
+### Instant Webhook Processing (NEW)
+- **No more 15-minute wait!** Content saved via browser extension is processed instantly
+- `/api/save` creates Airtable record, then fires a webhook to n8n for immediate processing
+- n8n pipeline: Perplexity research + OpenAI image prompt + social content (all platforms)
+- Popup shows real-time processing status with polling (`/api/process-status/:recordId`)
+- Full pipeline takes ~60 seconds from save to complete content generation
+- Crypto and AI topics trigger instant processing; General saves without processing
 
 ### Dual-Topic Support (Crypto & AI)
 - **Auto-detect mode** from selected Airtable table name
@@ -55,9 +63,16 @@ pm2 logs --nostream
 - "Ready to Schedule" queue
 - Visual post thumbnails on calendar
 
+### Browser Extension (v3.0)
+- Chrome extension for saving URLs to any pipeline
+- Auto-detects topic from URL/title keywords
+- Shows instant processing status after save
+- Polls for completion with real-time progress updates
+- Platform selection (Twitter, LinkedIn, Blog, Instagram, Facebook, Avatar)
+
 ## Airtable Schema
 
-**Base**: 5th Ave Crypto (`appgyL5gKf8rjaJPv`)
+**Base**: 5th Ave Content Hub (`appgyL5gKf8rjaJPv`)
 
 | Table | ID | Purpose |
 |-------|----|---------|
@@ -68,21 +83,68 @@ pm2 logs --nostream
 | Writing Prompts | `tblNlXsKkFJvdLDdo` | Per-platform writing prompts |
 | Brand Guidelines | `tblki4OkwIYoml1cw` | Image style & brand voice |
 
-**Social Posts & Social Posts - AI fields**: sourceHeadline, category, sourceSummary, postImage, imagePrompt, Status, sourceURL, socialChannels, imageSize, blogCopy, linkedinCopy, facebookCopy, instagramCopy, twitterCopy, threadsCopy, blueskyCopy, whyItMatters, rewrittenHeadline, caption, shortScript, Start date, datePosted
+**Social Posts & Social Posts - AI fields**: sourceHeadline, rewrittenHeadline, category, sourceSummary, postImage, imagePrompt, Status, sourceURL, socialChannels, imageSize, blogCopy, linkedinCopy, facebookCopy, instagramCopy, twitterCopy, threadsCopy, blueskyCopy, whyItMatters, caption, shortScript, Start date, datePosted
 
 ## n8n Workflows
 
-| Workflow | ID | Status | Schedule | Target Table |
-|----------|----|--------|----------|-------------|
-| 5th Ave Crypto News | `XNLL4gkhUCfXKX5K` | ✅ Active | Every 8 hours | Social Posts |
-| Fifth Ave AI News | `9UDqdrzT6RNfKaOI` | ❌ Needs manual activation | Every 8 hours | Social Posts - AI |
-| 5th Ave Crypto - Extension Pickup | `jATELdNUDfmLMeXC` | ✅ Active | Every 15 min | Social Posts |
-| 5th Ave AI - Extension Pickup | `ptL1slQw6YD7xm2I` | ✅ Active | Every 15 min | Social Posts - AI |
+| Workflow | ID | Status | Trigger | Target Table |
+|----------|----|--------|---------|-------------|
+| 5th Ave Crypto News | `XNLL4gkhUCfXKX5K` | Active | Every 8 hours | Social Posts |
+| Fifth Ave AI News | `9UDqdrzT6RNfKaOI` | Needs activation | Every 8 hours | Social Posts - AI |
+| 5th Ave Crypto - Extension Pickup | `jATELdNUDfmLMeXC` | **Active** | **Instant webhook** + 15min fallback | Social Posts |
+| 5th Ave AI - Extension Pickup | `ptL1slQw6YD7xm2I` | **Active** | **Instant webhook** + 15min fallback | Social Posts - AI |
 
-### What's Configured
-- All AI workflow nodes updated: prompts, table IDs, categories
-- Extension Pickup workflows: find new records, enrich from URL, generate image prompts + social content
-- See `5TH_AVE_NEWS_FIX_GUIDE.md` for complete details
+### Webhook Processing Architecture
+
+```
+Extension Save (/api/save)
+       │
+       ├── Creates Airtable record (Status: "Needs Approval")
+       │
+       └── Fires webhook (crypto/ai only) ──► n8n Instant Trigger
+                                                     │
+                                                     ▼
+                                              Set Record Data
+                                              (normalizes webhook payload)
+                                                     │
+                                                     ▼
+                                              Enrich from URL
+                                              (Perplexity sonar-pro)
+                                                     │
+                                        ┌────────────┴────────────┐
+                                        ▼                         ▼
+                                Generate Image Prompt       AI Writer
+                                (GPT-4o)                    (GPT-4o)
+                                        │                         │
+                                        ▼                         ▼
+                                Parse Image Prompt        Parse Social Content
+                                        │                         │
+                                        ▼                         ▼
+                                HTTP PATCH Airtable       HTTP PATCH Airtable
+                                (save imagePrompt)        (save all social copy)
+```
+
+**Webhook endpoints (production):**
+- Crypto: `https://fifthaveai.app.n8n.cloud/webhook/crypto-pickup`
+- AI: `https://fifthaveai.app.n8n.cloud/webhook/ai-pickup`
+
+**Webhook payload shape:**
+```json
+{
+  "recordId": "recXXXXXX",
+  "sourceURL": "https://...",
+  "sourceHeadline": "Article Title",
+  "sourceSummary": "Notes from extension",
+  "topic": "crypto|ai",
+  "triggeredAt": "2026-02-06T05:10:56.000Z"
+}
+```
+
+### Key Fixes Applied (2026-02-06)
+1. **Bypassed broken Has Records? IF node** - n8n v2.2 IF node with `{{ $json.sourceURL }} isNotEmpty` always evaluated false; replaced with direct routing through Set Record Data
+2. **Fixed cross-node references** - Enrich from URL used `$json.fields.sourceURL` but Airtable returns `$json.sourceURL`; corrected all references
+3. **Replaced Airtable Save nodes with HTTP PATCH** - n8n Airtable node v2.1 had a bug where `id: {{ $json.id }}` didn't resolve correctly; HTTP Request nodes reliably use `$json.id`
+4. **Fixed double AI Writer execution** - Set Record Data now connects only to Enrich from URL, not parallel to AI Writer
 
 ## API Endpoints
 
@@ -98,7 +160,9 @@ pm2 logs --nostream
 | `/api/task-status/:id` | GET | Check generation status |
 | `/api/upload-image` | POST | Upload to freeimage.host |
 | `/api/proxy-image` | POST | Proxy image for CORS |
-| `/api/save` | POST | Browser extension save (routes to correct table) |
+| `/api/save` | POST | **Browser extension save + instant webhook trigger** |
+| `/api/process-status/:id` | GET | **Poll processing status (hasResearch, hasImagePrompt, hasSocialContent)** |
+| `/api/process` | POST | **Manually re-trigger processing for existing record** |
 | `/api/topics` | GET | List available topics for extension |
 
 ## Tech Stack
@@ -109,15 +173,16 @@ pm2 logs --nostream
 - **Image Generation**: KieAI API
 - **Text Overlay**: Ideogram character-edit (via KieAI)
 - **Image Hosting**: freeimage.host
-- **Browser Extension**: Chrome extension for saving URLs to pipeline
-- **Automation**: n8n (2 workflows: Crypto + AI, each with auto-discovery + extension pickup)
+- **Browser Extension**: Chrome extension v3.0 with instant processing
+- **Automation**: n8n (webhook-triggered instant processing + 15-min fallback)
+- **AI Pipeline**: Perplexity (sonar-pro) + OpenAI (GPT-4o) via n8n
 - **Deployment**: Cloudflare Pages (planned)
 
 ## Project Structure
 
 ```
 webapp/
-├── src/index.tsx              # Main application (backend + frontend)
+├── src/index.tsx              # Main application (backend + frontend + /api/save webhook)
 ├── dist/                      # Build output
 ├── masks/                     # Mask images for text overlay
 ├── public/                    # Static assets
@@ -126,10 +191,10 @@ webapp/
 ├── package.json               # Dependencies
 ├── PROJECT.md                 # Project vision/specification
 ├── STATE.md                   # Current state tracking
-├── extension/                 # Chrome extension source files
+├── extension/                 # Chrome extension source files (v3.0)
 │   ├── manifest.json          # Extension manifest (v3)
-│   ├── popup.html             # Extension popup UI
-│   ├── popup.js               # Extension popup logic
+│   ├── popup.html             # Extension popup UI (with processing status)
+│   ├── popup.js               # Extension popup logic (instant webhook + polling)
 │   └── icons/                 # Extension icons
 ├── 5TH_AVE_NEWS_FIX_GUIDE.md # n8n workflow fix guide
 └── README.md                  # This file
@@ -151,7 +216,7 @@ pm2 list
 ## Content Flow Architecture
 
 ```
-  Auto-Discovery (every 8 hrs)     Browser Extension (manual)
+  Auto-Discovery (every 8 hrs)     Browser Extension (instant!)
   AI finds 5 top stories           You save any URL
          │                                │
          ▼                                ▼
@@ -159,10 +224,17 @@ pm2 list
   │        Airtable: Social Posts / AI          │
   │        Status: "Needs Approval"             │
   └──────────────────┬──────────────────────────┘
+                     │
+          ┌──────────┴──────────┐
+          ▼                     ▼
+  15-min fallback        Instant webhook
+  (schedule trigger)     (fires immediately)
+          │                     │
+          └──────────┬──────────┘
                      ▼
   ┌─────────────────────────────────────────────┐
-  │  n8n: Image Generation + Social Copy        │
-  │  (shared pipeline for both triggers)        │
+  │  n8n: Perplexity Research → Image Prompt    │
+  │  + Social Copy (all 8 platforms) (~60s)     │
   └──────────────────┬──────────────────────────┘
                      ▼
   ┌─────────────────────────────────────────────┐

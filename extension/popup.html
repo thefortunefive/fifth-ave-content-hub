@@ -259,6 +259,17 @@
     .status.error { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.2); }
     .status.loading { background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.2); }
 
+    /* Processing state */
+    .save-btn.processing {
+      background: linear-gradient(135deg, #a855f7, #6d28d9);
+      color: white;
+      animation: pulse-processing 2s ease-in-out infinite;
+    }
+    @keyframes pulse-processing {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
     /* Spinner */
     .spinner {
       width: 16px; height: 16px;
@@ -396,8 +407,16 @@
 
     <!-- Save Button -->
     <button id="save-btn" class="save-btn general">
-      <span>&#x1F4BE;</span> Save to Pipeline
+      <span>&#x26A1;</span> Save to Pipeline
     </button>
+
+    <!-- Processing info -->
+    <div id="processing-info" class="processing-info" style="display:none;">
+      <div style="display:flex; align-items:center; gap:6px; font-size:11px; color:#94a3b8; margin-top:8px;">
+        <span style="color:#a855f7;">&#x26A1;</span>
+        <span>Crypto/AI saves are processed instantly via n8n webhooks — no 15-minute wait!</span>
+      </div>
+    </div>
 
     <!-- Status Message -->
     <div id="status" class="status"></div>

@@ -485,8 +485,24 @@ app.post('/api/process', async (c) => {
       return c.json({ error: 'Processing only available for crypto/ai topics' }, 400)
     }
     
-    // Trigger the n8n webhook
-    await triggerInstantPickup(topic, recordId)
+    const route = EXTENSION_ROUTES[topic]
+    if (!route) {
+      return c.json({ error: 'Invalid topic' }, 400)
+    }
+    
+    // Fetch the record from Airtable to get current data
+    const airtableRes = await fetch(`https://api.airtable.com/v0/${route.baseId}/${route.tableId}/${recordId}`, {
+      headers: { 'Authorization': `Bearer ${EXTENSION_AIRTABLE_TOKEN}` }
+    })
+    const record: any = await airtableRes.json()
+    const fields = record.fields || {}
+    
+    // Trigger the n8n webhook with record data
+    await triggerInstantPickup(topic, recordId, {
+      sourceURL: fields.sourceURL || '',
+      sourceHeadline: fields.sourceHeadline || '',
+      sourceSummary: fields.sourceSummary || ''
+    })
     
     return c.json({ success: true, status: 'processing_started', recordId })
   } catch (err: any) {

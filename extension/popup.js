@@ -1,5 +1,5 @@
 // 5th Ave Content Saver - Chrome Extension
-// v2.0 - Supports Crypto, AI, and General pipelines
+// v3.0 - Instant webhook processing (no 15-minute wait)
 
 // Default API endpoint - update this to your Content Hub URL
 const DEFAULT_API_ENDPOINT = 'https://3000-i8wcwhv91wsc5cw1epaap-02b9cc79.sandbox.novita.ai';
@@ -18,8 +18,8 @@ const TOPIC_STYLES = {
 
 // Save button labels and styles
 const SAVE_LABELS = {
-  crypto: { text: 'Save to Crypto News', class: 'crypto' },
-  ai: { text: 'Save to AI News', class: 'ai' },
+  crypto: { text: 'Save & Process Crypto News', class: 'crypto' },
+  ai: { text: 'Save & Process AI News', class: 'ai' },
   general: { text: 'Save to Pipeline', class: 'general' }
 };
 
@@ -141,10 +141,16 @@ function setActiveTopic(topic) {
   const saveBtn = document.getElementById('save-btn');
   const label = SAVE_LABELS[topic];
   saveBtn.className = 'save-btn ' + label.class;
-  saveBtn.innerHTML = '<span>\uD83D\uDCBE</span> ' + label.text;
+  saveBtn.innerHTML = '<span>\u26A1</span> ' + label.text;
+
+  // Show/hide processing info
+  const processingInfo = document.getElementById('processing-info');
+  if (processingInfo) {
+    processingInfo.style.display = (topic === 'crypto' || topic === 'ai') ? 'block' : 'none';
+  }
 }
 
-// Save to Airtable via backend API
+// Save to Airtable via backend API — triggers instant n8n webhook processing
 async function saveToAirtable() {
   const saveBtn = document.getElementById('save-btn');
   const customTitle = document.getElementById('custom-title').value.trim();
@@ -156,7 +162,7 @@ async function saveToAirtable() {
   saveBtn.disabled = true;
   const label = SAVE_LABELS[currentTopic];
   saveBtn.innerHTML = '<div class="spinner"></div> Saving...';
-  showStatus('Saving to ' + label.text.replace('Save to ', '') + '...', 'loading');
+  showStatus('Saving to ' + label.text.replace('Save & Process ', '').replace('Save to ', '') + '...', 'loading');
 
   try {
     const response = await fetch(apiEndpoint + '/api/save', {
@@ -176,36 +182,109 @@ async function saveToAirtable() {
     const result = await response.json();
 
     if (result.success) {
-      const tableName = result.table || label.text.replace('Save to ', '');
-      showStatus('Saved to ' + tableName + '!', 'success');
-      saveBtn.innerHTML = '\u2705 Saved!';
-
-      // Reset after 2 seconds
-      setTimeout(() => {
-        saveBtn.innerHTML = '<span>\uD83D\uDCBE</span> ' + label.text;
-        saveBtn.disabled = false;
-      }, 2000);
+      const tableName = result.table || label.text.replace('Save & Process ', '').replace('Save to ', '');
+      
+      // Check if instant processing was triggered
+      if (result.processing === 'started') {
+        // Show processing status with record info
+        showStatus('\u2705 Saved to ' + tableName + ' \u2014 \u26A1 Processing instantly via n8n...', 'success');
+        saveBtn.innerHTML = '\u26A1 Processing...';
+        saveBtn.className = 'save-btn processing';
+        
+        // Start polling for completion
+        pollProcessingStatus(result.record.id, currentTopic, saveBtn, label);
+      } else {
+        // General topic or no processing needed
+        showStatus('\u2705 Saved to ' + tableName + '!', 'success');
+        saveBtn.innerHTML = '\u2705 Saved!';
+        
+        // Reset after 2 seconds
+        setTimeout(() => {
+          saveBtn.innerHTML = '<span>\u26A1</span> ' + label.text;
+          saveBtn.className = 'save-btn ' + label.class;
+          saveBtn.disabled = false;
+        }, 2000);
+      }
     } else {
       throw new Error(result.error || 'Failed to save');
     }
   } catch (error) {
     console.error('Error:', error);
     showStatus(error.message, 'error');
-    saveBtn.innerHTML = '<span>\uD83D\uDCBE</span> ' + label.text;
+    saveBtn.innerHTML = '<span>\u26A1</span> ' + label.text;
+    saveBtn.className = 'save-btn ' + label.class;
     saveBtn.disabled = false;
   }
+}
+
+// Poll the processing status endpoint to check if n8n has finished
+async function pollProcessingStatus(recordId, topic, saveBtn, label) {
+  const maxPolls = 30; // 30 polls * 3 seconds = 90 seconds max
+  let pollCount = 0;
+  
+  const poll = async () => {
+    pollCount++;
+    
+    try {
+      const response = await fetch(apiEndpoint + '/api/process-status/' + recordId + '?topic=' + topic);
+      const status = await response.json();
+      
+      if (status.status === 'complete') {
+        // All content generated!
+        const headline = status.fields.rewrittenHeadline ? (' \u2014 "' + status.fields.rewrittenHeadline + '"') : '';
+        showStatus('\u2705 Content ready!' + headline, 'success');
+        saveBtn.innerHTML = '\u2705 Content Ready!';
+        saveBtn.className = 'save-btn ' + label.class;
+        
+        // Reset after 4 seconds
+        setTimeout(() => {
+          saveBtn.innerHTML = '<span>\u26A1</span> ' + label.text;
+          saveBtn.disabled = false;
+        }, 4000);
+        return;
+      }
+      
+      if (status.status === 'generating_content') {
+        showStatus('\u26A1 Research done \u2014 generating social content & image prompt...', 'loading');
+        saveBtn.innerHTML = '\u26A1 Generating content...';
+      }
+      
+      if (pollCount < maxPolls) {
+        setTimeout(poll, 3000);
+      } else {
+        // Timed out but still processing
+        showStatus('\u2705 Saved! Processing continues in background \u2014 check dashboard for results.', 'success');
+        saveBtn.innerHTML = '<span>\u26A1</span> ' + label.text;
+        saveBtn.className = 'save-btn ' + label.class;
+        saveBtn.disabled = false;
+      }
+    } catch (err) {
+      console.error('Poll error:', err);
+      // Don't fail — processing may still be running
+      if (pollCount < maxPolls) {
+        setTimeout(poll, 3000);
+      } else {
+        saveBtn.innerHTML = '<span>\u26A1</span> ' + label.text;
+        saveBtn.className = 'save-btn ' + label.class;
+        saveBtn.disabled = false;
+      }
+    }
+  };
+  
+  // Start polling after 5 seconds (give n8n time to start)
+  setTimeout(poll, 5000);
 }
 
 // Show status message
 function showStatus(message, type) {
   const status = document.getElementById('status');
-  status.textContent = (type === 'success' ? '\u2705 ' : type === 'error' ? '\u274C ' : '\u23F3 ') + message;
+  status.textContent = message;
   status.className = 'status show ' + type;
 
-  // Auto-hide success messages
+  // Auto-hide success messages after 8 seconds (longer for processing updates)
   if (type === 'success') {
     setTimeout(() => {
       status.className = 'status';
-    }, 4000);
+    }, 8000);
   }
 }
