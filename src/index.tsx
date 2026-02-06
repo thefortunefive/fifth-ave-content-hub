@@ -1,7 +1,13 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 
-const app = new Hono()
+// Type bindings for environment variables
+type Bindings = {
+  PERPLEXITY_API_KEY?: string
+  OPENAI_API_KEY?: string
+}
+
+const app = new Hono<{ Bindings: Bindings }>()
 
 app.use('/api/*', cors())
 
@@ -284,7 +290,168 @@ const VALID_SOCIAL_CHANNELS = ['Twitter', 'LinkedIn', 'Blog', 'Instagram', 'Face
 // Airtable token for extension saves
 const EXTENSION_AIRTABLE_TOKEN = 'patzmYCtUSKROFbsw.ebdd70b78b2f422fd5a6da1aa867be11f690a795117c9e13d9d4747708018921'
 
-// API: Save URL from browser extension
+// ============================================
+// INSTANT CONTENT PROCESSING ENGINE
+// ============================================
+
+// Perplexity: Research and enrich a URL
+async function enrichFromUrl(sourceURL: string, sourceHeadline: string, sourceSummary: string, topic: string, perplexityKey: string): Promise<string> {
+  const topicLabel = topic === 'ai' ? 'AI/technology' : 'crypto'
+  
+  const res = await fetch('https://api.perplexity.ai/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${perplexityKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: 'sonar-pro',
+      messages: [{
+        role: 'user',
+        content: `You are a professional ${topicLabel} news researcher.\n\nGiven this article URL and headline, research and provide a comprehensive summary.\n\nURL: ${sourceURL}\nHEADLINE: ${sourceHeadline}\nUSER NOTES: ${sourceSummary || ''}\n\nTASK:\n1. Read and analyze the article at the URL\n2. Provide a detailed, factual summary\n3. Identify the key ${topicLabel} angle\n4. Explain why this matters\n\nReturn a detailed summary (3-5 paragraphs) that covers:\n- What happened (facts, data, quotes)\n- Why it matters for ${topicLabel}\n- Broader implications\n- Key takeaways\n\nWrite in clear, factual prose. No JSON needed - just a well-written report.`
+      }]
+    })
+  })
+  
+  const data: any = await res.json()
+  return data.choices?.[0]?.message?.content || ''
+}
+
+// OpenAI: Generate image prompt
+async function generateImagePromptAI(sourceHeadline: string, research: string, topic: string, openaiKey: string): Promise<string> {
+  const systemPrompt = topic === 'ai' 
+    ? `You are "5th Ave Angel", a sharp AI/technology commentator and creative director.\n\nYour job is to create a detailed text-to-image prompt for an AI image generator.\n\nCRITICAL - CHARACTER REQUIREMENT:\nEvery image MUST feature "5th Ave Angel" — a professional woman in her mid-30s with long blonde hair, wearing elegant Ralph Lauren-style business attire.\n\nCATEGORY-SPECIFIC VISUAL THEMES:\n- ai_models: Futuristic tech labs, holographic displays, neural network visualizations\n- ai_regulation: Government buildings, courtrooms, official settings with tech elements\n- ai_workplace: Modern offices, productivity tools, human-AI collaboration scenes\n- ai_research: Research labs, scientific environments, breakthrough moment visuals\n- ai_products: Product launches, consumer tech, sleek modern environments\n- ai_ethics: Balanced scales imagery, human-centered tech, thoughtful compositions\n- ai_robotics: Robotics labs, humanoid robots, advanced manufacturing\n\nCONSTRAINTS:\n- Respond ONLY with valid JSON: {"image_prompt": "..."}\n- 2-4 sentences maximum\n- ALWAYS include the blonde woman as the main subject\n- Style: cinematic, editorial, professional, photorealistic, 16:9`
+    : `You are "5th Ave Angel", a sharp crypto commentator and creative director.\n\nYour job is to create a detailed text-to-image prompt for an AI image generator.\n\nCRITICAL - CHARACTER REQUIREMENT:\nEvery image MUST feature "5th Ave Angel" — a professional woman in her mid-30s with long blonde hair, wearing elegant Ralph Lauren-style business attire.\n\nCATEGORY-SPECIFIC VISUAL THEMES:\n- self_banking: Vaults, banks, physical cash, digital wallets, freedom imagery\n- bitcoin_adoption: Cities, government buildings, corporate offices, global map\n- crypto_regulation: Courtrooms, Capitol buildings, legal documents, gavels\n- infra_dev: Server rooms, blockchain visualizations, code screens, hardware\n- macro_market: Stock tickers, trading floors, economic charts, global finance\n\nCONSTRAINTS:\n- Respond ONLY with valid JSON: {"image_prompt": "..."}\n- 2-4 sentences maximum\n- ALWAYS include the blonde woman as the main subject\n- Style: cinematic, editorial, professional, photorealistic, 16:9`
+
+  const topicLabel = topic === 'ai' ? 'AI/technology' : 'crypto'
+  
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${openaiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o',
+      temperature: 0.7,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: `HEADLINE: ${sourceHeadline}\n\nRESEARCH: ${research}\n\nCreate an image prompt featuring 5th Ave Angel in a scene related to this ${topicLabel} story.\n\nReturn ONLY: {"image_prompt": "A professional blonde woman in her mid-30s wearing [attire] [action] in [setting]. [Details]. [Lighting]. Cinematic, editorial, photorealistic, 16:9."}` }
+      ]
+    })
+  })
+  
+  const data: any = await res.json()
+  const content = data.choices?.[0]?.message?.content || ''
+  
+  // Parse the image prompt from JSON response
+  try {
+    const parsed = JSON.parse(content)
+    return parsed.image_prompt || ''
+  } catch {
+    const match = content.match(/"image_prompt"\s*:\s*"([^"]+)"/)
+    return match ? match[1] : content
+  }
+}
+
+// OpenAI: Generate all social media content
+async function generateSocialContent(sourceHeadline: string, research: string, topic: string, openaiKey: string): Promise<Record<string, string>> {
+  const topicLabel = topic === 'ai' ? 'AI technology' : 'crypto'
+  const persona = topic === 'ai'
+    ? `You are "5th Ave Angel" — a sharp, insightful AI technology commentator.\n\nYou speak clearly, confidently, and assume the audience is smart but busy.\nYou care about how AI impacts everyday people, businesses, and society — not just the tech industry hype cycle.`
+    : `You are "5th Ave Angel" — a sharp, no-BS crypto commentator.\n\nYou speak clearly, confidently, and assume the audience is smart but busy.\nYou care about self-banking, Bitcoin adoption, and real-world impact, not price noise.`
+
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${openaiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o',
+      temperature: 0.7,
+      messages: [
+        {
+          role: 'system',
+          content: `${persona}\n\nYour job is to take a ${topicLabel} news story and create platform-specific social media content.\n\nRULES:\n- Always return valid JSON only, no markdown, no backticks, no explanation\n- Every field must be populated\n- Be direct, conversational, and insightful`
+        },
+        {
+          role: 'user',
+          content: `HEADLINE: ${sourceHeadline}\n\nRESEARCH:\n${research}\n\nCreate social media content. Return ONLY valid JSON:\n\n{\n  "rewrittenHeadline": "Punchy headline, max 90 characters",\n  "caption": "2-3 sentence hook",\n  "whyItMatters": "1-2 sentences on why a normal person should care",\n  "blogCopy": "3-4 paragraph blog post (400-600 words)",\n  "linkedinCopy": "Professional tone, 150-200 words with hashtags",\n  "facebookCopy": "Conversational, 100-150 words",\n  "instagramCopy": "Punchy, 80-125 words with hashtags",\n  "twitterCopy": "Max 280 characters, no hashtags",\n  "threadsCopy": "Conversational, 100-150 words, no hashtags",\n  "blueskyCopy": "Max 300 characters, no hashtags",\n  "shortScript": "30-45 second video script"\n}`
+        }
+      ]
+    })
+  })
+  
+  const data: any = await res.json()
+  const content = data.choices?.[0]?.message?.content || '{}'
+  
+  try {
+    return JSON.parse(content)
+  } catch {
+    const match = content.match(/\{[\s\S]*\}/)
+    return match ? JSON.parse(match[0]) : {}
+  }
+}
+
+// Update Airtable record with enriched content
+async function updateAirtableRecord(recordId: string, baseId: string, tableId: string, fields: Record<string, any>): Promise<void> {
+  await fetch(`https://api.airtable.com/v0/${baseId}/${tableId}/${recordId}`, {
+    method: 'PATCH',
+    headers: {
+      'Authorization': `Bearer ${EXTENSION_AIRTABLE_TOKEN}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ fields })
+  })
+}
+
+// Full instant processing pipeline
+async function processContentInstantly(
+  recordId: string,
+  sourceURL: string,
+  sourceHeadline: string,
+  sourceSummary: string,
+  topic: string,
+  baseId: string,
+  tableId: string,
+  perplexityKey: string,
+  openaiKey: string
+): Promise<void> {
+  try {
+    console.log(`[Instant Process] Starting for record ${recordId} (${topic})`)
+    
+    // Step 1: Enrich from URL via Perplexity
+    console.log('[Instant Process] Step 1: Researching URL via Perplexity...')
+    const research = await enrichFromUrl(sourceURL, sourceHeadline, sourceSummary, topic, perplexityKey)
+    console.log(`[Instant Process] Research complete: ${research.length} chars`)
+    
+    // Step 2: Generate image prompt AND social content in parallel
+    console.log('[Instant Process] Step 2: Generating image prompt + social content in parallel...')
+    const [imagePrompt, socialContent] = await Promise.all([
+      generateImagePromptAI(sourceHeadline, research, topic, openaiKey),
+      generateSocialContent(sourceHeadline, research, topic, openaiKey)
+    ])
+    console.log(`[Instant Process] Image prompt: ${imagePrompt.length} chars`)
+    console.log(`[Instant Process] Social content fields: ${Object.keys(socialContent).length}`)
+    
+    // Step 3: Update Airtable record with all generated content
+    console.log('[Instant Process] Step 3: Saving all content to Airtable...')
+    const updateFields: Record<string, any> = {
+      imagePrompt: imagePrompt,
+      sourceSummary: research,
+      ...socialContent
+    }
+    
+    await updateAirtableRecord(recordId, baseId, tableId, updateFields)
+    console.log(`[Instant Process] DONE! Record ${recordId} fully enriched.`)
+    
+  } catch (err: any) {
+    console.error(`[Instant Process] ERROR for record ${recordId}:`, err.message || err)
+  }
+}
+
+// API: Save URL from browser extension — with INSTANT content processing
 app.post('/api/save', async (c) => {
   try {
     const { url, title, notes, platforms, topic } = await c.req.json()
@@ -341,22 +508,159 @@ app.post('/api/save', async (c) => {
       body: JSON.stringify({ fields })
     })
     
-    const data = await res.json()
+    const data: any = await res.json()
     
     if (data.error) {
       console.error('Airtable error:', data.error)
       return c.json({ success: false, error: data.error.message || 'Airtable error' }, 500)
     }
     
+    // ===== INSTANT PROCESSING =====
+    // For crypto/ai topics, immediately enrich the record with research, image prompt, and social content
+    // This runs in the background — the extension gets an immediate response
+    const perplexityKey = c.env?.PERPLEXITY_API_KEY || ''
+    const openaiKey = c.env?.OPENAI_API_KEY || ''
+    let processingStarted = false
+    
+    if ((selectedTopic === 'crypto' || selectedTopic === 'ai') && perplexityKey && openaiKey && data.id) {
+      processingStarted = true
+      const recordId = data.id
+      const sourceURL = url
+      const sourceHeadline = title || ''
+      const sourceSummary = notes || ''
+      
+      // Use waitUntil if available (Cloudflare Workers), otherwise fire-and-forget
+      const processingPromise = processContentInstantly(
+        recordId,
+        sourceURL,
+        sourceHeadline,
+        sourceSummary,
+        selectedTopic,
+        route.baseId,
+        route.tableId,
+        perplexityKey,
+        openaiKey
+      )
+      
+      // In Cloudflare Workers, c.executionCtx.waitUntil() keeps the worker alive
+      // In dev/local mode, the promise will run but may not complete
+      if (c.executionCtx && typeof c.executionCtx.waitUntil === 'function') {
+        c.executionCtx.waitUntil(processingPromise)
+      } else {
+        // Local dev fallback: just let it run
+        processingPromise.catch(err => console.error('[Instant Process] Background error:', err))
+      }
+    }
+    
     return c.json({ 
       success: true, 
       record: data,
       topic: selectedTopic,
-      table: selectedTopic === 'general' ? 'Content Pipeline' : (selectedTopic === 'crypto' ? 'Social Posts' : 'Social Posts - AI')
+      table: selectedTopic === 'general' ? 'Content Pipeline' : (selectedTopic === 'crypto' ? 'Social Posts' : 'Social Posts - AI'),
+      processing: processingStarted ? 'started' : (selectedTopic === 'general' ? 'not_applicable' : 'no_api_keys')
     })
   } catch (err: any) {
     console.error('Save error:', err)
     return c.json({ success: false, error: err.message || 'Server error' }, 500)
+  }
+})
+
+// API: Check processing status of a record (poll from extension)
+app.get('/api/process-status/:recordId', async (c) => {
+  try {
+    const recordId = c.req.param('recordId')
+    const topic = c.req.query('topic') || 'crypto'
+    const route = EXTENSION_ROUTES[topic]
+    
+    if (!route) {
+      return c.json({ error: 'Invalid topic' }, 400)
+    }
+    
+    // Fetch the record from Airtable to check if it's been enriched
+    const res = await fetch(`https://api.airtable.com/v0/${route.baseId}/${route.tableId}/${recordId}`, {
+      headers: { 'Authorization': `Bearer ${EXTENSION_AIRTABLE_TOKEN}` }
+    })
+    
+    const data: any = await res.json()
+    const fields = data.fields || {}
+    
+    // Check which fields have been populated
+    const hasResearch = !!(fields.sourceSummary && fields.sourceSummary.length > 50)
+    const hasImagePrompt = !!(fields.imagePrompt && fields.imagePrompt.length > 10)
+    const hasSocialContent = !!(fields.twitterCopy && fields.twitterCopy.length > 5)
+    
+    let status = 'processing'
+    if (hasResearch && hasImagePrompt && hasSocialContent) {
+      status = 'complete'
+    } else if (hasResearch) {
+      status = 'generating_content'
+    }
+    
+    return c.json({
+      recordId,
+      status,
+      fields: {
+        hasResearch,
+        hasImagePrompt,
+        hasSocialContent,
+        rewrittenHeadline: fields.rewrittenHeadline || null
+      }
+    })
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500)
+  }
+})
+
+// API: Manually trigger processing for an existing record
+app.post('/api/process', async (c) => {
+  try {
+    const { recordId, topic } = await c.req.json()
+    
+    if (!recordId || !topic) {
+      return c.json({ error: 'recordId and topic are required' }, 400)
+    }
+    
+    const route = EXTENSION_ROUTES[topic]
+    if (!route || topic === 'general') {
+      return c.json({ error: 'Processing only available for crypto/ai topics' }, 400)
+    }
+    
+    const perplexityKey = c.env?.PERPLEXITY_API_KEY || ''
+    const openaiKey = c.env?.OPENAI_API_KEY || ''
+    
+    if (!perplexityKey || !openaiKey) {
+      return c.json({ error: 'API keys not configured. Set PERPLEXITY_API_KEY and OPENAI_API_KEY.' }, 500)
+    }
+    
+    // Fetch the record to get current data
+    const recordRes = await fetch(`https://api.airtable.com/v0/${route.baseId}/${route.tableId}/${recordId}`, {
+      headers: { 'Authorization': `Bearer ${EXTENSION_AIRTABLE_TOKEN}` }
+    })
+    const recordData: any = await recordRes.json()
+    const fields = recordData.fields || {}
+    
+    // Start processing
+    const processingPromise = processContentInstantly(
+      recordId,
+      fields.sourceURL || '',
+      fields.sourceHeadline || '',
+      fields.sourceSummary || '',
+      topic,
+      route.baseId,
+      route.tableId,
+      perplexityKey,
+      openaiKey
+    )
+    
+    if (c.executionCtx && typeof c.executionCtx.waitUntil === 'function') {
+      c.executionCtx.waitUntil(processingPromise)
+    } else {
+      processingPromise.catch(err => console.error('[Manual Process] Background error:', err))
+    }
+    
+    return c.json({ success: true, status: 'processing_started', recordId })
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500)
   }
 })
 
