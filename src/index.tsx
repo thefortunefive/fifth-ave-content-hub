@@ -1525,7 +1525,7 @@ app.get('/', (c) => {
     // ========================================
     // CONFIGURATION
     // ========================================
-    const AIRTABLE_TOKEN = 'patuhJllpfFdYQYCr.880a18b1310ed5b987a1461fa8a1056857ab65c0b021834d29a21d520647e5b0';
+    const AIRTABLE_TOKEN = 'patzmYCtUSKROFbsw.ebdd70b78b2f422fd5a6da1aa867be11f690a795117c9e13d9d4747708018921';
     
     const referenceCategories = [
       { id: 'face', name: 'Face', icon: 'fa-user-circle', default: 'https://iili.io/fM9hV6B.png', order: 1 },
@@ -1582,6 +1582,66 @@ app.get('/', (c) => {
         lighting: 'professional studio lighting with subtle amber accents'
       }
     };
+
+    // AI-specific category settings for image generation
+    const CATEGORY_SETTINGS_AI = {
+      'ai_models': {
+        setting: 'in a sleek, futuristic tech lab with holographic AI model visualizations and neural network diagrams floating around her',
+        mood: 'innovative and cutting-edge',
+        outfit: 'modern tech-chic blazer with clean lines, paired with a minimalist smart watch and subtle LED-accent accessories',
+        lighting: 'cool blue and purple ambient lighting with holographic reflections'
+      },
+      'ai_regulation': {
+        setting: 'in a sophisticated government hearing room or policy think tank with AI ethics guidelines displayed on screens behind her',
+        mood: 'authoritative and thoughtful',
+        outfit: 'tailored power suit in deep charcoal with a statement brooch, projecting authority and intelligence',
+        lighting: 'formal bright lighting with warm accents from wooden paneling'
+      },
+      'ai_workplace': {
+        setting: 'in a modern open-plan office where humans and AI assistants collaborate, with productivity dashboards and AI tools visible on screens',
+        mood: 'empowering and forward-thinking',
+        outfit: 'smart business casual - elegant knit top with tailored pants, balancing approachability and professionalism',
+        lighting: 'natural daylight from large windows mixed with modern office LED lighting'
+      },
+      'ai_research': {
+        setting: 'in a cutting-edge research facility with whiteboards full of equations, brain-computer interface prototypes, and scientific visualization screens',
+        mood: 'intellectually curious and pioneering',
+        outfit: 'stylish lab coat over a designer turtleneck, with smart glasses perched elegantly',
+        lighting: 'clean white lab lighting with occasional blue laser accents'
+      },
+      'ai_products': {
+        setting: 'at a sleek product launch event or demo stage with the latest AI-powered devices and apps displayed around her',
+        mood: 'excited and consumer-friendly',
+        outfit: 'trendy tech founder look - elevated casual with statement sneakers and a designer crossbody',
+        lighting: 'dramatic stage lighting with spotlights and warm product display glow'
+      },
+      'ai_ethics': {
+        setting: 'in a contemplative setting balancing nature and technology - perhaps a glass-walled meditation room overlooking a city with subtle digital elements',
+        mood: 'reflective and balanced',
+        outfit: 'flowing elegant blouse with structured pants, balancing softness with strength',
+        lighting: 'golden hour natural light mixed with soft digital screen ambiance'
+      },
+      'ai_robotics': {
+        setting: 'in an advanced robotics lab with humanoid robots and robotic arms, standing confidently among the machines as a human guide',
+        mood: 'bold and futuristic',
+        outfit: 'sleek futuristic athleisure with metallic accents, projecting a sci-fi editorial vibe',
+        lighting: 'industrial lighting with neon accents and metallic reflections from robot surfaces'
+      },
+      'default': {
+        setting: 'in a professional studio setting with subtle AI and technology-themed background elements like circuit patterns and neural network visualizations',
+        mood: 'confident and educational',
+        outfit: 'stylish professional attire that commands attention with modern tech-inspired accessories',
+        lighting: 'professional studio lighting with cool blue and purple accents'
+      }
+    };
+
+    // Get category settings based on current topic
+    function getCategorySettings(category) {
+      if (currentTopic === 'ai') {
+        return CATEGORY_SETTINGS_AI[category] || CATEGORY_SETTINGS_AI['default'];
+      }
+      return CATEGORY_SETTINGS[category] || CATEGORY_SETTINGS['default'];
+    }
 
     // Generate image prompt based on headline and category
     function generateImagePrompt(headline, category) {
