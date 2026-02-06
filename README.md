@@ -72,17 +72,17 @@ pm2 logs --nostream
 
 ## n8n Workflows
 
-| Workflow | Status | Target Table |
-|----------|--------|-------------|
-| 5th Ave Crypto News | Active | Social Posts (`tblZwA0JCNPeORaGi`) |
-| 5th Ave AI News | **Needs configuration** | Social Posts - AI (`tblSXrbwYXTQC7D2u`) |
+| Workflow | ID | Status | Schedule | Target Table |
+|----------|----|--------|----------|-------------|
+| 5th Ave Crypto News | `XNLL4gkhUCfXKX5K` | ✅ Active | Every 8 hours | Social Posts |
+| Fifth Ave AI News | `9UDqdrzT6RNfKaOI` | ❌ Needs manual activation | Every 8 hours | Social Posts - AI |
+| 5th Ave Crypto - Extension Pickup | `jATELdNUDfmLMeXC` | ✅ Active | Every 15 min | Social Posts |
+| 5th Ave AI - Extension Pickup | `ptL1slQw6YD7xm2I` | ✅ Active | Every 15 min | Social Posts - AI |
 
-### n8n Workflow Updates for AI News
-
-See `5TH_AVE_NEWS_FIX_GUIDE.md` for complete details on:
-- Which nodes to update (table IDs, prompts)
-- AI Writer1 prompt template
-- Field mapping configuration
+### What's Configured
+- All AI workflow nodes updated: prompts, table IDs, categories
+- Extension Pickup workflows: find new records, enrich from URL, generate image prompts + social content
+- See `5TH_AVE_NEWS_FIX_GUIDE.md` for complete details
 
 ## API Endpoints
 
@@ -172,9 +172,8 @@ pm2 list
 
 ## Not Yet Implemented
 - Cloudflare Pages production deployment
-- n8n Phase 2: Extension Pickup trigger (watch for new records every 15 min)
-- Multi-size image generation in n8n workflow
-- Threads copy field in n8n
+- Manually activate "Fifth Ave AI News" workflow in n8n UI
+- Multi-size image generation in n8n workflow (16:9, 9:16, 1:1)
 - Automated posting via n8n + Blotato
 - Avatar News dashboard integration (HeyGen video pipeline)
 
