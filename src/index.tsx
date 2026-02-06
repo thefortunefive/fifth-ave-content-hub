@@ -235,6 +235,143 @@ app.post('/api/proxy-image', async (c) => {
 })
 
 // ============================================
+// BROWSER EXTENSION: Save to Pipeline
+// ============================================
+
+// Table routing configuration for the browser extension
+const EXTENSION_ROUTES = {
+  crypto: {
+    baseId: 'appgyL5gKf8rjaJPv',
+    tableId: 'tblZwA0JCNPeORaGi',
+    fieldMap: {
+      url: 'sourceURL',
+      title: 'sourceHeadline',
+      notes: 'sourceSummary',
+      platforms: 'socialChannels',
+      status: 'Status',
+      statusValue: 'Needs Approval'
+    }
+  },
+  ai: {
+    baseId: 'appgyL5gKf8rjaJPv',
+    tableId: 'tblSXrbwYXTQC7D2u',
+    fieldMap: {
+      url: 'sourceURL',
+      title: 'sourceHeadline',
+      notes: 'sourceSummary',
+      platforms: 'socialChannels',
+      status: 'Status',
+      statusValue: 'Needs Approval'
+    }
+  },
+  general: {
+    baseId: 'appQggEi0kxkoSmLn',
+    tableId: 'tblhAFDUnMcdO8DLk',
+    fieldMap: {
+      url: 'Video URL',
+      title: 'Video Title',
+      notes: 'Notes',
+      platforms: 'Platforms',
+      status: 'Status',
+      statusValue: 'Pending Review'
+    }
+  }
+}
+
+// Valid socialChannels options for the 5th Ave tables
+const VALID_SOCIAL_CHANNELS = ['Twitter', 'LinkedIn', 'Blog', 'Instagram', 'Facebook', 'Avatar']
+
+// Airtable token for extension saves
+const EXTENSION_AIRTABLE_TOKEN = 'patzmYCtUSKROFbsw.ebdd70b78b2f422fd5a6da1aa867be11f690a795117c9e13d9d4747708018921'
+
+// API: Save URL from browser extension
+app.post('/api/save', async (c) => {
+  try {
+    const { url, title, notes, platforms, topic } = await c.req.json()
+    
+    if (!url) {
+      return c.json({ success: false, error: 'URL is required' }, 400)
+    }
+    
+    // Determine routing based on topic (default to 'general')
+    const selectedTopic = topic || 'general'
+    const route = EXTENSION_ROUTES[selectedTopic]
+    
+    if (!route) {
+      return c.json({ success: false, error: 'Invalid topic. Use: crypto, ai, or general' }, 400)
+    }
+    
+    const fm = route.fieldMap
+    
+    // Build the fields object based on the field mapping
+    const fields: Record<string, any> = {}
+    fields[fm.url] = url
+    fields[fm.title] = title || ''
+    fields[fm.status] = fm.statusValue
+    
+    if (notes) {
+      fields[fm.notes] = notes
+    }
+    
+    // Map platforms - validate for 5th Ave tables
+    if (platforms && platforms.length > 0) {
+      if (selectedTopic === 'crypto' || selectedTopic === 'ai') {
+        // Filter to valid socialChannels options only
+        const validPlatforms = platforms.filter((p: string) => VALID_SOCIAL_CHANNELS.includes(p))
+        if (validPlatforms.length > 0) {
+          fields[fm.platforms] = validPlatforms
+        }
+      } else {
+        fields[fm.platforms] = platforms
+      }
+    }
+    
+    // For General Pipeline, add Created Date
+    if (selectedTopic === 'general') {
+      fields['Created Date'] = new Date().toISOString()
+    }
+    
+    // Create the record in Airtable
+    const res = await fetch(`https://api.airtable.com/v0/${route.baseId}/${route.tableId}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${EXTENSION_AIRTABLE_TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ fields })
+    })
+    
+    const data = await res.json()
+    
+    if (data.error) {
+      console.error('Airtable error:', data.error)
+      return c.json({ success: false, error: data.error.message || 'Airtable error' }, 500)
+    }
+    
+    return c.json({ 
+      success: true, 
+      record: data,
+      topic: selectedTopic,
+      table: selectedTopic === 'general' ? 'Content Pipeline' : (selectedTopic === 'crypto' ? 'Social Posts' : 'Social Posts - AI')
+    })
+  } catch (err: any) {
+    console.error('Save error:', err)
+    return c.json({ success: false, error: err.message || 'Server error' }, 500)
+  }
+})
+
+// API: Get available topics for the extension
+app.get('/api/topics', (c) => {
+  return c.json({
+    topics: [
+      { id: 'crypto', label: '🪙 Crypto News', description: 'Save to 5th Ave Crypto pipeline' },
+      { id: 'ai', label: '🤖 AI News', description: 'Save to 5th Ave AI pipeline' },
+      { id: 'general', label: '📋 General Pipeline', description: 'Save to Content Pipeline' }
+    ]
+  })
+})
+
+// ============================================
 // COMBINED DASHBOARD
 // ============================================
 app.get('/', (c) => {

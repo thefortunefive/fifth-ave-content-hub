@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>5th Ave Content Saver</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      width: 380px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%);
+      color: #e2e8f0;
+    }
+
+    /* Header */
+    .header {
+      padding: 16px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .header h1 {
+      font-size: 16px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #f59e0b, #a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .header-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .header-actions a, .header-actions button {
+      color: #94a3b8;
+      font-size: 13px;
+      text-decoration: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+    .header-actions a:hover, .header-actions button:hover {
+      color: #e2e8f0;
+      background: rgba(255,255,255,0.08);
+    }
+
+    /* Content area */
+    .content { padding: 16px 20px; }
+
+    /* Page info */
+    .page-info {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 14px;
+    }
+    .page-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #e2e8f0;
+      margin-bottom: 4px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .page-url {
+      font-size: 11px;
+      color: #64748b;
+      word-break: break-all;
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    /* Topic selector */
+    .topic-section {
+      margin-bottom: 14px;
+    }
+    .topic-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+    .topic-buttons {
+      display: flex;
+      gap: 6px;
+    }
+    .topic-btn {
+      flex: 1;
+      padding: 10px 8px;
+      border-radius: 10px;
+      border: 2px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+      color: #94a3b8;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .topic-btn:hover {
+      border-color: rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.06);
+    }
+    .topic-btn.active-crypto {
+      border-color: #f59e0b;
+      background: rgba(245, 158, 11, 0.12);
+      color: #fbbf24;
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.1);
+    }
+    .topic-btn.active-ai {
+      border-color: #a855f7;
+      background: rgba(168, 85, 247, 0.12);
+      color: #c084fc;
+      box-shadow: 0 0 20px rgba(168, 85, 247, 0.1);
+    }
+    .topic-btn.active-general {
+      border-color: #3b82f6;
+      background: rgba(59, 130, 246, 0.12);
+      color: #60a5fa;
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.1);
+    }
+    .topic-icon { font-size: 20px; }
+    .topic-name { font-size: 11px; }
+    .topic-dest {
+      font-size: 9px;
+      color: #64748b;
+      font-weight: 400;
+    }
+    .topic-btn.active-crypto .topic-dest,
+    .topic-btn.active-ai .topic-dest,
+    .topic-btn.active-general .topic-dest {
+      color: inherit;
+      opacity: 0.7;
+    }
+
+    /* Form fields */
+    .field-group {
+      margin-bottom: 12px;
+    }
+    .field-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.04);
+      color: #e2e8f0;
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input[type="text"]:focus, textarea:focus {
+      border-color: rgba(168, 85, 247, 0.5);
+    }
+    textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    /* Platform buttons */
+    .platform-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .platform-btn {
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.03);
+      color: #94a3b8;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .platform-btn:hover {
+      border-color: rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.06);
+    }
+    .platform-btn.active {
+      border-color: #10b981;
+      background: rgba(16, 185, 129, 0.12);
+      color: #34d399;
+    }
+    .platform-btn input { display: none; }
+
+    /* Save button */
+    .save-btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: 10px;
+      border: none;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    .save-btn.crypto {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #1a1a2e;
+    }
+    .save-btn.ai {
+      background: linear-gradient(135deg, #a855f7, #7c3aed);
+      color: white;
+    }
+    .save-btn.general {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: white;
+    }
+    .save-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+    .save-btn:active { transform: translateY(0); }
+    .save-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* Status */
+    .status {
+      margin-top: 10px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      text-align: center;
+      display: none;
+    }
+    .status.show { display: block; }
+    .status.success { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.2); }
+    .status.error { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.2); }
+    .status.loading { background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.2); }
+
+    /* Spinner */
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-top-color: currentColor;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Settings panel */
+    .settings-panel {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+    .settings-panel.show {
+      max-height: 200px;
+    }
+    .settings-content {
+      padding: 14px 20px;
+    }
+    .settings-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .settings-row input {
+      flex: 1;
+    }
+    .settings-save {
+      padding: 8px 14px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.06);
+      color: #e2e8f0;
+      font-size: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .settings-save:hover {
+      background: rgba(255,255,255,0.1);
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <h1>5th Ave Content Saver</h1>
+    <div class="header-actions">
+      <a href="#" id="dashboard-link" target="_blank" title="Open Dashboard">Dashboard</a>
+      <button id="settings-toggle" title="Settings">&#9881;</button>
+    </div>
+  </div>
+
+  <!-- Settings Panel -->
+  <div id="settings-panel" class="settings-panel">
+    <div class="settings-content">
+      <div class="field-label">API Endpoint</div>
+      <div class="settings-row">
+        <input type="text" id="api-endpoint" placeholder="https://your-app.pages.dev">
+        <button id="save-settings" class="settings-save">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="content">
+    <!-- Page Info -->
+    <div class="page-info">
+      <div id="page-title" class="page-title">Loading...</div>
+      <div id="page-url" class="page-url">Loading...</div>
+    </div>
+
+    <!-- Topic Selector -->
+    <div class="topic-section">
+      <div class="topic-label">Save to Pipeline</div>
+      <div class="topic-buttons">
+        <button class="topic-btn" data-topic="crypto" id="topic-crypto">
+          <span class="topic-icon">&#x1FA99;</span>
+          <span class="topic-name">Crypto</span>
+          <span class="topic-dest">Social Posts</span>
+        </button>
+        <button class="topic-btn" data-topic="ai" id="topic-ai">
+          <span class="topic-icon">&#x1F916;</span>
+          <span class="topic-name">AI News</span>
+          <span class="topic-dest">Social Posts - AI</span>
+        </button>
+        <button class="topic-btn" data-topic="general" id="topic-general">
+          <span class="topic-icon">&#x1F4CB;</span>
+          <span class="topic-name">General</span>
+          <span class="topic-dest">Content Pipeline</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Title Override -->
+    <div class="field-group">
+      <div class="field-label">Title (optional override)</div>
+      <input type="text" id="custom-title" placeholder="Leave blank to use page title">
+    </div>
+
+    <!-- Notes -->
+    <div class="field-group">
+      <div class="field-label">Notes for AI</div>
+      <textarea id="notes" placeholder="Add context for AI content generation..."></textarea>
+    </div>
+
+    <!-- Platform Selection -->
+    <div class="field-group">
+      <div class="field-label">Platforms</div>
+      <div class="platform-grid">
+        <button class="platform-btn active" data-platform="Twitter">
+          <input type="checkbox" value="Twitter" checked> Twitter
+        </button>
+        <button class="platform-btn active" data-platform="LinkedIn">
+          <input type="checkbox" value="LinkedIn" checked> LinkedIn
+        </button>
+        <button class="platform-btn active" data-platform="Blog">
+          <input type="checkbox" value="Blog" checked> Blog
+        </button>
+        <button class="platform-btn active" data-platform="Instagram">
+          <input type="checkbox" value="Instagram" checked> Instagram
+        </button>
+        <button class="platform-btn" data-platform="Facebook">
+          <input type="checkbox" value="Facebook"> Facebook
+        </button>
+        <button class="platform-btn" data-platform="Avatar">
+          <input type="checkbox" value="Avatar"> Avatar
+        </button>
+      </div>
+    </div>
+
+    <!-- Save Button -->
+    <button id="save-btn" class="save-btn general">
+      <span>&#x1F4BE;</span> Save to Pipeline
+    </button>
+
+    <!-- Status Message -->
+    <div id="status" class="status"></div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

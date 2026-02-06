@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "5th Ave Content Saver",
+  "version": "2.0.0",
+  "description": "Save any URL to your 5th Ave content pipeline - Crypto News, AI News, or General",
+  "permissions": [
+    "activeTab",
+    "storage"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "host_permissions": [
+    "https://*.pages.dev/*",
+    "https://*.sandbox.novita.ai/*",
+    "http://localhost:3000/*"
+  ]
+}

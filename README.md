@@ -98,6 +98,8 @@ See `5TH_AVE_NEWS_FIX_GUIDE.md` for complete details on:
 | `/api/task-status/:id` | GET | Check generation status |
 | `/api/upload-image` | POST | Upload to freeimage.host |
 | `/api/proxy-image` | POST | Proxy image for CORS |
+| `/api/save` | POST | Browser extension save (routes to correct table) |
+| `/api/topics` | GET | List available topics for extension |
 
 ## Tech Stack
 
@@ -107,7 +109,8 @@ See `5TH_AVE_NEWS_FIX_GUIDE.md` for complete details on:
 - **Image Generation**: KieAI API
 - **Text Overlay**: Ideogram character-edit (via KieAI)
 - **Image Hosting**: freeimage.host
-- **Automation**: n8n (2 workflows: Crypto + AI)
+- **Browser Extension**: Chrome extension for saving URLs to pipeline
+- **Automation**: n8n (2 workflows: Crypto + AI, each with auto-discovery + extension pickup)
 - **Deployment**: Cloudflare Pages (planned)
 
 ## Project Structure
@@ -123,6 +126,11 @@ webapp/
 ├── package.json               # Dependencies
 ├── PROJECT.md                 # Project vision/specification
 ├── STATE.md                   # Current state tracking
+├── extension/                 # Chrome extension source files
+│   ├── manifest.json          # Extension manifest (v3)
+│   ├── popup.html             # Extension popup UI
+│   ├── popup.js               # Extension popup logic
+│   └── icons/                 # Extension icons
 ├── 5TH_AVE_NEWS_FIX_GUIDE.md # n8n workflow fix guide
 └── README.md                  # This file
 ```
@@ -140,8 +148,31 @@ npm run build && pm2 restart all
 pm2 list
 ```
 
+## Content Flow Architecture
+
+```
+  Auto-Discovery (every 8 hrs)     Browser Extension (manual)
+  AI finds 5 top stories           You save any URL
+         │                                │
+         ▼                                ▼
+  ┌─────────────────────────────────────────────┐
+  │        Airtable: Social Posts / AI          │
+  │        Status: "Needs Approval"             │
+  └──────────────────┬──────────────────────────┘
+                     ▼
+  ┌─────────────────────────────────────────────┐
+  │  n8n: Image Generation + Social Copy        │
+  │  (shared pipeline for both triggers)        │
+  └──────────────────┬──────────────────────────┘
+                     ▼
+  ┌─────────────────────────────────────────────┐
+  │  Dashboard: Review → Approve → Schedule     │
+  └─────────────────────────────────────────────┘
+```
+
 ## Not Yet Implemented
 - Cloudflare Pages production deployment
+- n8n Phase 2: Extension Pickup trigger (watch for new records every 15 min)
 - Multi-size image generation in n8n workflow
 - Threads copy field in n8n
 - Automated posting via n8n + Blotato

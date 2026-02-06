@@ -390,4 +390,223 @@ Return ONLY valid JSON with this exact structure:
 
 ---
 
+## 🔌 PHASE 2: BROWSER EXTENSION PICKUP
+
+### Overview
+The browser extension saves articles/videos directly to the Social Posts tables with `Status = "Needs Approval"` and no `imagePrompt`. Each n8n workflow needs a **second trigger** that watches for these extension-saved records and processes them.
+
+### How Extension-Saved Records Differ from Auto-Discovered
+| Field | Auto-Discovered (Trigger 1) | Extension-Saved (Trigger 2) |
+|-------|---------------------------|---------------------------|
+| `sourceHeadline` | AI-generated from research | Page title or user-edited |
+| `sourceSummary` | AI-generated full summary | User's notes (may be brief) |
+| `sourceURL` | AI-found URL | User-saved URL |
+| `imagePrompt` | AI-generated | **EMPTY** (needs generation) |
+| `category` | AI-assigned | **EMPTY** (needs assignment) |
+| `whyItMatters` | AI-generated | **EMPTY** (needs generation) |
+| `Status` | `Needs Approval` | `Needs Approval` |
+| Social copy fields | AI-generated | **EMPTY** (need generation) |
+
+### Detection Filter
+Extension-saved records can be identified by:
+```
+AND(
+  {Status} = 'Needs Approval',
+  {imagePrompt} = '',
+  {sourceURL} != ''
+)
+```
+This catches records that have a URL but haven't been enriched yet.
+
+### Trigger 2 Workflow: Extension Pickup (for EACH workflow - Crypto & AI)
+
+```
+Airtable Trigger: Watch for new records (every 15 min)
+  Table: tblZwA0JCNPeORaGi (Crypto) or tblSXrbwYXTQC7D2u (AI)
+  Filter: {imagePrompt} = '' AND {sourceURL} != ''
+    ↓
+AI Enrichment (new node - enriches from URL)
+  Input: sourceURL, sourceHeadline
+  Output: enriched summary, category, whyItMatters
+    ↓
+Update Record: Save enrichment to Airtable
+  Fields: sourceSummary, category, whyItMatters
+    ↓
+Angel Image Prompt (existing node - reuse)
+  Input: sourceHeadline, category
+  Output: imagePrompt
+    ↓
+Update Record: Save imagePrompt
+    ↓
+AI Writer1 (existing node - reuse)
+  Input: sourceHeadline, sourceSummary, category, whyItMatters, sourceURL
+  Output: JSON with all social copy fields
+    ↓
+Update Record: Save all social copy fields
+    ↓
+KieAI Create Task (existing node - reuse)
+    ↓
+Wait 5s → KieAI Record Info → IF Success?
+    ↓
+Parse KieAI Result → Airtable Upload Attachment
+    ↓
+Airtable Update Status
+```
+
+### AI Enrichment Node (NEW)
+
+This node takes a URL and headline, then uses AI to generate a full summary, category, and analysis. Add this as a new AI node.
+
+**System Prompt:**
+```
+You are a content analyst for 5th Ave, a media brand covering {TOPIC} news.
+Given a URL and headline, analyze the content and produce structured data.
+```
+
+**User Prompt (Crypto version):**
+```
+=Analyze this article and generate structured content data:
+
+URL: {{ $json.fields.sourceURL }}
+HEADLINE: {{ $json.fields.sourceHeadline }}
+NOTES: {{ $json.fields.sourceSummary || 'No additional notes' }}
+
+Generate a JSON response with:
+1. "summary": A 2-3 paragraph summary of the article (200-400 words)
+2. "category": One of: crypto_regulation, bitcoin_adoption, macro_market, self_banking, infra_dev
+3. "why_it_matters": A concise explanation of why this matters for everyday crypto users (100-150 words)
+
+Return ONLY valid JSON:
+{
+  "summary": "...",
+  "category": "...",
+  "why_it_matters": "..."
+}
+```
+
+**User Prompt (AI version):**
+```
+=Analyze this article and generate structured content data:
+
+URL: {{ $json.fields.sourceURL }}
+HEADLINE: {{ $json.fields.sourceHeadline }}
+NOTES: {{ $json.fields.sourceSummary || 'No additional notes' }}
+
+Generate a JSON response with:
+1. "summary": A 2-3 paragraph summary of the article (200-400 words)
+2. "category": One of: ai_models, ai_regulation, ai_workplace, ai_research, ai_products, ai_ethics, ai_robotics
+3. "why_it_matters": A concise explanation of why this matters for everyday people (100-150 words)
+
+Return ONLY valid JSON:
+{
+  "summary": "...",
+  "category": "...",
+  "why_it_matters": "..."
+}
+```
+
+### Update Record After Enrichment
+
+| Field | Value |
+|-------|-------|
+| sourceSummary | `={{ JSON.parse($json.message.content).summary }}` |
+| category | `={{ JSON.parse($json.message.content).category }}` |
+| whyItMatters | `={{ JSON.parse($json.message.content).why_it_matters }}` |
+
+### Recommended Schedules
+
+| Trigger | Interval | Purpose |
+|---------|----------|---------|
+| Trigger 1: Auto-Discovery | Every 8 hours | Find 5 top stories automatically |
+| Trigger 2: Extension Pickup | Every 15 minutes | Process manually-saved articles |
+
+**Why 8 hours for auto-discovery?** 3 runs/day × 5 stories = 15 stories/day. Enough without flooding.
+
+**Why 15 minutes for extension pickup?** Fast enough that saved articles are processed quickly. Cheap — most runs find zero new records.
+
+### Complete Workflow Architecture (per topic)
+
+```
+╔════════════════════════════════════════════╗
+║          5th Ave Crypto/AI News            ║
+╠════════════════════════════════════════════╣
+║                                            ║
+║  TRIGGER 1: Schedule (every 8 hours)       ║
+║    → AI Research (find 5 stories)          ║
+║    → Split Stories                         ║
+║    → Angel Image Prompt                    ║
+║    → Create Record (Needs Approval)        ║
+║    ─────────────────┐                      ║
+║                     ▼                      ║
+║  TRIGGER 2: Airtable Watch (every 15 min)  ║
+║    → Filter: imagePrompt empty + has URL   ║
+║    → AI Enrichment (from URL)              ║
+║    → Update Record (summary, category)     ║
+║    ─────────────────┐                      ║
+║                     ▼                      ║
+║  ┌─── SHARED PIPELINE ───────────────────┐ ║
+║  │ Angel Image Prompt                    │ ║
+║  │ AI Writer1 (social copy)              │ ║
+║  │ KieAI Image Generation                │ ║
+║  │ Upload Attachment                     │ ║
+║  │ Update Status                         │ ║
+║  └───────────────────────────────────────┘ ║
+║                     ▼                      ║
+║  Dashboard: Review → Approve → Schedule    ║
+╚════════════════════════════════════════════╝
+```
+
+---
+
+## 🌐 BROWSER EXTENSION
+
+### Overview
+The **5th Ave Content Saver** Chrome extension allows you to save any URL to the correct pipeline with one click.
+
+### Extension Files Location
+All extension files are in `webapp/extension/`:
+```
+extension/
+├── manifest.json   # Chrome extension manifest (v3)
+├── popup.html      # Extension popup UI
+├── popup.js        # Extension popup logic
+└── icons/          # Extension icons (add your own)
+```
+
+### Installation
+1. Open Chrome → `chrome://extensions/`
+2. Enable "Developer mode" (top right)
+3. Click "Load unpacked"
+4. Select the `webapp/extension/` folder
+5. Pin the extension to your toolbar
+
+### Configuration
+- Click the gear icon in the extension popup
+- Set the API endpoint to your Content Hub URL
+- Default: `https://3000-i8wcwhv91wsc5cw1epaap-02b9cc79.sandbox.novita.ai`
+- Production: Update to your Cloudflare Pages URL after deployment
+
+### Topic Routing
+| Selection | Base | Table | Status Set |
+|-----------|------|-------|-----------|
+| 🪙 Crypto | `appgyL5gKf8rjaJPv` | `tblZwA0JCNPeORaGi` (Social Posts) | `Needs Approval` |
+| 🤖 AI News | `appgyL5gKf8rjaJPv` | `tblSXrbwYXTQC7D2u` (Social Posts - AI) | `Needs Approval` |
+| 📋 General | `appQggEi0kxkoSmLn` | `tblhAFDUnMcdO8DLk` (Content Pipeline) | `Pending Review` |
+
+### Field Mapping
+| Extension Input | → Crypto/AI Field | → General Field |
+|----------------|-------------------|-----------------|
+| URL | `sourceURL` | `Video URL` |
+| Title | `sourceHeadline` | `Video Title` |
+| Notes | `sourceSummary` | `Notes` |
+| Platforms | `socialChannels` | `Platforms` |
+
+### Features
+- **Auto-suggest topic**: Detects crypto/AI keywords in URL and title
+- **Remember last topic**: Saves your last selection
+- **Platform selection**: Choose which social platforms to target
+- **Notes for AI**: Add context for the AI content generation
+
+---
+
 *Last Updated: 2026-02-06*
