@@ -3,5 +3,8 @@
   "name": "fifth-ave-content-hub",
   "compatibility_date": "2024-01-01",
   "pages_build_output_dir": "./dist",
-  "compatibility_flags": ["nodejs_compat"]
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "AIRTABLE_TOKEN": "patzmYCtUSKROFbsw.ebdd70b78b2f422fd5a6da1aa867be11f690a795117c9e13d9d4747708018921"
+  }
 }

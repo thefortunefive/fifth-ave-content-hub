@@ -10,6 +10,66 @@ type Bindings = {
   OPENAI_API_KEY?: string
 }
 
+// Simple in-memory cache with TTL
+interface CacheEntry {
+  data: any
+  timestamp: number
+  etag?: string
+}
+
+const CACHE_TTL = 5 * 60 * 1000 // 5 minutes in milliseconds
+const cache = new Map<string, CacheEntry>()
+
+function getCached(key: string): any | null {
+  const entry = cache.get(key)
+  if (!entry) return null
+  
+  // Return data even if expired - we'll refresh in background
+  return entry.data
+}
+
+function setCached(key: string, data: any, etag?: string): void {
+  cache.set(key, {
+    data,
+    timestamp: Date.now(),
+    etag
+  })
+}
+
+function isCacheValid(key: string): boolean {
+  const entry = cache.get(key)
+  if (!entry) return false
+  return Date.now() - entry.timestamp < CACHE_TTL
+}
+
+// Retry configuration for rate limiting
+const MAX_RETRIES = 3
+const INITIAL_RETRY_DELAY = 1000 // 1 second
+
+async function fetchWithRetry(url: string, options: RequestInit, retries = MAX_RETRIES): Promise<Response> {
+  try {
+    const res = await fetch(url, options)
+    
+    // If rate limited, retry with exponential backoff
+    if (res.status === 429 && retries > 0) {
+      const delay = INITIAL_RETRY_DELAY * (MAX_RETRIES - retries + 1)
+      console.log(`Rate limited (429). Retrying in ${delay}ms... (${retries} retries left)`)
+      await new Promise(resolve => setTimeout(resolve, delay))
+      return fetchWithRetry(url, options, retries - 1)
+    }
+    
+    return res
+  } catch (err) {
+    if (retries > 0) {
+      const delay = INITIAL_RETRY_DELAY * (MAX_RETRIES - retries + 1)
+      console.log(`Fetch failed. Retrying in ${delay}ms... (${retries} retries left)`)
+      await new Promise(resolve => setTimeout(resolve, delay))
+      return fetchWithRetry(url, options, retries - 1)
+    }
+    throw err
+  }
+}
+
 app.use('/api/*', cors())
 
 // KieAI config
@@ -22,11 +82,23 @@ const REFERENCE_IMAGES = {
   logo: 'https://iili.io/fEiEfUB.png'
 }
 
-// API: Get all bases (with pagination support)
+// API: Get all bases (with pagination support and caching)
 app.get('/api/bases', async (c) => {
   const token = c.req.header('X-Airtable-Token')
   if (!token) return c.json({ error: 'Missing Airtable token' }, 401)
   
+  // Check cache first
+  const cacheKey = `bases:${token.substring(0, 10)}`
+  const cachedData = getCached(cacheKey)
+  const cacheValid = isCacheValid(cacheKey)
+  
+  // If we have valid cached data, return it immediately
+  if (cachedData && cacheValid) {
+    console.log('Returning cached bases data')
+    return c.json(cachedData)
+  }
+  
+  // If we have stale cached data and request fails, we'll return the stale data
   try {
     let allBases: any[] = []
     let offset: string | null = null
@@ -38,19 +110,53 @@ app.get('/api/bases', async (c) => {
         url += `?offset=${offset}`
       }
       
-      const res = await fetch(url, {
+      const res = await fetchWithRetry(url, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       
       if (!res.ok) {
         const errorText = await res.text()
         console.error('Airtable API error:', res.status, errorText)
-        return c.json({ error: `Airtable API error: ${res.status}`, details: errorText }, res.status)
+        
+        // If we have cached data, return it as fallback (even if stale)
+        if (cachedData) {
+          console.log('Returning stale cached data due to API error')
+          return c.json({ 
+            ...cachedData, 
+            _cached: true, 
+            _cacheStale: true,
+            _error: `Airtable API error: ${res.status}. Showing cached data.`
+          })
+        }
+        
+        // Return user-friendly error message
+        let userMessage = `Airtable API error: ${res.status}`
+        if (res.status === 429) {
+          userMessage = 'Airtable rate limit exceeded. Please wait a moment and try again.'
+        } else if (res.status === 401 || res.status === 403) {
+          userMessage = 'Invalid or expired Airtable token. Please check your token and try again.'
+        }
+        
+        return c.json({ error: userMessage, details: errorText }, res.status)
       }
       
       const data = await res.json()
-      console.log('Airtable bases response:', JSON.stringify(data, null, 2))
-      
+
+      if (data.error) {
+        console.error('Airtable API returned error:', data.error)
+        
+        if (cachedData) {
+          return c.json({ 
+            ...cachedData, 
+            _cached: true, 
+            _cacheStale: true,
+            _error: 'Airtable error. Showing cached data.'
+          })
+        }
+        
+        return c.json({ error: data.error }, 400)
+      }
+
       if (data.bases && Array.isArray(data.bases)) {
         allBases = allBases.concat(data.bases)
         console.log(`Fetched ${data.bases.length} bases, total so far: ${allBases.length}`)
@@ -59,37 +165,105 @@ app.get('/api/bases', async (c) => {
       offset = data.offset || null
     } while (offset)
     
-    console.log(`Total bases fetched: ${allBases.length}`)
-    return c.json({ bases: allBases })
+    const result = { bases: allBases }
+    
+    // Cache the result
+    setCached(cacheKey, result)
+    console.log(`Total bases fetched and cached: ${allBases.length}`)
+    
+    return c.json(result)
   } catch (err: any) {
     console.error('Error fetching bases:', err)
+    
+    // Return cached data as fallback if available
+    if (cachedData) {
+      console.log('Returning stale cached data due to error')
+      return c.json({ 
+        ...cachedData, 
+        _cached: true, 
+        _cacheStale: true,
+        _error: `Network error: ${err.message}. Showing cached data.`
+      })
+    }
+    
     return c.json({ error: err.message || 'Failed to fetch bases' }, 500)
   }
 })
 
-// API: Get tables for a base
+// API: Get tables for a base (with caching)
 app.get('/api/bases/:baseId/tables', async (c) => {
   const token = c.req.header('X-Airtable-Token')
   if (!token) return c.json({ error: 'Missing Airtable token' }, 401)
   
   const baseId = c.req.param('baseId')
   
+  // Check cache first
+  const cacheKey = `tables:${baseId}:${token.substring(0, 10)}`
+  const cachedData = getCached(cacheKey)
+  const cacheValid = isCacheValid(cacheKey)
+  
+  // If we have valid cached data, return it immediately
+  if (cachedData && cacheValid) {
+    console.log(`Returning cached tables for base ${baseId}`)
+    return c.json(cachedData)
+  }
+  
+  console.log(`Fetching tables for base: ${baseId}, token present: ${token ? 'yes' : 'no'}, token prefix: ${token.substring(0, 10)}...`)
+  
   try {
-    const res = await fetch(`https://api.airtable.com/v0/meta/bases/${baseId}/tables`, {
+    const res = await fetchWithRetry(`https://api.airtable.com/v0/meta/bases/${baseId}/tables`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
     
     if (!res.ok) {
       const errorText = await res.text()
       console.error('Airtable tables API error:', res.status, errorText)
-      return c.json({ error: `Airtable API error: ${res.status}`, details: errorText }, res.status)
+      
+      // If we have cached data, return it as fallback (even if stale)
+      if (cachedData) {
+        console.log('Returning stale cached tables due to API error')
+        return c.json({ 
+          ...cachedData, 
+          _cached: true, 
+          _cacheStale: true,
+          _error: `Airtable API error: ${res.status}. Showing cached data.`
+        })
+      }
+      
+      // Return user-friendly error message
+      let userMessage = `Airtable API error: ${res.status}`
+      if (res.status === 429) {
+        userMessage = 'Airtable rate limit exceeded. Please wait a moment and try again.'
+      } else if (res.status === 401 || res.status === 403) {
+        userMessage = 'Invalid or expired Airtable token. Please check your token and try again.'
+      } else if (res.status === 404) {
+        userMessage = 'Base not found. Please check if you have access to this base.'
+      }
+      
+      return c.json({ error: userMessage, details: errorText }, res.status)
     }
     
     const data = await res.json()
-    console.log(`Fetched ${data.tables?.length || 0} tables for base ${baseId}`)
+    
+    // Cache the result
+    setCached(cacheKey, data)
+    console.log(`Fetched and cached ${data.tables?.length || 0} tables for base ${baseId}`)
+    
     return c.json(data)
   } catch (err: any) {
     console.error('Error fetching tables:', err)
+    
+    // Return cached data as fallback if available
+    if (cachedData) {
+      console.log('Returning stale cached tables due to error')
+      return c.json({ 
+        ...cachedData, 
+        _cached: true, 
+        _cacheStale: true,
+        _error: `Network error: ${err.message}. Showing cached data.`
+      })
+    }
+    
     return c.json({ error: err.message || 'Failed to fetch tables' }, 500)
   }
 })
@@ -447,7 +621,8 @@ app.post('/api/save', async (c) => {
     
     if (data.error) {
       console.error('Airtable error:', data.error)
-      return c.json({ success: false, error: data.error.message || 'Airtable error' }, 500)
+      const errorMsg = typeof data.error === 'string' ? data.error : (data.error.message || 'Airtable error')
+      return c.json({ success: false, error: errorMsg }, 500)
     }
     
     // ===== INSTANT PROCESSING via n8n Webhook =====
@@ -2311,22 +2486,23 @@ app.get('/', (c) => {
         });
         const data = await res.json();
         
-        // Log and display the response for debugging
-        console.log('Bases API response:', data);
-        updateDebugPanel({
-          apiResponse: data,
-          basesCount: data.bases?.length || 0,
-          basesList: data.bases?.map(b => ({ id: b.id, name: b.name })) || [],
-          error: data.error || null,
-          timestamp: new Date().toISOString()
-        });
-        
         if (data.error) {
-          throw new Error(data.error.message || 'API error');
+          throw new Error(typeof data.error === 'string' ? data.error : (data.error.message || 'API error'));
         }
         
+        // Check if we're using cached data
+        const isCached = data._cached;
+        const cacheStale = data._cacheStale;
+        const cacheError = data._error;
+        
         bases = data.bases || [];
-        console.log('Loaded ' + bases.length + ' bases:', bases.map(b => b.name));
+        console.log('Loaded ' + bases.length + ' bases' + (isCached ? ' (from cache)' : '') + ':', bases.map(b => b.name));
+        
+        // Show subtle indicator if using cached/stale data
+        if (isCached && cacheStale) {
+          console.warn('Using stale cached bases data:', cacheError);
+          updateDebugPanel({ warning: 'Using cached data (API temporarily unavailable)', bases: bases.length });
+        }
         
         if (bases.length === 0) {
           selector.innerHTML = '<option value="">No bases found</option>';
@@ -2348,10 +2524,28 @@ app.get('/', (c) => {
           await onBaseChange();
         }
       } catch (err) {
-        selector.innerHTML = '<option value="">Error loading bases</option>';
+        selector.innerHTML = '<option value="">Unable to load bases</option>';
         console.error('Failed to load bases:', err);
-        alert('Error loading Airtable bases: ' + err.message);
         updateDebugPanel('Error: ' + err.message);
+        
+        // Elegant inline error for bases too
+        const errorDiv = document.createElement('div');
+        errorDiv.id = 'baseLoadError';
+        errorDiv.className = 'mt-3 p-4 rounded-xl border border-amber-500/30 bg-amber-900/20 backdrop-blur-sm';
+        const isRateLimit = err.message && err.message.includes('429');
+        const messageText = isRateLimit ? 'Allow a brief pause, then refresh the page.' : 'Please refresh to reconnect.';
+        errorDiv.innerHTML = '<div style="display:flex;align-items:flex-start;gap:12px"><div style="width:32px;height:32px;border-radius:50%;background:rgba(245,158,11,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fas fa-crown" style="color:#fbbf24;font-size:14px"></i></div><div><p style="font-size:14px;font-weight:500;color:#fcd34d;margin-bottom:4px">Connection Interrupted</p><p style="font-size:12px;color:rgba(252,211,77,0.8);line-height:1.5">The Airtable connection is momentarily crowded. ' + messageText + '</p></div></div>';
+        
+        const container = selector.closest('.glass') || selector.parentElement;
+        const existingError = document.getElementById('baseLoadError');
+        if (existingError) existingError.remove();
+        container?.insertBefore(errorDiv, container.firstChild);
+        
+        setTimeout(() => {
+          errorDiv.style.opacity = '0';
+          errorDiv.style.transition = 'opacity 0.5s ease';
+          setTimeout(() => errorDiv.remove(), 500);
+        }, 8000);
       }
     }
     
@@ -2394,11 +2588,20 @@ app.get('/', (c) => {
         const data = await res.json();
         
         if (data.error) {
-          throw new Error(data.error.message || 'API error loading tables');
+          throw new Error(typeof data.error === 'string' ? data.error : (data.error.message || 'API error loading tables'));
         }
         
+        // Check if we're using cached data
+        const tablesCached = data._cached;
+        const tablesCacheStale = data._cacheStale;
+        
         tables = data.tables || [];
-        console.log('Loaded ' + tables.length + ' tables for base ' + (currentBase?.name || 'Unknown') + ':', tables.map(t => t.name));
+        console.log('Loaded ' + tables.length + ' tables' + (tablesCached ? ' (from cache)' : '') + ' for base ' + (currentBase?.name || 'Unknown') + ':', tables.map(t => t.name));
+        
+        // Show debug info if using cached/stale data
+        if (tablesCached && tablesCacheStale) {
+          console.warn('Using stale cached tables data:', data._error);
+        }
         
         if (tables.length === 0) {
           tableSelector.innerHTML = '<option value="">No tables found</option>';
@@ -2419,9 +2622,29 @@ app.get('/', (c) => {
         }
         await onTableChange();
       } catch (err) {
-        tableSelector.innerHTML = '<option value="">Error loading tables</option>';
+        tableSelector.innerHTML = '<option value="">Unable to load tables</option>';
         console.error('Failed to load tables:', err);
-        alert('Error loading tables: ' + err.message);
+        
+        // Elegant inline error instead of ugly alert
+        const errorDiv = document.createElement('div');
+        errorDiv.id = 'tableLoadError';
+        errorDiv.className = 'mt-3 p-4 rounded-xl border border-red-500/30 bg-red-900/20 backdrop-blur-sm';
+        const isRateLimit = err.message && err.message.includes('429');
+        const messageText = isRateLimit ? 'Please wait a moment, then select your base again.' : 'Please refresh and try again.';
+        errorDiv.innerHTML = '<div style="display:flex;align-items:flex-start;gap:12px"><div style="width:32px;height:32px;border-radius:50%;background:rgba(239,68,68,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fas fa-gem" style="color:#f87171;font-size:14px"></i></div><div><p style="font-size:14px;font-weight:500;color:#fca5a5;margin-bottom:4px">A Momentary Pause</p><p style="font-size:12px;color:rgba(252,165,165,0.8);line-height:1.5">The Airtable rate limit has been reached. ' + messageText + '</p></div></div>';
+        
+        // Insert after the table selector container
+        const container = tableSelector.closest('.glass') || tableSelector.parentElement;
+        const existingError = document.getElementById('tableLoadError');
+        if (existingError) existingError.remove();
+        container?.insertBefore(errorDiv, container.firstChild);
+        
+        // Auto-dismiss after 8 seconds
+        setTimeout(() => {
+          errorDiv.style.opacity = '0';
+          errorDiv.style.transition = 'opacity 0.5s ease';
+          setTimeout(() => errorDiv.remove(), 500);
+        }, 8000);
       }
     }
 
@@ -2530,7 +2753,8 @@ app.get('/', (c) => {
         const data = await res.json();
         
         if (data.error) {
-          recordsList.innerHTML = '<p class="text-red-500 text-sm p-4">' + (data.error.message || 'Error loading records') + '</p>';
+          const errorMsg = typeof data.error === 'string' ? data.error : (data.error.message || 'Error loading records');
+          recordsList.innerHTML = '<p class="text-red-500 text-sm p-4">' + errorMsg + '</p>';
           return;
         }
         
@@ -3778,7 +4002,7 @@ app.get('/', (c) => {
         const recordKeys = Object.keys(imagesByRecord);
         
         if (recordKeys.length === 0) {
-          alert('No images have article assignments. Images generated before this update don\\'t have article tracking. Please generate new images with an article selected.');
+          alert("No images have article assignments. Images generated before this update don't have article tracking. Please generate new images with an article selected.");
           return;
         }
         
