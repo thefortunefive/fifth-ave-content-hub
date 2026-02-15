@@ -2405,11 +2405,18 @@ app.get('/', (c) => {
           return;
         }
         
-        tableSelector.innerHTML = '<option value="">-- Select a Table --</option>' + 
+        tableSelector.innerHTML = '<option value="">-- Select a Table --</option>' +
           tables.map(t => '<option value="' + t.id + '">' + t.name + '</option>').join('');
-        
-        // Auto-select first table
-        tableSelector.value = tables[0].id;
+
+        // Auto-select "APR" table if available, otherwise select first table
+        const aprTable = tables.find(t => t.name === 'APR');
+        if (aprTable) {
+          console.log('Auto-selecting APR table:', aprTable.id);
+          tableSelector.value = aprTable.id;
+        } else {
+          console.log('APR table not found, selecting first table:', tables[0].name);
+          tableSelector.value = tables[0].id;
+        }
         await onTableChange();
       } catch (err) {
         tableSelector.innerHTML = '<option value="">Error loading tables</option>';
