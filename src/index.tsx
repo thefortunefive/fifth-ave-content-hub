@@ -5,7 +5,7 @@ const app = new Hono()
 
 // Add environment bindings
 type Bindings = {
-  AIRTABLE_TOKEN?: string
+  NOCODB_TOKEN?: string
   PERPLEXITY_API_KEY?: string
   OPENAI_API_KEY?: string
 }
@@ -84,8 +84,8 @@ const REFERENCE_IMAGES = {
 
 // API: Get all bases (with pagination support and caching)
 app.get('/api/bases', async (c) => {
-  const token = c.req.header('X-Airtable-Token')
-  if (!token) return c.json({ error: 'Missing Airtable token' }, 401)
+  const token = c.req.header('xc-token') || c.env.NOCODB_TOKEN
+  if (!token) return c.json({ error: 'Missing NocoDB token' }, 401)
   
   // Check cache first
   const cacheKey = `bases:${token.substring(0, 10)}`
@@ -100,76 +100,53 @@ app.get('/api/bases', async (c) => {
   
   // If we have stale cached data and request fails, we'll return the stale data
   try {
-    let allBases: any[] = []
-    let offset: string | null = null
+    // NocoDB API for listing bases
+    const url = 'https://open-buckets-study.loca.lt/api/v2/meta/bases'
     
-    // Airtable paginates results, so we need to fetch all pages
-    do {
-      let url = 'https://api.airtable.com/v0/meta/bases'
-      if (offset) {
-        url += `?offset=${offset}`
-      }
-      
-      const res = await fetchWithRetry(url, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
-      
-      if (!res.ok) {
-        const errorText = await res.text()
-        console.error('Airtable API error:', res.status, errorText)
-        
-        // If we have cached data, return it as fallback (even if stale)
-        if (cachedData) {
-          console.log('Returning stale cached data due to API error')
-          return c.json({ 
-            ...cachedData, 
-            _cached: true, 
-            _cacheStale: true,
-            _error: `Airtable API error: ${res.status}. Showing cached data.`
-          })
-        }
-        
-        // Return user-friendly error message
-        let userMessage = `Airtable API error: ${res.status}`
-        if (res.status === 429) {
-          userMessage = 'Airtable rate limit exceeded. Please wait a moment and try again.'
-        } else if (res.status === 401 || res.status === 403) {
-          userMessage = 'Invalid or expired Airtable token. Please check your token and try again.'
-        }
-        
-        return c.json({ error: userMessage, details: errorText }, res.status)
-      }
-      
-      const data = await res.json()
-
-      if (data.error) {
-        console.error('Airtable API returned error:', data.error)
-        
-        if (cachedData) {
-          return c.json({ 
-            ...cachedData, 
-            _cached: true, 
-            _cacheStale: true,
-            _error: 'Airtable error. Showing cached data.'
-          })
-        }
-        
-        return c.json({ error: data.error }, 400)
-      }
-
-      if (data.bases && Array.isArray(data.bases)) {
-        allBases = allBases.concat(data.bases)
-        console.log(`Fetched ${data.bases.length} bases, total so far: ${allBases.length}`)
-      }
-      
-      offset = data.offset || null
-    } while (offset)
+    const res = await fetchWithRetry(url, {
+      headers: { 'xc-token': token, 'bypass-tunnel-reminder': 'true' }
+    })
     
-    const result = { bases: allBases }
+    if (!res.ok) {
+      const errorText = await res.text()
+      console.error('NocoDB API error:', res.status, errorText)
+      
+      // If we have cached data, return it as fallback (even if stale)
+      if (cachedData) {
+        console.log('Returning stale cached data due to API error')
+        return c.json({ 
+          ...cachedData, 
+          _cached: true, 
+          _cacheStale: true,
+          _error: `NocoDB API error: ${res.status}. Showing cached data.`
+        })
+      }
+      
+      // Return user-friendly error message
+      let userMessage = `NocoDB API error: ${res.status}`
+      if (res.status === 429) {
+        userMessage = 'NocoDB rate limit exceeded. Please wait a moment and try again.'
+      } else if (res.status === 401 || res.status === 403) {
+        userMessage = 'Invalid or expired NocoDB token. Please check your token and try again.'
+      }
+      
+      return c.json({ error: userMessage, details: errorText }, res.status)
+    }
+    
+    const data = await res.json()
+
+    // Transform NocoDB response to match expected format
+    // NocoDB returns { bases: [...] } or array directly
+    let bases = data.bases || data || []
+    if (!Array.isArray(bases)) {
+      bases = []
+    }
+    
+    const result = { bases }
     
     // Cache the result
     setCached(cacheKey, result)
-    console.log(`Total bases fetched and cached: ${allBases.length}`)
+    console.log(`Total bases fetched and cached: ${bases.length}`)
     
     return c.json(result)
   } catch (err: any) {
@@ -192,9 +169,9 @@ app.get('/api/bases', async (c) => {
 
 // API: Get tables for a base (with caching)
 app.get('/api/bases/:baseId/tables', async (c) => {
-  const token = c.req.header('X-Airtable-Token')
-  if (!token) return c.json({ error: 'Missing Airtable token' }, 401)
-  
+  const token = c.req.header('xc-token') || c.env.NOCODB_TOKEN
+  if (!token) return c.json({ error: 'Missing NocoDB token' }, 401)
+
   const baseId = c.req.param('baseId')
   
   // Check cache first
@@ -209,33 +186,33 @@ app.get('/api/bases/:baseId/tables', async (c) => {
   }
   
   console.log(`Fetching tables for base: ${baseId}, token present: ${token ? 'yes' : 'no'}, token prefix: ${token.substring(0, 10)}...`)
-  
+
   try {
-    const res = await fetchWithRetry(`https://api.airtable.com/v0/meta/bases/${baseId}/tables`, {
-      headers: { 'Authorization': `Bearer ${token}` }
+    const res = await fetchWithRetry(`https://open-buckets-study.loca.lt/api/v2/meta/bases/${baseId}/tables`, {
+      headers: { 'xc-token': token, 'bypass-tunnel-reminder': 'true' }
     })
-    
+
     if (!res.ok) {
       const errorText = await res.text()
-      console.error('Airtable tables API error:', res.status, errorText)
-      
+      console.error('NocoDB tables API error:', res.status, errorText)
+
       // If we have cached data, return it as fallback (even if stale)
       if (cachedData) {
         console.log('Returning stale cached tables due to API error')
-        return c.json({ 
-          ...cachedData, 
-          _cached: true, 
+        return c.json({
+          ...cachedData,
+          _cached: true,
           _cacheStale: true,
-          _error: `Airtable API error: ${res.status}. Showing cached data.`
+          _error: `NocoDB API error: ${res.status}. Showing cached data.`
         })
       }
       
       // Return user-friendly error message
-      let userMessage = `Airtable API error: ${res.status}`
+      let userMessage = `NocoDB API error: ${res.status}`
       if (res.status === 429) {
-        userMessage = 'Airtable rate limit exceeded. Please wait a moment and try again.'
+        userMessage = 'NocoDB rate limit exceeded. Please wait a moment and try again.'
       } else if (res.status === 401 || res.status === 403) {
-        userMessage = 'Invalid or expired Airtable token. Please check your token and try again.'
+        userMessage = 'Invalid or expired NocoDB token. Please check your token and try again.'
       } else if (res.status === 404) {
         userMessage = 'Base not found. Please check if you have access to this base.'
       }
@@ -268,66 +245,110 @@ app.get('/api/bases/:baseId/tables', async (c) => {
   }
 })
 
-// API: Get records from Airtable (with dynamic base and table)
+// API: Get records from NocoDB (with dynamic table)
 app.get('/api/records', async (c) => {
-  const token = c.req.header('X-Airtable-Token')
-  if (!token) return c.json({ error: 'Missing Airtable token' }, 401)
-  
-  const baseId = c.req.query('baseId')
+  const token = c.req.header('xc-token') || c.env.NOCODB_TOKEN
+  if (!token) return c.json({ error: 'Missing NocoDB token' }, 401)
+
   const tableId = c.req.query('tableId')
   const filter = c.req.query('filter') || ''
-  
-  if (!baseId || !tableId) return c.json({ error: 'Missing baseId or tableId' }, 400)
-  
-  let url = `https://api.airtable.com/v0/${baseId}/${tableId}?pageSize=50`
+
+  if (!tableId) return c.json({ error: 'Missing tableId' }, 400)
+
+  // NocoDB API for listing records
+  let url = `https://open-buckets-study.loca.lt/api/v2/tables/${tableId}/records`
   if (filter && filter !== 'all') {
-    url += `&filterByFormula={Status}='${filter}'`
+    // NocoDB uses different filter syntax - for now, fetch all and filter client-side
+    // or use NocoDB's where parameter: url += `?where=(Status,eq,${filter})`
   }
-  
+
   const res = await fetch(url, {
-    headers: { 'Authorization': `Bearer ${token}` }
+    headers: { 'xc-token': token, 'bypass-tunnel-reminder': 'true' }
   })
-  return c.json(await res.json())
+
+  const data = await res.json()
+
+  // Transform NocoDB response to match Airtable-style format for frontend compatibility
+  // NocoDB returns { list: [...], pageInfo: {...} }
+  if (data.list && Array.isArray(data.list)) {
+    return c.json({
+      records: data.list.map((record: any) => ({
+        id: record.Id || record.id,
+        fields: record
+      })),
+      offset: data.pageInfo?.isLastPage ? null : (data.pageInfo?.page + 1)
+    })
+  }
+
+  return c.json(data)
 })
 
-// API: Get single record (with dynamic base and table)
+// API: Get single record (with dynamic table)
 app.get('/api/records/:id', async (c) => {
-  const token = c.req.header('X-Airtable-Token')
-  if (!token) return c.json({ error: 'Missing Airtable token' }, 401)
-  
-  const baseId = c.req.query('baseId')
+  const token = c.req.header('xc-token') || c.env.NOCODB_TOKEN
+  if (!token) return c.json({ error: 'Missing NocoDB token' }, 401)
+
   const tableId = c.req.query('tableId')
   const id = c.req.param('id')
-  
-  if (!baseId || !tableId) return c.json({ error: 'Missing baseId or tableId' }, 400)
-  
-  const res = await fetch(`https://api.airtable.com/v0/${baseId}/${tableId}/${id}`, {
-    headers: { 'Authorization': `Bearer ${token}` }
+
+  if (!tableId) return c.json({ error: 'Missing tableId' }, 400)
+
+  // NocoDB API for single record
+  const res = await fetch(`https://open-buckets-study.loca.lt/api/v2/tables/${tableId}/records/${id}`, {
+    headers: { 'xc-token': token, 'bypass-tunnel-reminder': 'true' }
   })
-  return c.json(await res.json())
+
+  const data = await res.json()
+
+  // Transform to Airtable-style format
+  if (data && !data.error) {
+    return c.json({
+      id: data.Id || data.id,
+      fields: data
+    })
+  }
+
+  return c.json(data)
 })
 
-// API: Update record (with dynamic base and table)
+// API: Update record (with dynamic table)
 app.patch('/api/records/:id', async (c) => {
-  const token = c.req.header('X-Airtable-Token')
-  if (!token) return c.json({ error: 'Missing Airtable token' }, 401)
-  
-  const baseId = c.req.query('baseId')
+  const token = c.req.header('xc-token') || c.env.NOCODB_TOKEN
+  if (!token) return c.json({ error: 'Missing NocoDB token' }, 401)
+
   const tableId = c.req.query('tableId')
   const id = c.req.param('id')
   const body = await c.req.json()
-  
-  if (!baseId || !tableId) return c.json({ error: 'Missing baseId or tableId' }, 400)
-  
-  const res = await fetch(`https://api.airtable.com/v0/${baseId}/${tableId}/${id}`, {
+
+  if (!tableId) return c.json({ error: 'Missing tableId' }, 400)
+
+  // NocoDB expects the Id field in the body
+  const nocoBody = {
+    Id: id,
+    ...body
+  }
+
+  const res = await fetch(`https://open-buckets-study.loca.lt/api/v2/tables/${tableId}/records`, {
     method: 'PATCH',
     headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
+      'xc-token': token,
+      'Content-Type': 'application/json',
+      'bypass-tunnel-reminder': 'true'
     },
-    body: JSON.stringify({ fields: body })
+    body: JSON.stringify(nocoBody)
   })
-  return c.json(await res.json())
+
+  const data = await res.json()
+
+  // Transform to Airtable-style response
+  if (data && !data.error) {
+    return c.json({
+      id: data.Id || id,
+      fields: data
+    })
+  }
+
+  return c.json(data)
 })
 
 // API: Generate image with KieAI
@@ -471,8 +492,8 @@ app.post('/api/proxy-image', async (c) => {
 // Table routing configuration for the browser extension
 const EXTENSION_ROUTES = {
   crypto: {
-    baseId: 'appgyL5gKf8rjaJPv',
-    tableId: 'tblZwA0JCNPeORaGi',
+    baseId: 'p5v5ffrepsxc7g5',
+    tableId: 'm9m6gh688zrhkb4',
     fieldMap: {
       url: 'sourceURL',
       title: 'sourceHeadline',
@@ -483,8 +504,8 @@ const EXTENSION_ROUTES = {
     }
   },
   ai: {
-    baseId: 'appgyL5gKf8rjaJPv',
-    tableId: 'tblSXrbwYXTQC7D2u',
+    baseId: 'p5v5ffrepsxc7g5',
+    tableId: 'mi0xcrv7gp5inbh',
     fieldMap: {
       url: 'sourceURL',
       title: 'sourceHeadline',
@@ -495,8 +516,8 @@ const EXTENSION_ROUTES = {
     }
   },
   general: {
-    baseId: 'appQggEi0kxkoSmLn',
-    tableId: 'tblhAFDUnMcdO8DLk',
+    baseId: 'p5v5ffrepsxc7g5',
+    tableId: 'm48lt8phy1o2y04',
     fieldMap: {
       url: 'Video URL',
       title: 'Video Title',
@@ -511,8 +532,8 @@ const EXTENSION_ROUTES = {
 // Valid socialChannels options for the 5th Ave tables
 const VALID_SOCIAL_CHANNELS = ['Twitter', 'LinkedIn', 'Blog', 'Instagram', 'Facebook', 'Avatar']
 
-// Airtable token for extension saves
-const EXTENSION_AIRTABLE_TOKEN = 'patzmYCtUSKROFbsw.ebdd70b78b2f422fd5a6da1aa867be11f690a795117c9e13d9d4747708018921'
+// NocoDB token for extension saves
+const EXTENSION_NOCODB_TOKEN = 'PzPjLnn3qdo8jhG048mWgZUx30tpHJ_J4JCqvQ5z'
 
 // ============================================
 // INSTANT PROCESSING: n8n Webhook Triggers
@@ -525,7 +546,7 @@ const N8N_WEBHOOKS: Record<string, string> = {
 }
 
 // Trigger the n8n pickup workflow immediately via webhook
-// Sends record data directly so n8n can process without re-fetching from Airtable
+// Sends record data directly so n8n can process without re-fetching from NocoDB
 async function triggerInstantPickup(topic: string, recordId: string, recordData: {
   sourceURL: string
   sourceHeadline: string
@@ -535,7 +556,7 @@ async function triggerInstantPickup(topic: string, recordId: string, recordData:
   if (!webhookUrl) return
   
   try {
-    // Wait 2 seconds for Airtable to fully index the new record
+    // Wait 2 seconds for NocoDB to fully index the new record
     await new Promise(resolve => setTimeout(resolve, 2000))
     
     console.log(`[Instant Pickup] Triggering ${topic} webhook for record ${recordId}`)
@@ -566,8 +587,8 @@ app.post('/api/save', async (c) => {
       return c.json({ success: false, error: 'URL is required' }, 400)
     }
     
-    // Get Airtable token from environment or use default
-    const airtableToken = c.env?.AIRTABLE_TOKEN || EXTENSION_AIRTABLE_TOKEN
+    // Get NocoDB token from environment or use default
+    const nocodbToken = c.env?.NOCODB_TOKEN || EXTENSION_NOCODB_TOKEN
     
     // Determine routing based on topic (default to 'general')
     const selectedTopic = topic || 'general'
@@ -607,22 +628,31 @@ app.post('/api/save', async (c) => {
       fields['Created Date'] = new Date().toISOString()
     }
     
-    // Create the record in Airtable
-    const res = await fetch(`https://api.airtable.com/v0/${route.baseId}/${route.tableId}`, {
+    // Create the record in NocoDB
+    // NocoDB uses tableId only, no baseId in record URLs
+    // NocoDB expects flat fields, not wrapped in { fields: {...} }
+    const res = await fetch(`${NOCODB_BASE_URL}/api/v2/tables/${route.tableId}/records`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${airtableToken}`,
+        'xc-token': nocodbToken,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ fields })
+      body: JSON.stringify(fields)
     })
     
     const data: any = await res.json()
     
     if (data.error) {
-      console.error('Airtable error:', data.error)
-      const errorMsg = typeof data.error === 'string' ? data.error : (data.error.message || 'Airtable error')
+      console.error('NocoDB error:', data.error)
+      const errorMsg = typeof data.error === 'string' ? data.error : (data.error.message || 'NocoDB error')
       return c.json({ success: false, error: errorMsg }, 500)
+    }
+    
+    // Transform NocoDB response to match expected format
+    // NocoDB returns flat record with Id field
+    const transformedData = {
+      id: data.Id,
+      fields: data
     }
     
     // ===== INSTANT PROCESSING via n8n Webhook =====
@@ -649,7 +679,7 @@ app.post('/api/save', async (c) => {
     
     return c.json({ 
       success: true, 
-      record: data,
+      record: transformedData,
       topic: selectedTopic,
       table: selectedTopic === 'general' ? 'Content Pipeline' : (selectedTopic === 'crypto' ? 'Social Posts' : 'Social Posts - AI'),
       processing: processingStarted ? 'started' : 'not_applicable'
@@ -671,16 +701,18 @@ app.get('/api/process-status/:recordId', async (c) => {
       return c.json({ error: 'Invalid topic' }, 400)
     }
     
-    // Get Airtable token from environment or use default
-    const airtableToken = c.env?.AIRTABLE_TOKEN || EXTENSION_AIRTABLE_TOKEN
+    // Get NocoDB token from environment or use default
+    const nocodbToken = c.env?.NOCODB_TOKEN || EXTENSION_NOCODB_TOKEN
     
-    // Fetch the record from Airtable to check if it's been enriched
-    const res = await fetch(`https://api.airtable.com/v0/${route.baseId}/${route.tableId}/${recordId}`, {
-      headers: { 'Authorization': `Bearer ${airtableToken}` }
+    // Fetch the record from NocoDB to check if it's been enriched
+    // NocoDB uses tableId only, no baseId in record URLs
+    const res = await fetch(`${NOCODB_BASE_URL}/api/v2/tables/${route.tableId}/records/${recordId}`, {
+      headers: { 'xc-token': nocodbToken }
     })
     
     const data: any = await res.json()
-    const fields = data.fields || {}
+    // NocoDB returns flat fields, not nested under 'fields'
+    const fields = data || {}
     
     // Check which fields have been populated
     const hasResearch = !!(fields.sourceSummary && fields.sourceSummary.length > 50)
@@ -727,15 +759,17 @@ app.post('/api/process', async (c) => {
       return c.json({ error: 'Invalid topic' }, 400)
     }
     
-    // Get Airtable token from environment or use default
-    const airtableToken = c.env?.AIRTABLE_TOKEN || EXTENSION_AIRTABLE_TOKEN
+    // Get NocoDB token from environment or use default
+    const nocodbToken = c.env?.NOCODB_TOKEN || EXTENSION_NOCODB_TOKEN
     
-    // Fetch the record from Airtable to get current data
-    const airtableRes = await fetch(`https://api.airtable.com/v0/${route.baseId}/${route.tableId}/${recordId}`, {
-      headers: { 'Authorization': `Bearer ${airtableToken}` }
+    // Fetch the record from NocoDB to get current data
+    // NocoDB uses tableId only, no baseId in record URLs
+    const nocodbRes = await fetch(`${NOCODB_BASE_URL}/api/v2/tables/${route.tableId}/records/${recordId}`, {
+      headers: { 'xc-token': nocodbToken }
     })
-    const record: any = await airtableRes.json()
-    const fields = record.fields || {}
+    const record: any = await nocodbRes.json()
+    // NocoDB returns flat fields, not nested under 'fields'
+    const fields = record || {}
     
     // Trigger the n8n webhook with record data
     await triggerInstantPickup(topic, recordId, {
@@ -1622,10 +1656,10 @@ app.get('/', (c) => {
               </div>
             </div>
           </div>
-          <button id="saveImagesToAirtableBtn" onclick="saveImagesToAirtable()" 
+          <button id="saveImagesToNocoDBBtn" onclick="saveImagesToNocoDB()" 
                   class="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2">
             <i class="fas fa-cloud-upload-alt"></i>
-            Save to Airtable
+            Save to NocoDB
           </button>
         </div>
       </div>
@@ -1723,11 +1757,11 @@ app.get('/', (c) => {
       </div>
     </div>
 
-    <!-- 6. Airtable Records (Full Width) -->
+    <!-- 6. NocoDB Records (Full Width) -->
     <div class="glass rounded-2xl p-4 mb-4">
       <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
         <i class="fas fa-database text-amber-500"></i>
-        Airtable Records
+        NocoDB Records
       </h2>
       
       <!-- Selectors Row -->
@@ -2062,7 +2096,7 @@ app.get('/', (c) => {
     // ========================================
     // CONFIGURATION
     // ========================================
-    const AIRTABLE_TOKEN = '${c.env?.AIRTABLE_TOKEN || "patzmYCtUSKROFbsw.ebdd70b78b2f422fd5a6da1aa867be11f690a795117c9e13d9d4747708018921"}';
+    const NOCODB_TOKEN = '${c.env?.NOCODB_TOKEN || "PzPjLnn3qdo8jhG048mWgZUx30tpHJ_J4JCqvQ5z"}';
     
     const referenceCategories = [
       { id: 'face', name: 'Face', icon: 'fa-user-circle', default: 'https://iili.io/fM9hV6B.png', order: 1 },
@@ -2482,7 +2516,7 @@ app.get('/', (c) => {
       
       try {
         const res = await fetch('/api/bases', {
-          headers: { 'X-Airtable-Token': AIRTABLE_TOKEN }
+          headers: { 'xc-token': NOCODB_TOKEN }
         });
         const data = await res.json();
         
@@ -2516,10 +2550,10 @@ app.get('/', (c) => {
         const optionsHtml = bases.map(b => \`<option value="\${b.id}">\${b.name}</option>\`).join('');
         selector.innerHTML = '<option value="">-- Select a Base --</option>' + optionsHtml;
         
-        // Default to Fifth Ave Content Hub if available, otherwise leave as "-- Select a Base --"
-        const defaultBase = bases.find(b => b.name === 'Fifth Ave Content Hub');
+        // Default to "Getting Started" base if available, otherwise leave as "-- Select a Base --"
+        const defaultBase = bases.find(b => b.id === 'p5v5ffrepsxc7g5');
         if (defaultBase) {
-          console.log('Defaulting to Fifth Ave Content Hub:', defaultBase.id);
+          console.log('Defaulting to Getting Started base:', defaultBase.id);
           selector.value = defaultBase.id;
           await onBaseChange();
         }
@@ -2534,7 +2568,7 @@ app.get('/', (c) => {
         errorDiv.className = 'mt-3 p-4 rounded-xl border border-amber-500/30 bg-amber-900/20 backdrop-blur-sm';
         const isRateLimit = err.message && err.message.includes('429');
         const messageText = isRateLimit ? 'Allow a brief pause, then refresh the page.' : 'Please refresh to reconnect.';
-        errorDiv.innerHTML = '<div style="display:flex;align-items:flex-start;gap:12px"><div style="width:32px;height:32px;border-radius:50%;background:rgba(245,158,11,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fas fa-crown" style="color:#fbbf24;font-size:14px"></i></div><div><p style="font-size:14px;font-weight:500;color:#fcd34d;margin-bottom:4px">Connection Interrupted</p><p style="font-size:12px;color:rgba(252,211,77,0.8);line-height:1.5">The Airtable connection is momentarily crowded. ' + messageText + '</p></div></div>';
+        errorDiv.innerHTML = '<div style="display:flex;align-items:flex-start;gap:12px"><div style="width:32px;height:32px;border-radius:50%;background:rgba(245,158,11,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fas fa-crown" style="color:#fbbf24;font-size:14px"></i></div><div><p style="font-size:14px;font-weight:500;color:#fcd34d;margin-bottom:4px">Connection Interrupted</p><p style="font-size:12px;color:rgba(252,211,77,0.8);line-height:1.5">The NocoDB connection is momentarily crowded. ' + messageText + '</p></div></div>';
         
         const container = selector.closest('.glass') || selector.parentElement;
         const existingError = document.getElementById('baseLoadError');
@@ -2583,7 +2617,7 @@ app.get('/', (c) => {
       
       try {
         const res = await fetch(\`/api/bases/\${baseId}/tables\`, {
-          headers: { 'X-Airtable-Token': AIRTABLE_TOKEN }
+          headers: { 'xc-token': NOCODB_TOKEN }
         });
         const data = await res.json();
         
@@ -2631,7 +2665,7 @@ app.get('/', (c) => {
         errorDiv.className = 'mt-3 p-4 rounded-xl border border-red-500/30 bg-red-900/20 backdrop-blur-sm';
         const isRateLimit = err.message && err.message.includes('429');
         const messageText = isRateLimit ? 'Please wait a moment, then select your base again.' : 'Please refresh and try again.';
-        errorDiv.innerHTML = '<div style="display:flex;align-items:flex-start;gap:12px"><div style="width:32px;height:32px;border-radius:50%;background:rgba(239,68,68,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fas fa-gem" style="color:#f87171;font-size:14px"></i></div><div><p style="font-size:14px;font-weight:500;color:#fca5a5;margin-bottom:4px">A Momentary Pause</p><p style="font-size:12px;color:rgba(252,165,165,0.8);line-height:1.5">The Airtable rate limit has been reached. ' + messageText + '</p></div></div>';
+        errorDiv.innerHTML = '<div style="display:flex;align-items:flex-start;gap:12px"><div style="width:32px;height:32px;border-radius:50%;background:rgba(239,68,68,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fas fa-gem" style="color:#f87171;font-size:14px"></i></div><div><p style="font-size:14px;font-weight:500;color:#fca5a5;margin-bottom:4px">A Momentary Pause</p><p style="font-size:12px;color:rgba(252,165,165,0.8);line-height:1.5">The NocoDB rate limit has been reached. ' + messageText + '</p></div></div>';
         
         // Insert after the table selector container
         const container = tableSelector.closest('.glass') || tableSelector.parentElement;
@@ -2748,7 +2782,7 @@ app.get('/', (c) => {
       
       try {
         const res = await fetch(\`/api/records?baseId=\${currentBase.id}&tableId=\${currentTable.id}&filter=\${encodeURIComponent(filter)}\`, {
-          headers: { 'X-Airtable-Token': AIRTABLE_TOKEN }
+          headers: { 'xc-token': NOCODB_TOKEN }
         });
         const data = await res.json();
         
@@ -2833,7 +2867,7 @@ app.get('/', (c) => {
       
       try {
         const res = await fetch(\`/api/records/\${id}?baseId=\${currentBase.id}&tableId=\${currentTable.id}\`, {
-          headers: { 'X-Airtable-Token': AIRTABLE_TOKEN }
+          headers: { 'xc-token': NOCODB_TOKEN }
         });
         currentRecord = await res.json();
         const f = currentRecord.fields || {};
@@ -2903,7 +2937,7 @@ app.get('/', (c) => {
           document.getElementById('blueskyCount').textContent = (f.blueskyCopy || '').length;
         }
         
-        // Images - load from Airtable with X button to remove
+        // Images - load from NocoDB with X button to remove
         // Check imageURL text field first (new method), fallback to attachment field (old method)
         const imageField = tableFields.find(tf => IMAGE_FIELD_TYPES.includes(tf.type))?.name;
         
@@ -3350,8 +3384,8 @@ app.get('/', (c) => {
             const imageUrl = resultJson.resultUrls[0];
             await showGeneratedImage(imageUrl, ratioToGenerate);
             addToHistory(lastGeneratedUrl, prompt); // Use lastGeneratedUrl which may have text overlay
-            // Auto-save to Airtable (newest first, append to existing)
-            await autoSaveImageToAirtable(imageUrl);
+            // Auto-save to NocoDB (newest first, append to existing)
+            await autoSaveImageToNocoDB(imageUrl);
             break;
           } else if (statusData.data?.state === 'failed') {
             throw new Error(statusData.data.failMsg || 'Generation failed');
@@ -3491,11 +3525,11 @@ app.get('/', (c) => {
           document.getElementById(size.statusId).className = 'text-green-400';
         }
         
-        statusText.textContent = 'All sizes generated! Saving to Airtable...';
+        statusText.textContent = 'All sizes generated! Saving to NocoDB...';
         
-        // Auto-save to Airtable if a record is selected
+        // Auto-save to NocoDB if a record is selected
         if (currentRecordId && currentBase && currentTable) {
-          await saveImagesToAirtable();
+          await saveImagesToNocoDB();
         }
         
         showSaveIndicator();
@@ -3911,24 +3945,24 @@ app.get('/', (c) => {
     }
     
     // ========================================
-    // AUTO-SAVE IMAGE TO AIRTABLE
+    // AUTO-SAVE IMAGE TO NOCODB
     // ========================================
-    async function autoSaveImageToAirtable(imageUrl) {
+    async function autoSaveImageToNocoDB(imageUrl) {
       // Only save if we have a current record selected
       if (!currentRecordId || !currentBase || !currentTable) {
-        console.log('No record selected - skipping auto-save to Airtable');
+        console.log('No record selected - skipping auto-save to NocoDB');
         return;
       }
       
       try {
         // Save image URL to text field 'imageURL' (NOT attachment field)
-        console.log('Auto-saving image URL to Airtable imageURL field:', imageUrl);
+        console.log('Auto-saving image URL to NocoDB imageURL field:', imageUrl);
         
-        // Save to Airtable
+        // Save to NocoDB
         const res = await fetch('/api/records/' + currentRecordId + '?baseId=' + currentBase.id + '&tableId=' + currentTable.id, {
           method: 'PATCH',
           headers: {
-            'X-Airtable-Token': AIRTABLE_TOKEN,
+            'xc-token': NOCODB_TOKEN,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({ imageURL: imageUrl })
@@ -3937,7 +3971,7 @@ app.get('/', (c) => {
         const result = await res.json();
         
         if (result.error) {
-          console.error('Airtable save error:', result.error);
+          console.error('NocoDB save error:', result.error);
           return;
         }
         
@@ -3946,22 +3980,22 @@ app.get('/', (c) => {
           currentRecord.fields.imageURL = imageUrl;
         }
         
-        console.log('✓ Image URL auto-saved to Airtable');
+        console.log('✓ Image URL auto-saved to NocoDB');
         showSaveIndicator();
         
       } catch (err) {
-        console.error('Auto-save to Airtable failed:', err);
+        console.error('Auto-save to NocoDB failed:', err);
       }
     }
     
-    // Save a specific image from history to current Airtable record
-    async function saveHistoryImageToAirtable(imageUrl) {
+    // Save a specific image from history to current NocoDB record
+    async function saveHistoryImageToNocoDB(imageUrl) {
       if (!currentRecordId || !currentBase || !currentTable) {
         alert('Please select an article first before saving images.');
         return;
       }
       
-      await autoSaveImageToAirtable(imageUrl);
+      await autoSaveImageToNocoDB(imageUrl);
       alert('Image saved to current article!');
     }
     
@@ -4024,11 +4058,11 @@ app.get('/', (c) => {
               continue;
             }
             
-            // Save to Airtable
+            // Save to NocoDB
             const res = await fetch('/api/records/' + record.recordId + '?baseId=' + record.baseId + '&tableId=' + record.tableId, {
               method: 'PATCH',
               headers: {
-                'X-Airtable-Token': AIRTABLE_TOKEN,
+                'xc-token': NOCODB_TOKEN,
                 'Content-Type': 'application/json'
               },
               body: JSON.stringify({ imageURL: imageUrl })
@@ -4416,7 +4450,7 @@ app.get('/', (c) => {
         alert('Please select an article first before saving images.');
         return;
       }
-      await autoSaveImageToAirtable(currentLightboxUrl);
+      await autoSaveImageToNocoDB(currentLightboxUrl);
       closeLightbox();
     }
     
@@ -4669,7 +4703,7 @@ app.get('/', (c) => {
         
         // Auto-save
         if (currentRecordId && currentBase && currentTable) {
-          await saveImagesToAirtable();
+          await saveImagesToNocoDB();
         }
         
       } catch (err) {
@@ -4697,17 +4731,17 @@ app.get('/', (c) => {
     async function autoSave(field) {
       if (!currentRecordId || !currentBase || !currentTable) return;
       
-      const airtableField = field.dataset.field;
-      if (!airtableField) return;
+      const nocodbField = field.dataset.field;
+      if (!nocodbField) return;
       
       try {
         const res = await fetch(\`/api/records/\${currentRecordId}?baseId=\${currentBase.id}&tableId=\${currentTable.id}\`, {
           method: 'PATCH',
           headers: {
-            'X-Airtable-Token': AIRTABLE_TOKEN,
+            'xc-token': NOCODB_TOKEN,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ [airtableField]: field.value })
+          body: JSON.stringify({ [nocodbField]: field.value })
         });
         
         if (res.ok) {
@@ -4757,7 +4791,7 @@ app.get('/', (c) => {
       if (!currentRecordId || !currentBase || !currentTable) return;
       await fetch(\`/api/records/\${currentRecordId}?baseId=\${currentBase.id}&tableId=\${currentTable.id}\`, {
         method: 'PATCH',
-        headers: { 'X-Airtable-Token': AIRTABLE_TOKEN, 'Content-Type': 'application/json' },
+        headers: { 'xc-token': NOCODB_TOKEN, 'Content-Type': 'application/json' },
         body: JSON.stringify({ Status: 'Approved' })
       });
       loadRecords();
@@ -4768,7 +4802,7 @@ app.get('/', (c) => {
       if (!currentRecordId || !currentBase || !currentTable) return;
       await fetch(\`/api/records/\${currentRecordId}?baseId=\${currentBase.id}&tableId=\${currentTable.id}\`, {
         method: 'PATCH',
-        headers: { 'X-Airtable-Token': AIRTABLE_TOKEN, 'Content-Type': 'application/json' },
+        headers: { 'xc-token': NOCODB_TOKEN, 'Content-Type': 'application/json' },
         body: JSON.stringify({ Status: 'Declined' })
       });
       loadRecords();
@@ -4776,9 +4810,9 @@ app.get('/', (c) => {
     }
 
     // ========================================
-    // SAVE IMAGES TO AIRTABLE
+    // SAVE IMAGES TO NOCODB
     // ========================================
-    async function saveImagesToAirtable() {
+    async function saveImagesToNocoDB() {
       if (!currentRecordId || !currentBase || !currentTable) {
         alert('Please select a record first before saving images.');
         return;
@@ -4791,7 +4825,7 @@ app.get('/', (c) => {
         return;
       }
       
-      const btn = document.getElementById('saveImagesToAirtableBtn');
+      const btn = document.getElementById('saveImagesToNocoDBBtn');
       const statusDiv = document.getElementById('saveImagesStatus');
       const statusText = document.getElementById('saveImagesText');
       
@@ -4818,14 +4852,14 @@ app.get('/', (c) => {
         const updates = { imageURL: imageUrl };
         const savedCount = 1;
         
-        console.log('Saving to Airtable imageURL field:', imageUrl);
+        console.log('Saving to NocoDB imageURL field:', imageUrl);
         
-        // Save to Airtable
-        statusText.textContent = 'Uploading ' + savedCount + ' image(s) to Airtable...';
+        // Save to NocoDB
+        statusText.textContent = 'Uploading ' + savedCount + ' image(s) to NocoDB...';
         const res = await fetch(\`/api/records/\${currentRecordId}?baseId=\${currentBase.id}&tableId=\${currentTable.id}\`, {
           method: 'PATCH',
           headers: {
-            'X-Airtable-Token': AIRTABLE_TOKEN,
+            'xc-token': NOCODB_TOKEN,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify(updates)
@@ -4834,10 +4868,10 @@ app.get('/', (c) => {
         const result = await res.json();
         
         if (result.error) {
-          throw new Error(result.error.message || 'Airtable error');
+          throw new Error(result.error.message || 'NocoDB error');
         }
         
-        statusText.textContent = '✓ Saved ' + savedCount + ' image(s) to Airtable!';
+        statusText.textContent = '✓ Saved ' + savedCount + ' image(s) to NocoDB!';
         statusDiv.classList.remove('border-blue-500/30', 'bg-blue-900/30');
         statusDiv.classList.add('border-green-500/30', 'bg-green-900/30');
         statusText.classList.remove('text-blue-300');
@@ -4871,7 +4905,7 @@ app.get('/', (c) => {
         }, 5000);
       } finally {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-cloud-upload-alt mr-2"></i>Save to Airtable';
+        btn.innerHTML = '<i class="fas fa-cloud-upload-alt mr-2"></i>Save to NocoDB';
       }
     }
 
@@ -4998,7 +5032,7 @@ app.get('/', (c) => {
       try {
         // Fetch all records to find scheduled and unscheduled posts
         const res = await fetch('/api/records?baseId=' + currentBase.id + '&tableId=' + currentTable.id + '&pageSize=100', {
-          headers: { 'X-Airtable-Token': AIRTABLE_TOKEN }
+          headers: { 'xc-token': NOCODB_TOKEN }
         });
         const data = await res.json();
         
@@ -5206,11 +5240,11 @@ app.get('/', (c) => {
         // Find the date field name
         const dateField = tableFields.find(f => f.type === 'date')?.name || 'Start date';
         
-        // Update Airtable record
+        // Update NocoDB record
         const res = await fetch('/api/records/' + postId + '?baseId=' + currentBase.id + '&tableId=' + currentTable.id, {
           method: 'PATCH',
           headers: {
-            'X-Airtable-Token': AIRTABLE_TOKEN,
+            'xc-token': NOCODB_TOKEN,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({ [dateField]: date })
