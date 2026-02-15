@@ -3,6 +3,13 @@ import { cors } from 'hono/cors'
 
 const app = new Hono()
 
+// Add environment bindings
+type Bindings = {
+  AIRTABLE_TOKEN?: string
+  PERPLEXITY_API_KEY?: string
+  OPENAI_API_KEY?: string
+}
+
 app.use('/api/*', cors())
 
 // KieAI config
@@ -15,15 +22,49 @@ const REFERENCE_IMAGES = {
   logo: 'https://iili.io/fEiEfUB.png'
 }
 
-// API: Get all bases
+// API: Get all bases (with pagination support)
 app.get('/api/bases', async (c) => {
   const token = c.req.header('X-Airtable-Token')
   if (!token) return c.json({ error: 'Missing Airtable token' }, 401)
   
-  const res = await fetch('https://api.airtable.com/v0/meta/bases', {
-    headers: { 'Authorization': `Bearer ${token}` }
-  })
-  return c.json(await res.json())
+  try {
+    let allBases: any[] = []
+    let offset: string | null = null
+    
+    // Airtable paginates results, so we need to fetch all pages
+    do {
+      let url = 'https://api.airtable.com/v0/meta/bases'
+      if (offset) {
+        url += `?offset=${offset}`
+      }
+      
+      const res = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      
+      if (!res.ok) {
+        const errorText = await res.text()
+        console.error('Airtable API error:', res.status, errorText)
+        return c.json({ error: `Airtable API error: ${res.status}`, details: errorText }, res.status)
+      }
+      
+      const data = await res.json()
+      console.log('Airtable bases response:', JSON.stringify(data, null, 2))
+      
+      if (data.bases && Array.isArray(data.bases)) {
+        allBases = allBases.concat(data.bases)
+        console.log(`Fetched ${data.bases.length} bases, total so far: ${allBases.length}`)
+      }
+      
+      offset = data.offset || null
+    } while (offset)
+    
+    console.log(`Total bases fetched: ${allBases.length}`)
+    return c.json({ bases: allBases })
+  } catch (err: any) {
+    console.error('Error fetching bases:', err)
+    return c.json({ error: err.message || 'Failed to fetch bases' }, 500)
+  }
 })
 
 // API: Get tables for a base
@@ -32,10 +73,25 @@ app.get('/api/bases/:baseId/tables', async (c) => {
   if (!token) return c.json({ error: 'Missing Airtable token' }, 401)
   
   const baseId = c.req.param('baseId')
-  const res = await fetch(`https://api.airtable.com/v0/meta/bases/${baseId}/tables`, {
-    headers: { 'Authorization': `Bearer ${token}` }
-  })
-  return c.json(await res.json())
+  
+  try {
+    const res = await fetch(`https://api.airtable.com/v0/meta/bases/${baseId}/tables`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    
+    if (!res.ok) {
+      const errorText = await res.text()
+      console.error('Airtable tables API error:', res.status, errorText)
+      return c.json({ error: `Airtable API error: ${res.status}`, details: errorText }, res.status)
+    }
+    
+    const data = await res.json()
+    console.log(`Fetched ${data.tables?.length || 0} tables for base ${baseId}`)
+    return c.json(data)
+  } catch (err: any) {
+    console.error('Error fetching tables:', err)
+    return c.json({ error: err.message || 'Failed to fetch tables' }, 500)
+  }
 })
 
 // API: Get records from Airtable (with dynamic base and table)
@@ -336,6 +392,9 @@ app.post('/api/save', async (c) => {
       return c.json({ success: false, error: 'URL is required' }, 400)
     }
     
+    // Get Airtable token from environment or use default
+    const airtableToken = c.env?.AIRTABLE_TOKEN || EXTENSION_AIRTABLE_TOKEN
+    
     // Determine routing based on topic (default to 'general')
     const selectedTopic = topic || 'general'
     const route = EXTENSION_ROUTES[selectedTopic]
@@ -378,7 +437,7 @@ app.post('/api/save', async (c) => {
     const res = await fetch(`https://api.airtable.com/v0/${route.baseId}/${route.tableId}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${EXTENSION_AIRTABLE_TOKEN}`,
+        'Authorization': `Bearer ${airtableToken}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ fields })
@@ -437,9 +496,12 @@ app.get('/api/process-status/:recordId', async (c) => {
       return c.json({ error: 'Invalid topic' }, 400)
     }
     
+    // Get Airtable token from environment or use default
+    const airtableToken = c.env?.AIRTABLE_TOKEN || EXTENSION_AIRTABLE_TOKEN
+    
     // Fetch the record from Airtable to check if it's been enriched
     const res = await fetch(`https://api.airtable.com/v0/${route.baseId}/${route.tableId}/${recordId}`, {
-      headers: { 'Authorization': `Bearer ${EXTENSION_AIRTABLE_TOKEN}` }
+      headers: { 'Authorization': `Bearer ${airtableToken}` }
     })
     
     const data: any = await res.json()
@@ -490,9 +552,12 @@ app.post('/api/process', async (c) => {
       return c.json({ error: 'Invalid topic' }, 400)
     }
     
+    // Get Airtable token from environment or use default
+    const airtableToken = c.env?.AIRTABLE_TOKEN || EXTENSION_AIRTABLE_TOKEN
+    
     // Fetch the record from Airtable to get current data
     const airtableRes = await fetch(`https://api.airtable.com/v0/${route.baseId}/${route.tableId}/${recordId}`, {
-      headers: { 'Authorization': `Bearer ${EXTENSION_AIRTABLE_TOKEN}` }
+      headers: { 'Authorization': `Bearer ${airtableToken}` }
     })
     const record: any = await airtableRes.json()
     const fields = record.fields || {}
@@ -1526,6 +1591,16 @@ app.get('/', (c) => {
         </div>
       </div>
       
+      <!-- Debug Panel (hidden by default, toggle with button) -->
+      <div class="mb-4">
+        <button onclick="toggleDebugPanel()" class="text-xs text-gray-500 hover:text-gray-300 flex items-center gap-1">
+          <i class="fas fa-bug"></i> Toggle Debug Info
+        </button>
+        <div id="debugPanel" class="hidden mt-2 p-3 bg-gray-900 rounded-lg text-xs font-mono text-gray-400 overflow-auto max-h-48">
+          <div id="debugContent">Debug info will appear here...</div>
+        </div>
+      </div>
+      
       <!-- Records Grid (Horizontal scroll, larger cards) -->
       <div id="recordsList" class="flex gap-4 overflow-x-auto pb-4" style="scrollbar-width: thin; scrollbar-color: #f59e0b rgba(255, 255, 255, 0.1);">
         <p class="text-gray-500 text-sm p-4 text-center w-full">Select a base and table</p>
@@ -1812,7 +1887,7 @@ app.get('/', (c) => {
     // ========================================
     // CONFIGURATION
     // ========================================
-    const AIRTABLE_TOKEN = 'patzmYCtUSKROFbsw.ebdd70b78b2f422fd5a6da1aa867be11f690a795117c9e13d9d4747708018921';
+    const AIRTABLE_TOKEN = '${c.env?.AIRTABLE_TOKEN || "patzmYCtUSKROFbsw.ebdd70b78b2f422fd5a6da1aa867be11f690a795117c9e13d9d4747708018921"}';
     
     const referenceCategories = [
       { id: 'face', name: 'Face', icon: 'fa-user-circle', default: 'https://iili.io/fM9hV6B.png', order: 1 },
@@ -2235,23 +2310,63 @@ app.get('/', (c) => {
           headers: { 'X-Airtable-Token': AIRTABLE_TOKEN }
         });
         const data = await res.json();
+        
+        // Log and display the response for debugging
+        console.log('Bases API response:', data);
+        updateDebugPanel({
+          apiResponse: data,
+          basesCount: data.bases?.length || 0,
+          basesList: data.bases?.map(b => ({ id: b.id, name: b.name })) || [],
+          error: data.error || null,
+          timestamp: new Date().toISOString()
+        });
+        
+        if (data.error) {
+          throw new Error(data.error.message || 'API error');
+        }
+        
         bases = data.bases || [];
+        console.log('Loaded ' + bases.length + ' bases:', bases.map(b => b.name));
+        
+        if (bases.length === 0) {
+          selector.innerHTML = '<option value="">No bases found</option>';
+          return;
+        }
         
         // Sort alphabetically
         bases.sort((a, b) => a.name.localeCompare(b.name));
         
-        selector.innerHTML = '<option value="">-- Select a Base --</option>' + 
-          bases.map(b => \`<option value="\${b.id}">\${b.name}</option>\`).join('');
+        // Build dropdown with all bases
+        const optionsHtml = bases.map(b => \`<option value="\${b.id}">\${b.name}</option>\`).join('');
+        selector.innerHTML = '<option value="">-- Select a Base --</option>' + optionsHtml;
         
-        // Default to Fifth Ave Content Hub if available
+        // Default to Fifth Ave Content Hub if available, otherwise leave as "-- Select a Base --"
         const defaultBase = bases.find(b => b.name === 'Fifth Ave Content Hub');
         if (defaultBase) {
+          console.log('Defaulting to Fifth Ave Content Hub:', defaultBase.id);
           selector.value = defaultBase.id;
           await onBaseChange();
         }
       } catch (err) {
         selector.innerHTML = '<option value="">Error loading bases</option>';
         console.error('Failed to load bases:', err);
+        alert('Error loading Airtable bases: ' + err.message);
+        updateDebugPanel('Error: ' + err.message);
+      }
+    }
+    
+    // Debug panel functions
+    function toggleDebugPanel() {
+      const panel = document.getElementById('debugPanel');
+      panel.classList.toggle('hidden');
+    }
+    
+    function updateDebugPanel(content) {
+      const debugContent = document.getElementById('debugContent');
+      if (typeof content === 'object') {
+        debugContent.innerHTML = '<pre>' + JSON.stringify(content, null, 2) + '</pre>';
+      } else {
+        debugContent.innerHTML = content;
       }
     }
 
@@ -2268,6 +2383,8 @@ app.get('/', (c) => {
       }
       
       currentBase = bases.find(b => b.id === baseId);
+      console.log('Base changed to:', currentBase?.name || 'Unknown', 'ID:', baseId);
+      
       tableSelector.innerHTML = '<option value="">Loading tables...</option>';
       
       try {
@@ -2275,19 +2392,29 @@ app.get('/', (c) => {
           headers: { 'X-Airtable-Token': AIRTABLE_TOKEN }
         });
         const data = await res.json();
+        
+        if (data.error) {
+          throw new Error(data.error.message || 'API error loading tables');
+        }
+        
         tables = data.tables || [];
+        console.log('Loaded ' + tables.length + ' tables for base ' + (currentBase?.name || 'Unknown') + ':', tables.map(t => t.name));
+        
+        if (tables.length === 0) {
+          tableSelector.innerHTML = '<option value="">No tables found</option>';
+          return;
+        }
         
         tableSelector.innerHTML = '<option value="">-- Select a Table --</option>' + 
-          tables.map(t => \`<option value="\${t.id}">\${t.name}</option>\`).join('');
+          tables.map(t => '<option value="' + t.id + '">' + t.name + '</option>').join('');
         
         // Auto-select first table
-        if (tables.length > 0) {
-          tableSelector.value = tables[0].id;
-          await onTableChange();
-        }
+        tableSelector.value = tables[0].id;
+        await onTableChange();
       } catch (err) {
         tableSelector.innerHTML = '<option value="">Error loading tables</option>';
         console.error('Failed to load tables:', err);
+        alert('Error loading tables: ' + err.message);
       }
     }
 
@@ -2431,8 +2558,11 @@ app.get('/', (c) => {
           const displayTitle = typeof title === 'string' ? title : JSON.stringify(title);
           
           let thumbUrl = '';
-          if (imageField && r.fields[imageField] && Array.isArray(r.fields[imageField]) && r.fields[imageField].length > 0) {
-            // Use large thumbnail or full URL for better quality (not small/blurry)
+          // Check imageURL text field first (new method), fallback to attachment field (old method)
+          if (r.fields.imageURL) {
+            thumbUrl = r.fields.imageURL;
+          } else if (imageField && r.fields[imageField] && Array.isArray(r.fields[imageField]) && r.fields[imageField].length > 0) {
+            // Fallback: Use large thumbnail or full URL for better quality (not small/blurry)
             const img = r.fields[imageField][0];
             thumbUrl = img.thumbnails?.large?.url || img.thumbnails?.full?.url || img.url || '';
           }
@@ -2543,9 +2673,14 @@ app.get('/', (c) => {
         }
         
         // Images - load from Airtable with X button to remove
+        // Check imageURL text field first (new method), fallback to attachment field (old method)
         const imageField = tableFields.find(tf => IMAGE_FIELD_TYPES.includes(tf.type))?.name;
         
-        if (imageField && f[imageField] && f[imageField].length > 0) {
+        if (f.imageURL) {
+          // New method: use imageURL text field
+          setContentImage('16:9', f.imageURL);
+        } else if (imageField && f[imageField] && f[imageField].length > 0) {
+          // Fallback: use attachment field
           setContentImage('16:9', f[imageField][0].url);
         } else {
           clearContentImage('16:9');
@@ -3555,26 +3690,8 @@ app.get('/', (c) => {
       }
       
       try {
-        // Find the postImage field (or similar attachment field)
-        const imageFields = tableFields.filter(f => IMAGE_FIELD_TYPES.includes(f.type));
-        if (imageFields.length === 0) {
-          console.log('No image attachment field found in table');
-          return;
-        }
-        
-        const targetField = imageFields.find(f => 
-          ['postimage', 'image', 'images', 'attachment', 'attachments', 'photo', 'media'].includes(f.name.toLowerCase())
-        ) || imageFields[0];
-        
-        // Get existing attachments from the current record
-        const existingAttachments = currentRecord?.fields?.[targetField.name] || [];
-        
-        // Prepend new image (newest first) to existing attachments
-        const newAttachment = { url: imageUrl };
-        const updatedAttachments = [newAttachment, ...existingAttachments];
-        
-        console.log('Auto-saving image to Airtable field:', targetField.name);
-        console.log('Total attachments:', updatedAttachments.length);
+        // Save image URL to text field 'imageURL' (NOT attachment field)
+        console.log('Auto-saving image URL to Airtable imageURL field:', imageUrl);
         
         // Save to Airtable
         const res = await fetch('/api/records/' + currentRecordId + '?baseId=' + currentBase.id + '&tableId=' + currentTable.id, {
@@ -3583,7 +3700,7 @@ app.get('/', (c) => {
             'X-Airtable-Token': AIRTABLE_TOKEN,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ [targetField.name]: updatedAttachments })
+          body: JSON.stringify({ imageURL: imageUrl })
         });
         
         const result = await res.json();
@@ -3593,12 +3710,12 @@ app.get('/', (c) => {
           return;
         }
         
-        // Update local record cache with new attachments
+        // Update local record cache with imageURL
         if (currentRecord && currentRecord.fields) {
-          currentRecord.fields[targetField.name] = updatedAttachments;
+          currentRecord.fields.imageURL = imageUrl;
         }
         
-        console.log('✓ Image auto-saved to Airtable');
+        console.log('✓ Image URL auto-saved to Airtable');
         showSaveIndicator();
         
       } catch (err) {
@@ -3668,17 +3785,13 @@ app.get('/', (c) => {
           const record = imagesByRecord[key];
           
           try {
-            // First, get current attachments for this record
-            const getRes = await fetch('/api/records/' + record.recordId + '?baseId=' + record.baseId + '&tableId=' + record.tableId, {
-              headers: { 'X-Airtable-Token': AIRTABLE_TOKEN }
-            });
-            const currentData = await getRes.json();
-            
-            // Find the postImage field name (assume it's consistent)
-            const existingAttachments = currentData.fields?.postImage || [];
-            
-            // Prepend new images (newest first)
-            const allAttachments = [...record.images, ...existingAttachments];
+            // Save only the first image URL to the imageURL text field (NOT attachment field)
+            // Multiple images per record not supported with text field - use first image only
+            const imageUrl = record.images[0]?.url || '';
+            if (!imageUrl) {
+              console.log('No image URL for record: ' + record.articleTitle);
+              continue;
+            }
             
             // Save to Airtable
             const res = await fetch('/api/records/' + record.recordId + '?baseId=' + record.baseId + '&tableId=' + record.tableId, {
@@ -3687,7 +3800,7 @@ app.get('/', (c) => {
                 'X-Airtable-Token': AIRTABLE_TOKEN,
                 'Content-Type': 'application/json'
               },
-              body: JSON.stringify({ postImage: allAttachments })
+              body: JSON.stringify({ imageURL: imageUrl })
             });
             
             const result = await res.json();
@@ -3696,8 +3809,8 @@ app.get('/', (c) => {
               console.error('Error saving to ' + record.articleTitle + ':', result.error);
               errorCount++;
             } else {
-              console.log('✓ Saved ' + record.images.length + ' images to: ' + record.articleTitle);
-              savedCount += record.images.length;
+              console.log('✓ Saved image URL to: ' + record.articleTitle);
+              savedCount++;
             }
           } catch (err) {
             console.error('Error saving to ' + record.articleTitle + ':', err);
@@ -4456,67 +4569,25 @@ app.get('/', (c) => {
       statusDiv.classList.remove('hidden');
       
       try {
-        // Find image attachment fields in the table
-        const imageFields = tableFields.filter(f => IMAGE_FIELD_TYPES.includes(f.type));
-        
-        if (imageFields.length === 0) {
-          throw new Error('No image attachment fields found in this table. Please add an attachment field in Airtable.');
+        // Get the first available image URL - priority: 16:9 > 1:1 > 9:16
+        let imageUrl = '';
+        if (contentImages['16:9']) {
+          imageUrl = contentImages['16:9'];
+        } else if (contentImages['1:1']) {
+          imageUrl = contentImages['1:1'];
+        } else if (contentImages['9:16']) {
+          imageUrl = contentImages['9:16'];
         }
         
-        // Check for specific fields for each size
-        const field16x9 = imageFields.find(f => ['image16x9', 'image_16x9', 'landscapeimage'].includes(f.name.toLowerCase()));
-        const field9x16 = imageFields.find(f => ['image9x16', 'image_9x16', 'portraitimage', 'tiktokimage', 'reelsimage'].includes(f.name.toLowerCase()));
-        const field1x1 = imageFields.find(f => ['image1x1', 'image_1x1', 'squareimage', 'instagramimage'].includes(f.name.toLowerCase()));
-        
-        // Find the main image field (postImage or similar)
-        const mainImageField = imageFields.find(f => ['postimage', 'image', 'images', 'attachment', 'attachments', 'photo', 'media'].includes(f.name.toLowerCase()));
-        const fallbackField = imageFields[0]; // Use first available if no match
-        
-        const updates = {};
-        let savedCount = 0;
-        
-        // If we have separate fields for each size, use them
-        if (field16x9 && contentImages['16:9']) {
-          updates[field16x9.name] = [{ url: contentImages['16:9'] }];
-          savedCount++;
-        }
-        if (field9x16 && contentImages['9:16']) {
-          updates[field9x16.name] = [{ url: contentImages['9:16'] }];
-          savedCount++;
-        }
-        if (field1x1 && contentImages['1:1']) {
-          updates[field1x1.name] = [{ url: contentImages['1:1'] }];
-          savedCount++;
-        }
-        
-        // If no separate fields found, save ALL images to the main image field
-        if (savedCount === 0) {
-          const targetField = mainImageField || fallbackField;
-          const allImages = [];
-          
-          // Add all available images to the array
-          if (contentImages['16:9']) {
-            allImages.push({ url: contentImages['16:9'], filename: 'image_16x9.png' });
-          }
-          if (contentImages['9:16']) {
-            allImages.push({ url: contentImages['9:16'], filename: 'image_9x16.png' });
-          }
-          if (contentImages['1:1']) {
-            allImages.push({ url: contentImages['1:1'], filename: 'image_1x1.png' });
-          }
-          
-          if (allImages.length > 0) {
-            updates[targetField.name] = allImages;
-            savedCount = allImages.length;
-            statusText.textContent = 'Saving ' + savedCount + ' images to ' + targetField.name + '...';
-          }
-        }
-        
-        if (Object.keys(updates).length === 0 || savedCount === 0) {
+        if (!imageUrl) {
           throw new Error('No images to save. Add images to Content Images first.');
         }
         
-        console.log('Saving to Airtable:', updates);
+        // Save image URL to text field 'imageURL' (NOT attachment field)
+        const updates = { imageURL: imageUrl };
+        const savedCount = 1;
+        
+        console.log('Saving to Airtable imageURL field:', imageUrl);
         
         // Save to Airtable
         statusText.textContent = 'Uploading ' + savedCount + ' image(s) to Airtable...';
@@ -4719,8 +4790,11 @@ app.get('/', (c) => {
           const title = r.fields[titleField] || 'Untitled';
           
           // Get thumbnail
+          // Check imageURL text field first (new method), fallback to attachment field (old method)
           let thumbnail = '';
-          if (imageField && r.fields[imageField] && Array.isArray(r.fields[imageField]) && r.fields[imageField].length > 0) {
+          if (r.fields.imageURL) {
+            thumbnail = r.fields.imageURL;
+          } else if (imageField && r.fields[imageField] && Array.isArray(r.fields[imageField]) && r.fields[imageField].length > 0) {
             const img = r.fields[imageField][0];
             thumbnail = img.thumbnails?.large?.url || img.thumbnails?.small?.url || img.url || '';
           }
