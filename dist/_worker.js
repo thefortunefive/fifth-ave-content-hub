@@ -1,4 +1,4 @@
-var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in e?Lt(e,t,{enumerable:!0,configurable:!0,writable:!0,value:a}):e[t]=a;var h=(e,t,a)=>Dt(e,typeof t!="symbol"?t+"":t,a),He=(e,t,a)=>t.has(e)||We("Cannot "+a);var l=(e,t,a)=>(He(e,t,"read from private field"),a?a.call(e):t.get(e)),m=(e,t,a)=>t.has(e)?We("Cannot add the same private member more than once"):t instanceof WeakSet?t.add(e):t.set(e,a),f=(e,t,a,r)=>(He(e,t,"write to private field"),r?r.call(e,a):t.set(e,a),a),v=(e,t,a)=>(He(e,t,"access private method"),a);var Ze=(e,t,a,r)=>({set _(o){f(e,t,o,a)},get _(){return l(e,t,r)}});var Ke=(e,t,a)=>(r,o)=>{let n=-1;return s(0);async function s(c){if(c<=n)throw new Error("next() called multiple times");n=c;let i,d=!1,u;if(e[c]?(u=e[c][0][0],r.req.routeIndex=c):u=c===e.length&&o||void 0,u)try{i=await u(r,()=>s(c+1))}catch(g){if(g instanceof Error&&t)r.error=g,i=await t(g,r),d=!0;else throw g}else r.finalized===!1&&a&&(i=await a(r));return i&&(r.finalized===!1||d)&&(r.res=i),r}},Bt=Symbol(),At=async(e,t=Object.create(null))=>{const{all:a=!1,dot:r=!1}=t,n=(e instanceof ut?e.raw.headers:e.headers).get("Content-Type");return n!=null&&n.startsWith("multipart/form-data")||n!=null&&n.startsWith("application/x-www-form-urlencoded")?Ot(e,{all:a,dot:r}):{}};async function Ot(e,t){const a=await e.formData();return a?Ht(a,t):{}}function Ht(e,t){const a=Object.create(null);return e.forEach((r,o)=>{t.all||o.endsWith("[]")?Nt(a,o,r):a[o]=r}),t.dot&&Object.entries(a).forEach(([r,o])=>{r.includes(".")&&(Ut(a,r,o),delete a[r])}),a}var Nt=(e,t,a)=>{e[t]!==void 0?Array.isArray(e[t])?e[t].push(a):e[t]=[e[t],a]:t.endsWith("[]")?e[t]=[a]:e[t]=a},Ut=(e,t,a)=>{let r=e;const o=t.split(".");o.forEach((n,s)=>{s===o.length-1?r[n]=a:((!r[n]||typeof r[n]!="object"||Array.isArray(r[n])||r[n]instanceof File)&&(r[n]=Object.create(null)),r=r[n])})},st=e=>{const t=e.split("/");return t[0]===""&&t.shift(),t},Pt=e=>{const{groups:t,path:a}=jt(e),r=st(a);return zt(r,t)},jt=e=>{const t=[];return e=e.replace(/\{[^}]+\}/g,(a,r)=>{const o=`@${r}`;return t.push([o,a]),o}),{groups:t,path:e}},zt=(e,t)=>{for(let a=t.length-1;a>=0;a--){const[r]=t[a];for(let o=e.length-1;o>=0;o--)if(e[o].includes(r)){e[o]=e[o].replace(r,t[a][1]);break}}return e},Se={},Mt=(e,t)=>{if(e==="*")return"*";const a=e.match(/^\:([^\{\}]+)(?:\{(.+)\})?$/);if(a){const r=`${e}#${t}`;return Se[r]||(a[2]?Se[r]=t&&t[0]!==":"&&t[0]!=="*"?[r,a[1],new RegExp(`^${a[2]}(?=/${t})`)]:[e,a[1],new RegExp(`^${a[2]}$`)]:Se[r]=[e,a[1],!0]),Se[r]}return null},Me=(e,t)=>{try{return t(e)}catch{return e.replace(/(?:%[0-9A-Fa-f]{2})+/g,a=>{try{return t(a)}catch{return a}})}},Ft=e=>Me(e,decodeURI),it=e=>{const t=e.url,a=t.indexOf("/",t.indexOf(":")+4);let r=a;for(;r<t.length;r++){const o=t.charCodeAt(r);if(o===37){const n=t.indexOf("?",r),s=t.slice(a,n===-1?void 0:n);return Ft(s.includes("%25")?s.replace(/%25/g,"%2525"):s)}else if(o===63)break}return t.slice(a,r)},$t=e=>{const t=it(e);return t.length>1&&t.at(-1)==="/"?t.slice(0,-1):t},re=(e,t,...a)=>(a.length&&(t=re(t,...a)),`${(e==null?void 0:e[0])==="/"?"":"/"}${e}${t==="/"?"":`${(e==null?void 0:e.at(-1))==="/"?"":"/"}${(t==null?void 0:t[0])==="/"?t.slice(1):t}`}`),lt=e=>{if(e.charCodeAt(e.length-1)!==63||!e.includes(":"))return null;const t=e.split("/"),a=[];let r="";return t.forEach(o=>{if(o!==""&&!/\:/.test(o))r+="/"+o;else if(/\:/.test(o))if(/\?/.test(o)){a.length===0&&r===""?a.push("/"):a.push(r);const n=o.replace("?","");r+="/"+n,a.push(r)}else r+="/"+o}),a.filter((o,n,s)=>s.indexOf(o)===n)},Ne=e=>/[%+]/.test(e)?(e.indexOf("+")!==-1&&(e=e.replace(/\+/g," ")),e.indexOf("%")!==-1?Me(e,dt):e):e,ct=(e,t,a)=>{let r;if(!a&&t&&!/[%+]/.test(t)){let s=e.indexOf("?",8);if(s===-1)return;for(e.startsWith(t,s+1)||(s=e.indexOf(`&${t}`,s+1));s!==-1;){const c=e.charCodeAt(s+t.length+1);if(c===61){const i=s+t.length+2,d=e.indexOf("&",i);return Ne(e.slice(i,d===-1?void 0:d))}else if(c==38||isNaN(c))return"";s=e.indexOf(`&${t}`,s+1)}if(r=/[%+]/.test(e),!r)return}const o={};r??(r=/[%+]/.test(e));let n=e.indexOf("?",8);for(;n!==-1;){const s=e.indexOf("&",n+1);let c=e.indexOf("=",n);c>s&&s!==-1&&(c=-1);let i=e.slice(n+1,c===-1?s===-1?void 0:s:c);if(r&&(i=Ne(i)),n=s,i==="")continue;let d;c===-1?d="":(d=e.slice(c+1,s===-1?void 0:s),r&&(d=Ne(d))),a?(o[i]&&Array.isArray(o[i])||(o[i]=[]),o[i].push(d)):o[i]??(o[i]=d)}return t?o[t]:o},Gt=ct,_t=(e,t)=>ct(e,t,!0),dt=decodeURIComponent,Ye=e=>Me(e,dt),se,R,z,gt,ft,ze,$,et,ut=(et=class{constructor(e,t="/",a=[[]]){m(this,z);h(this,"raw");m(this,se);m(this,R);h(this,"routeIndex",0);h(this,"path");h(this,"bodyCache",{});m(this,$,e=>{const{bodyCache:t,raw:a}=this,r=t[e];if(r)return r;const o=Object.keys(t)[0];return o?t[o].then(n=>(o==="json"&&(n=JSON.stringify(n)),new Response(n)[e]())):t[e]=a[e]()});this.raw=e,this.path=t,f(this,R,a),f(this,se,{})}param(e){return e?v(this,z,gt).call(this,e):v(this,z,ft).call(this)}query(e){return Gt(this.url,e)}queries(e){return _t(this.url,e)}header(e){if(e)return this.raw.headers.get(e)??void 0;const t={};return this.raw.headers.forEach((a,r)=>{t[r]=a}),t}async parseBody(e){var t;return(t=this.bodyCache).parsedBody??(t.parsedBody=await At(this,e))}json(){return l(this,$).call(this,"text").then(e=>JSON.parse(e))}text(){return l(this,$).call(this,"text")}arrayBuffer(){return l(this,$).call(this,"arrayBuffer")}blob(){return l(this,$).call(this,"blob")}formData(){return l(this,$).call(this,"formData")}addValidatedData(e,t){l(this,se)[e]=t}valid(e){return l(this,se)[e]}get url(){return this.raw.url}get method(){return this.raw.method}get[Bt](){return l(this,R)}get matchedRoutes(){return l(this,R)[0].map(([[,e]])=>e)}get routePath(){return l(this,R)[0].map(([[,e]])=>e)[this.routeIndex].path}},se=new WeakMap,R=new WeakMap,z=new WeakSet,gt=function(e){const t=l(this,R)[0][this.routeIndex][1][e],a=v(this,z,ze).call(this,t);return a&&/\%/.test(a)?Ye(a):a},ft=function(){const e={},t=Object.keys(l(this,R)[0][this.routeIndex][1]);for(const a of t){const r=v(this,z,ze).call(this,l(this,R)[0][this.routeIndex][1][a]);r!==void 0&&(e[a]=/\%/.test(r)?Ye(r):r)}return e},ze=function(e){return l(this,R)[1]?l(this,R)[1][e]:e},$=new WeakMap,et),qt={Stringify:1},ht=async(e,t,a,r,o)=>{typeof e=="object"&&!(e instanceof String)&&(e instanceof Promise||(e=e.toString()),e instanceof Promise&&(e=await e));const n=e.callbacks;return n!=null&&n.length?(o?o[0]+=e:o=[e],Promise.all(n.map(c=>c({phase:t,buffer:o,context:r}))).then(c=>Promise.all(c.filter(Boolean).map(i=>ht(i,t,!1,r,o))).then(()=>o[0]))):Promise.resolve(e)},Wt="text/plain; charset=UTF-8",Ue=(e,t)=>({"Content-Type":e,...t}),be,xe,N,ie,U,E,ve,le,ce,V,ye,we,G,oe,tt,Zt=(tt=class{constructor(e,t){m(this,G);m(this,be);m(this,xe);h(this,"env",{});m(this,N);h(this,"finalized",!1);h(this,"error");m(this,ie);m(this,U);m(this,E);m(this,ve);m(this,le);m(this,ce);m(this,V);m(this,ye);m(this,we);h(this,"render",(...e)=>(l(this,le)??f(this,le,t=>this.html(t)),l(this,le).call(this,...e)));h(this,"setLayout",e=>f(this,ve,e));h(this,"getLayout",()=>l(this,ve));h(this,"setRenderer",e=>{f(this,le,e)});h(this,"header",(e,t,a)=>{this.finalized&&f(this,E,new Response(l(this,E).body,l(this,E)));const r=l(this,E)?l(this,E).headers:l(this,V)??f(this,V,new Headers);t===void 0?r.delete(e):a!=null&&a.append?r.append(e,t):r.set(e,t)});h(this,"status",e=>{f(this,ie,e)});h(this,"set",(e,t)=>{l(this,N)??f(this,N,new Map),l(this,N).set(e,t)});h(this,"get",e=>l(this,N)?l(this,N).get(e):void 0);h(this,"newResponse",(...e)=>v(this,G,oe).call(this,...e));h(this,"body",(e,t,a)=>v(this,G,oe).call(this,e,t,a));h(this,"text",(e,t,a)=>!l(this,V)&&!l(this,ie)&&!t&&!a&&!this.finalized?new Response(e):v(this,G,oe).call(this,e,t,Ue(Wt,a)));h(this,"json",(e,t,a)=>v(this,G,oe).call(this,JSON.stringify(e),t,Ue("application/json",a)));h(this,"html",(e,t,a)=>{const r=o=>v(this,G,oe).call(this,o,t,Ue("text/html; charset=UTF-8",a));return typeof e=="object"?ht(e,qt.Stringify,!1,{}).then(r):r(e)});h(this,"redirect",(e,t)=>{const a=String(e);return this.header("Location",/[^\x00-\xFF]/.test(a)?encodeURI(a):a),this.newResponse(null,t??302)});h(this,"notFound",()=>(l(this,ce)??f(this,ce,()=>new Response),l(this,ce).call(this,this)));f(this,be,e),t&&(f(this,U,t.executionCtx),this.env=t.env,f(this,ce,t.notFoundHandler),f(this,we,t.path),f(this,ye,t.matchResult))}get req(){return l(this,xe)??f(this,xe,new ut(l(this,be),l(this,we),l(this,ye))),l(this,xe)}get event(){if(l(this,U)&&"respondWith"in l(this,U))return l(this,U);throw Error("This context has no FetchEvent")}get executionCtx(){if(l(this,U))return l(this,U);throw Error("This context has no ExecutionContext")}get res(){return l(this,E)||f(this,E,new Response(null,{headers:l(this,V)??f(this,V,new Headers)}))}set res(e){if(l(this,E)&&e){e=new Response(e.body,e);for(const[t,a]of l(this,E).headers.entries())if(t!=="content-type")if(t==="set-cookie"){const r=l(this,E).headers.getSetCookie();e.headers.delete("set-cookie");for(const o of r)e.headers.append("set-cookie",o)}else e.headers.set(t,a)}f(this,E,e),this.finalized=!0}get var(){return l(this,N)?Object.fromEntries(l(this,N)):{}}},be=new WeakMap,xe=new WeakMap,N=new WeakMap,ie=new WeakMap,U=new WeakMap,E=new WeakMap,ve=new WeakMap,le=new WeakMap,ce=new WeakMap,V=new WeakMap,ye=new WeakMap,we=new WeakMap,G=new WeakSet,oe=function(e,t,a){const r=l(this,E)?new Headers(l(this,E).headers):l(this,V)??new Headers;if(typeof t=="object"&&"headers"in t){const n=t.headers instanceof Headers?t.headers:new Headers(t.headers);for(const[s,c]of n)s.toLowerCase()==="set-cookie"?r.append(s,c):r.set(s,c)}if(a)for(const[n,s]of Object.entries(a))if(typeof s=="string")r.set(n,s);else{r.delete(n);for(const c of s)r.append(n,c)}const o=typeof t=="number"?t:(t==null?void 0:t.status)??l(this,ie);return new Response(e,{status:o,headers:r})},tt),w="ALL",Kt="all",Yt=["get","post","put","delete","options","patch"],pt="Can not add a route since the matcher is already built.",mt=class extends Error{},Vt="__COMPOSED_HANDLER",Jt=e=>e.text("404 Not Found",404),Ve=(e,t)=>{if("getResponse"in e){const a=e.getResponse();return t.newResponse(a.body,a)}return console.error(e),t.text("Internal Server Error",500)},D,I,bt,B,K,ke,Ee,de,Xt=(de=class{constructor(t={}){m(this,I);h(this,"get");h(this,"post");h(this,"put");h(this,"delete");h(this,"options");h(this,"patch");h(this,"all");h(this,"on");h(this,"use");h(this,"router");h(this,"getPath");h(this,"_basePath","/");m(this,D,"/");h(this,"routes",[]);m(this,B,Jt);h(this,"errorHandler",Ve);h(this,"onError",t=>(this.errorHandler=t,this));h(this,"notFound",t=>(f(this,B,t),this));h(this,"fetch",(t,...a)=>v(this,I,Ee).call(this,t,a[1],a[0],t.method));h(this,"request",(t,a,r,o)=>t instanceof Request?this.fetch(a?new Request(t,a):t,r,o):(t=t.toString(),this.fetch(new Request(/^https?:\/\//.test(t)?t:`http://localhost${re("/",t)}`,a),r,o)));h(this,"fire",()=>{addEventListener("fetch",t=>{t.respondWith(v(this,I,Ee).call(this,t.request,t,void 0,t.request.method))})});[...Yt,Kt].forEach(n=>{this[n]=(s,...c)=>(typeof s=="string"?f(this,D,s):v(this,I,K).call(this,n,l(this,D),s),c.forEach(i=>{v(this,I,K).call(this,n,l(this,D),i)}),this)}),this.on=(n,s,...c)=>{for(const i of[s].flat()){f(this,D,i);for(const d of[n].flat())c.map(u=>{v(this,I,K).call(this,d.toUpperCase(),l(this,D),u)})}return this},this.use=(n,...s)=>(typeof n=="string"?f(this,D,n):(f(this,D,"*"),s.unshift(n)),s.forEach(c=>{v(this,I,K).call(this,w,l(this,D),c)}),this);const{strict:r,...o}=t;Object.assign(this,o),this.getPath=r??!0?t.getPath??it:$t}route(t,a){const r=this.basePath(t);return a.routes.map(o=>{var s;let n;a.errorHandler===Ve?n=o.handler:(n=async(c,i)=>(await Ke([],a.errorHandler)(c,()=>o.handler(c,i))).res,n[Vt]=o.handler),v(s=r,I,K).call(s,o.method,o.path,n)}),this}basePath(t){const a=v(this,I,bt).call(this);return a._basePath=re(this._basePath,t),a}mount(t,a,r){let o,n;r&&(typeof r=="function"?n=r:(n=r.optionHandler,r.replaceRequest===!1?o=i=>i:o=r.replaceRequest));const s=n?i=>{const d=n(i);return Array.isArray(d)?d:[d]}:i=>{let d;try{d=i.executionCtx}catch{}return[i.env,d]};o||(o=(()=>{const i=re(this._basePath,t),d=i==="/"?0:i.length;return u=>{const g=new URL(u.url);return g.pathname=g.pathname.slice(d)||"/",new Request(g,u)}})());const c=async(i,d)=>{const u=await a(o(i.req.raw),...s(i));if(u)return u;await d()};return v(this,I,K).call(this,w,re(t,"*"),c),this}},D=new WeakMap,I=new WeakSet,bt=function(){const t=new de({router:this.router,getPath:this.getPath});return t.errorHandler=this.errorHandler,f(t,B,l(this,B)),t.routes=this.routes,t},B=new WeakMap,K=function(t,a,r){t=t.toUpperCase(),a=re(this._basePath,a);const o={basePath:this._basePath,path:a,method:t,handler:r};this.router.add(t,a,[r,o]),this.routes.push(o)},ke=function(t,a){if(t instanceof Error)return this.errorHandler(t,a);throw t},Ee=function(t,a,r,o){if(o==="HEAD")return(async()=>new Response(null,await v(this,I,Ee).call(this,t,a,r,"GET")))();const n=this.getPath(t,{env:r}),s=this.router.match(o,n),c=new Zt(t,{path:n,matchResult:s,env:r,executionCtx:a,notFoundHandler:l(this,B)});if(s[0].length===1){let d;try{d=s[0][0][0][0](c,async()=>{c.res=await l(this,B).call(this,c)})}catch(u){return v(this,I,ke).call(this,u,c)}return d instanceof Promise?d.then(u=>u||(c.finalized?c.res:l(this,B).call(this,c))).catch(u=>v(this,I,ke).call(this,u,c)):d??l(this,B).call(this,c)}const i=Ke(s[0],this.errorHandler,l(this,B));return(async()=>{try{const d=await i(c);if(!d.finalized)throw new Error("Context is not finalized. Did you forget to return a Response object or `await next()`?");return d.res}catch(d){return v(this,I,ke).call(this,d,c)}})()},de),xt=[];function Qt(e,t){const a=this.buildAllMatchers(),r=(o,n)=>{const s=a[o]||a[w],c=s[2][n];if(c)return c;const i=n.match(s[0]);if(!i)return[[],xt];const d=i.indexOf("",1);return[s[1][d],i]};return this.match=r,r(e,t)}var Le="[^/]+",pe=".*",me="(?:|/.*)",ne=Symbol(),ea=new Set(".\\+*[^]$()");function ta(e,t){return e.length===1?t.length===1?e<t?-1:1:-1:t.length===1||e===pe||e===me?1:t===pe||t===me?-1:e===Le?1:t===Le?-1:e.length===t.length?e<t?-1:1:t.length-e.length}var J,X,A,te,aa=(te=class{constructor(){m(this,J);m(this,X);m(this,A,Object.create(null))}insert(t,a,r,o,n){if(t.length===0){if(l(this,J)!==void 0)throw ne;if(n)return;f(this,J,a);return}const[s,...c]=t,i=s==="*"?c.length===0?["","",pe]:["","",Le]:s==="/*"?["","",me]:s.match(/^\:([^\{\}]+)(?:\{(.+)\})?$/);let d;if(i){const u=i[1];let g=i[2]||Le;if(u&&i[2]&&(g===".*"||(g=g.replace(/^\((?!\?:)(?=[^)]+\)$)/,"(?:"),/\((?!\?:)/.test(g))))throw ne;if(d=l(this,A)[g],!d){if(Object.keys(l(this,A)).some(p=>p!==pe&&p!==me))throw ne;if(n)return;d=l(this,A)[g]=new te,u!==""&&f(d,X,o.varIndex++)}!n&&u!==""&&r.push([u,l(d,X)])}else if(d=l(this,A)[s],!d){if(Object.keys(l(this,A)).some(u=>u.length>1&&u!==pe&&u!==me))throw ne;if(n)return;d=l(this,A)[s]=new te}d.insert(c,a,r,o,n)}buildRegExpStr(){const a=Object.keys(l(this,A)).sort(ta).map(r=>{const o=l(this,A)[r];return(typeof l(o,X)=="number"?`(${r})@${l(o,X)}`:ea.has(r)?`\\${r}`:r)+o.buildRegExpStr()});return typeof l(this,J)=="number"&&a.unshift(`#${l(this,J)}`),a.length===0?"":a.length===1?a[0]:"(?:"+a.join("|")+")"}},J=new WeakMap,X=new WeakMap,A=new WeakMap,te),Be,Ie,at,ra=(at=class{constructor(){m(this,Be,{varIndex:0});m(this,Ie,new aa)}insert(e,t,a){const r=[],o=[];for(let s=0;;){let c=!1;if(e=e.replace(/\{[^}]+\}/g,i=>{const d=`@\\${s}`;return o[s]=[d,i],s++,c=!0,d}),!c)break}const n=e.match(/(?::[^\/]+)|(?:\/\*$)|./g)||[];for(let s=o.length-1;s>=0;s--){const[c]=o[s];for(let i=n.length-1;i>=0;i--)if(n[i].indexOf(c)!==-1){n[i]=n[i].replace(c,o[s][1]);break}}return l(this,Ie).insert(n,t,r,l(this,Be),a),r}buildRegExp(){let e=l(this,Ie).buildRegExpStr();if(e==="")return[/^$/,[],[]];let t=0;const a=[],r=[];return e=e.replace(/#(\d+)|@(\d+)|\.\*\$/g,(o,n,s)=>n!==void 0?(a[++t]=Number(n),"$()"):(s!==void 0&&(r[Number(s)]=++t),"")),[new RegExp(`^${e}`),a,r]}},Be=new WeakMap,Ie=new WeakMap,at),oa=[/^$/,[],Object.create(null)],Re=Object.create(null);function vt(e){return Re[e]??(Re[e]=new RegExp(e==="*"?"":`^${e.replace(/\/\*$|([.\\+*[^\]$()])/g,(t,a)=>a?`\\${a}`:"(?:|/.*)")}$`))}function na(){Re=Object.create(null)}function sa(e){var d;const t=new ra,a=[];if(e.length===0)return oa;const r=e.map(u=>[!/\*|\/:/.test(u[0]),...u]).sort(([u,g],[p,b])=>u?1:p?-1:g.length-b.length),o=Object.create(null);for(let u=0,g=-1,p=r.length;u<p;u++){const[b,S,L]=r[u];b?o[S]=[L.map(([y])=>[y,Object.create(null)]),xt]:g++;let x;try{x=t.insert(S,g,b)}catch(y){throw y===ne?new mt(S):y}b||(a[g]=L.map(([y,M])=>{const Te=Object.create(null);for(M-=1;M>=0;M--){const[Ce,O]=x[M];Te[Ce]=O}return[y,Te]}))}const[n,s,c]=t.buildRegExp();for(let u=0,g=a.length;u<g;u++)for(let p=0,b=a[u].length;p<b;p++){const S=(d=a[u][p])==null?void 0:d[1];if(!S)continue;const L=Object.keys(S);for(let x=0,y=L.length;x<y;x++)S[L[x]]=c[S[L[x]]]}const i=[];for(const u in s)i[u]=a[s[u]];return[n,i,o]}function ae(e,t){if(e){for(const a of Object.keys(e).sort((r,o)=>o.length-r.length))if(vt(a).test(t))return[...e[a]]}}var _,q,Ae,yt,rt,ia=(rt=class{constructor(){m(this,Ae);h(this,"name","RegExpRouter");m(this,_);m(this,q);h(this,"match",Qt);f(this,_,{[w]:Object.create(null)}),f(this,q,{[w]:Object.create(null)})}add(e,t,a){var c;const r=l(this,_),o=l(this,q);if(!r||!o)throw new Error(pt);r[e]||[r,o].forEach(i=>{i[e]=Object.create(null),Object.keys(i[w]).forEach(d=>{i[e][d]=[...i[w][d]]})}),t==="/*"&&(t="*");const n=(t.match(/\/:/g)||[]).length;if(/\*$/.test(t)){const i=vt(t);e===w?Object.keys(r).forEach(d=>{var u;(u=r[d])[t]||(u[t]=ae(r[d],t)||ae(r[w],t)||[])}):(c=r[e])[t]||(c[t]=ae(r[e],t)||ae(r[w],t)||[]),Object.keys(r).forEach(d=>{(e===w||e===d)&&Object.keys(r[d]).forEach(u=>{i.test(u)&&r[d][u].push([a,n])})}),Object.keys(o).forEach(d=>{(e===w||e===d)&&Object.keys(o[d]).forEach(u=>i.test(u)&&o[d][u].push([a,n]))});return}const s=lt(t)||[t];for(let i=0,d=s.length;i<d;i++){const u=s[i];Object.keys(o).forEach(g=>{var p;(e===w||e===g)&&((p=o[g])[u]||(p[u]=[...ae(r[g],u)||ae(r[w],u)||[]]),o[g][u].push([a,n-d+i+1]))})}}buildAllMatchers(){const e=Object.create(null);return Object.keys(l(this,q)).concat(Object.keys(l(this,_))).forEach(t=>{e[t]||(e[t]=v(this,Ae,yt).call(this,t))}),f(this,_,f(this,q,void 0)),na(),e}},_=new WeakMap,q=new WeakMap,Ae=new WeakSet,yt=function(e){const t=[];let a=e===w;return[l(this,_),l(this,q)].forEach(r=>{const o=r[e]?Object.keys(r[e]).map(n=>[n,r[e][n]]):[];o.length!==0?(a||(a=!0),t.push(...o)):e!==w&&t.push(...Object.keys(r[w]).map(n=>[n,r[w][n]]))}),a?sa(t):null},rt),W,P,ot,la=(ot=class{constructor(e){h(this,"name","SmartRouter");m(this,W,[]);m(this,P,[]);f(this,W,e.routers)}add(e,t,a){if(!l(this,P))throw new Error(pt);l(this,P).push([e,t,a])}match(e,t){if(!l(this,P))throw new Error("Fatal error");const a=l(this,W),r=l(this,P),o=a.length;let n=0,s;for(;n<o;n++){const c=a[n];try{for(let i=0,d=r.length;i<d;i++)c.add(...r[i]);s=c.match(e,t)}catch(i){if(i instanceof mt)continue;throw i}this.match=c.match.bind(c),f(this,W,[c]),f(this,P,void 0);break}if(n===o)throw new Error("Fatal error");return this.name=`SmartRouter + ${this.activeRouter.name}`,s}get activeRouter(){if(l(this,P)||l(this,W).length!==1)throw new Error("No active router has been determined yet.");return l(this,W)[0]}},W=new WeakMap,P=new WeakMap,ot),he=Object.create(null),Z,k,Q,ue,T,j,Y,ge,ca=(ge=class{constructor(t,a,r){m(this,j);m(this,Z);m(this,k);m(this,Q);m(this,ue,0);m(this,T,he);if(f(this,k,r||Object.create(null)),f(this,Z,[]),t&&a){const o=Object.create(null);o[t]={handler:a,possibleKeys:[],score:0},f(this,Z,[o])}f(this,Q,[])}insert(t,a,r){f(this,ue,++Ze(this,ue)._);let o=this;const n=Pt(a),s=[];for(let c=0,i=n.length;c<i;c++){const d=n[c],u=n[c+1],g=Mt(d,u),p=Array.isArray(g)?g[0]:d;if(p in l(o,k)){o=l(o,k)[p],g&&s.push(g[1]);continue}l(o,k)[p]=new ge,g&&(l(o,Q).push(g),s.push(g[1])),o=l(o,k)[p]}return l(o,Z).push({[t]:{handler:r,possibleKeys:s.filter((c,i,d)=>d.indexOf(c)===i),score:l(this,ue)}}),o}search(t,a){var i;const r=[];f(this,T,he);let n=[this];const s=st(a),c=[];for(let d=0,u=s.length;d<u;d++){const g=s[d],p=d===u-1,b=[];for(let S=0,L=n.length;S<L;S++){const x=n[S],y=l(x,k)[g];y&&(f(y,T,l(x,T)),p?(l(y,k)["*"]&&r.push(...v(this,j,Y).call(this,l(y,k)["*"],t,l(x,T))),r.push(...v(this,j,Y).call(this,y,t,l(x,T)))):b.push(y));for(let M=0,Te=l(x,Q).length;M<Te;M++){const Ce=l(x,Q)[M],O=l(x,T)===he?{}:{...l(x,T)};if(Ce==="*"){const F=l(x,k)["*"];F&&(r.push(...v(this,j,Y).call(this,F,t,l(x,T))),f(F,T,O),b.push(F));continue}const[Et,qe,fe]=Ce;if(!g&&!(fe instanceof RegExp))continue;const H=l(x,k)[Et],Rt=s.slice(d).join("/");if(fe instanceof RegExp){const F=fe.exec(Rt);if(F){if(O[qe]=F[0],r.push(...v(this,j,Y).call(this,H,t,l(x,T),O)),Object.keys(l(H,k)).length){f(H,T,O);const Oe=((i=F[0].match(/\//))==null?void 0:i.length)??0;(c[Oe]||(c[Oe]=[])).push(H)}continue}}(fe===!0||fe.test(g))&&(O[qe]=g,p?(r.push(...v(this,j,Y).call(this,H,t,O,l(x,T))),l(H,k)["*"]&&r.push(...v(this,j,Y).call(this,l(H,k)["*"],t,O,l(x,T)))):(f(H,T,O),b.push(H)))}}n=b.concat(c.shift()??[])}return r.length>1&&r.sort((d,u)=>d.score-u.score),[r.map(({handler:d,params:u})=>[d,u])]}},Z=new WeakMap,k=new WeakMap,Q=new WeakMap,ue=new WeakMap,T=new WeakMap,j=new WeakSet,Y=function(t,a,r,o){const n=[];for(let s=0,c=l(t,Z).length;s<c;s++){const i=l(t,Z)[s],d=i[a]||i[w],u={};if(d!==void 0&&(d.params=Object.create(null),n.push(d),r!==he||o&&o!==he))for(let g=0,p=d.possibleKeys.length;g<p;g++){const b=d.possibleKeys[g],S=u[d.score];d.params[b]=o!=null&&o[b]&&!S?o[b]:r[b]??(o==null?void 0:o[b]),u[d.score]=!0}}return n},ge),ee,nt,da=(nt=class{constructor(){h(this,"name","TrieRouter");m(this,ee);f(this,ee,new ca)}add(e,t,a){const r=lt(t);if(r){for(let o=0,n=r.length;o<n;o++)l(this,ee).insert(e,r[o],a);return}l(this,ee).insert(e,t,a)}match(e,t){return l(this,ee).search(e,t)}},ee=new WeakMap,nt),wt=class extends Xt{constructor(e={}){super(e),this.router=e.router??new la({routers:[new ia,new da]})}},ua=e=>{const a={...{origin:"*",allowMethods:["GET","HEAD","PUT","POST","DELETE","PATCH"],allowHeaders:[],exposeHeaders:[]},...e},r=(n=>typeof n=="string"?n==="*"?()=>n:s=>n===s?s:null:typeof n=="function"?n:s=>n.includes(s)?s:null)(a.origin),o=(n=>typeof n=="function"?n:Array.isArray(n)?()=>n:()=>[])(a.allowMethods);return async function(s,c){var u;function i(g,p){s.res.headers.set(g,p)}const d=await r(s.req.header("origin")||"",s);if(d&&i("Access-Control-Allow-Origin",d),a.credentials&&i("Access-Control-Allow-Credentials","true"),(u=a.exposeHeaders)!=null&&u.length&&i("Access-Control-Expose-Headers",a.exposeHeaders.join(",")),s.req.method==="OPTIONS"){a.origin!=="*"&&i("Vary","Origin"),a.maxAge!=null&&i("Access-Control-Max-Age",a.maxAge.toString());const g=await o(s.req.header("origin")||"",s);g.length&&i("Access-Control-Allow-Methods",g.join(","));let p=a.allowHeaders;if(!(p!=null&&p.length)){const b=s.req.header("Access-Control-Request-Headers");b&&(p=b.split(/\s*,\s*/))}return p!=null&&p.length&&(i("Access-Control-Allow-Headers",p.join(",")),s.res.headers.append("Vary","Access-Control-Request-Headers")),s.res.headers.delete("Content-Length"),s.res.headers.delete("Content-Type"),new Response(null,{headers:s.res.headers,status:204,statusText:"No Content"})}await c(),a.origin!=="*"&&s.header("Vary","Origin",{append:!0})}};const C=new wt,ga=5*60*1e3,Fe=new Map;function It(e){const t=Fe.get(e);return t?t.data:null}function Tt(e,t,a){Fe.set(e,{data:t,timestamp:Date.now(),etag:a})}function Ct(e){const t=Fe.get(e);return t?Date.now()-t.timestamp<ga:!1}const Pe=3,Je=1e3;async function De(e,t,a=Pe){try{const r=await fetch(e,t);if(r.status===429&&a>0){const o=Je*(Pe-a+1);return console.log(`Rate limited (429). Retrying in ${o}ms... (${a} retries left)`),await new Promise(n=>setTimeout(n,o)),De(e,t,a-1)}return r}catch(r){if(a>0){const o=Je*(Pe-a+1);return console.log(`Fetch failed. Retrying in ${o}ms... (${a} retries left)`),await new Promise(n=>setTimeout(n,o)),De(e,t,a-1)}throw r}}C.use("/api/*",ua());const $e="cf2a50987a92a698e89d5efeb80cde82",je={face:"https://iili.io/fM9hV6B.png",outfit:"https://iili.io/fM99P3l.png",logo:"https://iili.io/fEiEfUB.png"};C.get("/api/bases",async e=>{const t=e.req.header("xc-token")||e.env.NOCODB_TOKEN;if(!t)return e.json({error:"Missing NocoDB token"},401);const a=`bases:${t.substring(0,10)}`,r=It(a),o=Ct(a);if(r&&o)return console.log("Returning cached bases data"),e.json(r);try{const s=await De("https://open-buckets-study.loca.lt/api/v2/meta/bases",{headers:{"xc-token":t,"bypass-tunnel-reminder":"true"}});if(!s.ok){const u=await s.text();if(console.error("NocoDB API error:",s.status,u),r)return console.log("Returning stale cached data due to API error"),e.json({...r,_cached:!0,_cacheStale:!0,_error:`NocoDB API error: ${s.status}. Showing cached data.`});let g=`NocoDB API error: ${s.status}`;return s.status===429?g="NocoDB rate limit exceeded. Please wait a moment and try again.":(s.status===401||s.status===403)&&(g="Invalid or expired NocoDB token. Please check your token and try again."),e.json({error:g,details:u},s.status)}const c=await s.json();let i=c.bases||c||[];Array.isArray(i)||(i=[]);const d={bases:i};return Tt(a,d),console.log(`Total bases fetched and cached: ${i.length}`),e.json(d)}catch(n){return console.error("Error fetching bases:",n),r?(console.log("Returning stale cached data due to error"),e.json({...r,_cached:!0,_cacheStale:!0,_error:`Network error: ${n.message}. Showing cached data.`})):e.json({error:n.message||"Failed to fetch bases"},500)}});C.get("/api/bases/:baseId/tables",async e=>{var s;const t=e.req.header("xc-token")||e.env.NOCODB_TOKEN;if(!t)return e.json({error:"Missing NocoDB token"},401);const a=e.req.param("baseId"),r=`tables:${a}:${t.substring(0,10)}`,o=It(r),n=Ct(r);if(o&&n)return console.log(`Returning cached tables for base ${a}`),e.json(o);console.log(`Fetching tables for base: ${a}, token present: ${t?"yes":"no"}, token prefix: ${t.substring(0,10)}...`);try{const c=await De(`https://open-buckets-study.loca.lt/api/v2/meta/bases/${a}/tables`,{headers:{"xc-token":t,"bypass-tunnel-reminder":"true"}});if(!c.ok){const d=await c.text();if(console.error("NocoDB tables API error:",c.status,d),o)return console.log("Returning stale cached tables due to API error"),e.json({...o,_cached:!0,_cacheStale:!0,_error:`NocoDB API error: ${c.status}. Showing cached data.`});let u=`NocoDB API error: ${c.status}`;return c.status===429?u="NocoDB rate limit exceeded. Please wait a moment and try again.":c.status===401||c.status===403?u="Invalid or expired NocoDB token. Please check your token and try again.":c.status===404&&(u="Base not found. Please check if you have access to this base."),e.json({error:u,details:d},c.status)}const i=await c.json();return Tt(r,i),console.log(`Fetched and cached ${((s=i.tables)==null?void 0:s.length)||0} tables for base ${a}`),e.json(i)}catch(c){return console.error("Error fetching tables:",c),o?(console.log("Returning stale cached tables due to error"),e.json({...o,_cached:!0,_cacheStale:!0,_error:`Network error: ${c.message}. Showing cached data.`})):e.json({error:c.message||"Failed to fetch tables"},500)}});C.get("/api/records",async e=>{var s,c;const t=e.req.header("xc-token")||e.env.NOCODB_TOKEN;if(!t)return e.json({error:"Missing NocoDB token"},401);const a=e.req.query("tableId");if(e.req.query("filter"),!a)return e.json({error:"Missing tableId"},400);let r=`https://open-buckets-study.loca.lt/api/v2/tables/${a}/records`;const n=await(await fetch(r,{headers:{"xc-token":t,"bypass-tunnel-reminder":"true"}})).json();return n.list&&Array.isArray(n.list)?e.json({records:n.list.map(i=>({id:i.Id||i.id,fields:i})),offset:(s=n.pageInfo)!=null&&s.isLastPage?null:((c=n.pageInfo)==null?void 0:c.page)+1}):e.json(n)});C.get("/api/records/:id",async e=>{const t=e.req.header("xc-token")||e.env.NOCODB_TOKEN;if(!t)return e.json({error:"Missing NocoDB token"},401);const a=e.req.query("tableId"),r=e.req.param("id");if(!a)return e.json({error:"Missing tableId"},400);const n=await(await fetch(`https://open-buckets-study.loca.lt/api/v2/tables/${a}/records/${r}`,{headers:{"xc-token":t,"bypass-tunnel-reminder":"true"}})).json();return n&&!n.error?e.json({id:n.Id||n.id,fields:n}):e.json(n)});C.patch("/api/records/:id",async e=>{const t=e.req.header("xc-token")||e.env.NOCODB_TOKEN;if(!t)return e.json({error:"Missing NocoDB token"},401);const a=e.req.query("tableId"),r=e.req.param("id"),o=await e.req.json();if(!a)return e.json({error:"Missing tableId"},400);const n={Id:r,...o},c=await(await fetch(`https://open-buckets-study.loca.lt/api/v2/tables/${a}/records`,{method:"PATCH",headers:{"xc-token":t,"Content-Type":"application/json","bypass-tunnel-reminder":"true"},body:JSON.stringify(n)})).json();return c&&!c.error?e.json({id:c.Id||r,fields:c}):e.json(c)});C.post("/api/generate-image",async e=>{const{prompt:t,imageUrls:a,aspectRatio:r}=await e.req.json(),o={model:"google/nano-banana",input:{prompt:t,image_urls:a||[je.face,je.outfit,je.logo],image_size:r||"16:9",output_format:"png"}};console.log("KieAI Nano Banana Request:",JSON.stringify(o,null,2));const n=await fetch("https://api.kie.ai/api/v1/jobs/createTask",{method:"POST",headers:{Authorization:`Bearer ${$e}`,"Content-Type":"application/json"},body:JSON.stringify(o)});return e.json(await n.json())});const Xe={"16:9":"https://iili.io/fk9ypqB.png","9:16":"https://iili.io/fk9yy0P.png","1:1":"https://iili.io/fkH99g1.png"};C.post("/api/generate-image-ideogram",async e=>{const{prompt:t,imageUrl:a,aspectRatio:r}=await e.req.json(),o=Xe[r]||Xe["16:9"],n={model:"ideogram/character-edit",input:{prompt:t,image_url:a,mask_url:o,rendering_speed:"BALANCED",style:"AUTO",expand_prompt:!1,num_images:"1"}};console.log("Ideogram character-edit Request (text overlay):",JSON.stringify(n,null,2));const s=await fetch("https://api.kie.ai/api/v1/jobs/createTask",{method:"POST",headers:{Authorization:`Bearer ${$e}`,"Content-Type":"application/json"},body:JSON.stringify(n)});return e.json(await s.json())});C.get("/api/task-status/:taskId",async e=>{const t=e.req.param("taskId"),a=await fetch(`https://api.kie.ai/api/v1/jobs/recordInfo?taskId=${t}`,{headers:{Authorization:`Bearer ${$e}`}});return e.json(await a.json())});C.post("/api/upload-image",async e=>{const{base64Image:t}=await e.req.json(),a=new FormData;a.append("key","6d207e02198a847aa98d0a2a901485a5"),a.append("action","upload"),a.append("source",t),a.append("format","json");const r=await fetch("https://freeimage.host/api/1/upload",{method:"POST",body:a});return e.json(await r.json())});C.post("/api/proxy-image",async e=>{try{const{imageUrl:t}=await e.req.json();if(!t)return e.json({error:"Missing imageUrl"},400);const a=await fetch(t);if(!a.ok)return e.json({error:"Failed to fetch image: "+a.status},500);const r=await a.arrayBuffer(),o=new Uint8Array(r);let n="";for(let i=0;i<o.length;i++)n+=String.fromCharCode(o[i]);const s=btoa(n),c=a.headers.get("content-type")||"image/png";return e.json({success:!0,base64:s,contentType:c,dataUrl:"data:"+c+";base64,"+s})}catch(t){return e.json({error:"Proxy error: "+t.message},500)}});const Ge={crypto:{baseId:"p5v5ffrepsxc7g5",tableId:"m9m6gh688zrhkb4",fieldMap:{url:"sourceURL",title:"sourceHeadline",notes:"sourceSummary",platforms:"socialChannels",status:"Status",statusValue:"Needs Approval"}},ai:{baseId:"p5v5ffrepsxc7g5",tableId:"mi0xcrv7gp5inbh",fieldMap:{url:"sourceURL",title:"sourceHeadline",notes:"sourceSummary",platforms:"socialChannels",status:"Status",statusValue:"Needs Approval"}},general:{baseId:"p5v5ffrepsxc7g5",tableId:"m48lt8phy1o2y04",fieldMap:{url:"Video URL",title:"Video Title",notes:"Notes",platforms:"Platforms",status:"Status",statusValue:"Pending Review"}}},fa=["Twitter","LinkedIn","Blog","Instagram","Facebook","Avatar"],_e="PzPjLnn3qdo8jhG048mWgZUx30tpHJ_J4JCqvQ5z",ha={crypto:"https://fifthaveai.app.n8n.cloud/webhook/crypto-pickup",ai:"https://fifthaveai.app.n8n.cloud/webhook/ai-pickup"};async function St(e,t,a){const r=ha[e];if(r)try{await new Promise(n=>setTimeout(n,2e3)),console.log(`[Instant Pickup] Triggering ${e} webhook for record ${t}`);const o=await fetch(r,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({recordId:t,sourceURL:a.sourceURL,sourceHeadline:a.sourceHeadline,sourceSummary:a.sourceSummary,topic:e,triggeredAt:new Date().toISOString()})});console.log(`[Instant Pickup] Webhook response: ${o.status}`)}catch(o){console.error("[Instant Pickup] Webhook error:",o.message)}}C.post("/api/save",async e=>{var t;try{const{url:a,title:r,notes:o,platforms:n,topic:s}=await e.req.json();if(!a)return e.json({success:!1,error:"URL is required"},400);const c=((t=e.env)==null?void 0:t.NOCODB_TOKEN)||_e,i=s||"general",d=Ge[i];if(!d)return e.json({success:!1,error:"Invalid topic. Use: crypto, ai, or general"},400);const u=d.fieldMap,g={};if(g[u.url]=a,g[u.title]=r||"",g[u.status]=u.statusValue,o&&(g[u.notes]=o),n&&n.length>0)if(i==="crypto"||i==="ai"){const x=n.filter(y=>fa.includes(y));x.length>0&&(g[u.platforms]=x)}else g[u.platforms]=n;i==="general"&&(g["Created Date"]=new Date().toISOString());const b=await(await fetch(`${NOCODB_BASE_URL}/api/v2/tables/${d.tableId}/records`,{method:"POST",headers:{"xc-token":c,"Content-Type":"application/json"},body:JSON.stringify(g)})).json();if(b.error){console.error("NocoDB error:",b.error);const x=typeof b.error=="string"?b.error:b.error.message||"NocoDB error";return e.json({success:!1,error:x},500)}const S={id:b.Id,fields:b};let L=!1;if((i==="crypto"||i==="ai")&&b.id){L=!0;const x=St(i,b.id,{sourceURL:a,sourceHeadline:r||"",sourceSummary:o||""});e.executionCtx&&typeof e.executionCtx.waitUntil=="function"?e.executionCtx.waitUntil(x):x.catch(y=>console.error("[Instant Pickup] Background error:",y))}return e.json({success:!0,record:S,topic:i,table:i==="general"?"Content Pipeline":i==="crypto"?"Social Posts":"Social Posts - AI",processing:L?"started":"not_applicable"})}catch(a){return console.error("Save error:",a),e.json({success:!1,error:a.message||"Server error"},500)}});C.get("/api/process-status/:recordId",async e=>{var t;try{const a=e.req.param("recordId"),r=e.req.query("topic")||"crypto",o=Ge[r];if(!o)return e.json({error:"Invalid topic"},400);const n=((t=e.env)==null?void 0:t.NOCODB_TOKEN)||_e,i=await(await fetch(`${NOCODB_BASE_URL}/api/v2/tables/${o.tableId}/records/${a}`,{headers:{"xc-token":n}})).json()||{},d=!!(i.sourceSummary&&i.sourceSummary.length>50),u=!!(i.imagePrompt&&i.imagePrompt.length>10),g=!!(i.twitterCopy&&i.twitterCopy.length>5);let p="processing";return d&&u&&g?p="complete":d&&(p="generating_content"),e.json({recordId:a,status:p,fields:{hasResearch:d,hasImagePrompt:u,hasSocialContent:g,rewrittenHeadline:i.rewrittenHeadline||null}})}catch(a){return e.json({error:a.message},500)}});C.post("/api/process",async e=>{var t;try{const{recordId:a,topic:r}=await e.req.json();if(!a||!r)return e.json({error:"recordId and topic are required"},400);if(r==="general")return e.json({error:"Processing only available for crypto/ai topics"},400);const o=Ge[r];if(!o)return e.json({error:"Invalid topic"},400);const n=((t=e.env)==null?void 0:t.NOCODB_TOKEN)||_e,i=await(await fetch(`${NOCODB_BASE_URL}/api/v2/tables/${o.tableId}/records/${a}`,{headers:{"xc-token":n}})).json()||{};return await St(r,a,{sourceURL:i.sourceURL||"",sourceHeadline:i.sourceHeadline||"",sourceSummary:i.sourceSummary||""}),e.json({success:!0,status:"processing_started",recordId:a})}catch(a){return e.json({error:a.message},500)}});C.get("/api/topics",e=>e.json({topics:[{id:"crypto",label:"🪙 Crypto News",description:"Save to 5th Ave Crypto pipeline"},{id:"ai",label:"🤖 AI News",description:"Save to 5th Ave AI pipeline"},{id:"general",label:"📋 General Pipeline",description:"Save to Content Pipeline"}]}));C.get("/",e=>{var t;return e.html(`
+var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in e?Lt(e,t,{enumerable:!0,configurable:!0,writable:!0,value:a}):e[t]=a;var f=(e,t,a)=>Dt(e,typeof t!="symbol"?t+"":t,a),Pe=(e,t,a)=>t.has(e)||We("Cannot "+a);var l=(e,t,a)=>(Pe(e,t,"read from private field"),a?a.call(e):t.get(e)),p=(e,t,a)=>t.has(e)?We("Cannot add the same private member more than once"):t instanceof WeakSet?t.add(e):t.set(e,a),h=(e,t,a,r)=>(Pe(e,t,"write to private field"),r?r.call(e,a):t.set(e,a),a),v=(e,t,a)=>(Pe(e,t,"access private method"),a);var Ze=(e,t,a,r)=>({set _(o){h(e,t,o,a)},get _(){return l(e,t,r)}});var Ve=(e,t,a)=>(r,o)=>{let n=-1;return i(0);async function i(d){if(d<=n)throw new Error("next() called multiple times");n=d;let s,c=!1,u;if(e[d]?(u=e[d][0][0],r.req.routeIndex=d):u=d===e.length&&o||void 0,u)try{s=await u(r,()=>i(d+1))}catch(g){if(g instanceof Error&&t)r.error=g,s=await t(g,r),c=!0;else throw g}else r.finalized===!1&&a&&(s=await a(r));return s&&(r.finalized===!1||c)&&(r.res=s),r}},Bt=Symbol(),At=async(e,t=Object.create(null))=>{const{all:a=!1,dot:r=!1}=t,n=(e instanceof ut?e.raw.headers:e.headers).get("Content-Type");return n!=null&&n.startsWith("multipart/form-data")||n!=null&&n.startsWith("application/x-www-form-urlencoded")?Ht(e,{all:a,dot:r}):{}};async function Ht(e,t){const a=await e.formData();return a?Ot(a,t):{}}function Ot(e,t){const a=Object.create(null);return e.forEach((r,o)=>{t.all||o.endsWith("[]")?Pt(a,o,r):a[o]=r}),t.dot&&Object.entries(a).forEach(([r,o])=>{r.includes(".")&&(Ut(a,r,o),delete a[r])}),a}var Pt=(e,t,a)=>{e[t]!==void 0?Array.isArray(e[t])?e[t].push(a):e[t]=[e[t],a]:t.endsWith("[]")?e[t]=[a]:e[t]=a},Ut=(e,t,a)=>{let r=e;const o=t.split(".");o.forEach((n,i)=>{i===o.length-1?r[n]=a:((!r[n]||typeof r[n]!="object"||Array.isArray(r[n])||r[n]instanceof File)&&(r[n]=Object.create(null)),r=r[n])})},it=e=>{const t=e.split("/");return t[0]===""&&t.shift(),t},Nt=e=>{const{groups:t,path:a}=jt(e),r=it(a);return Ft(r,t)},jt=e=>{const t=[];return e=e.replace(/\{[^}]+\}/g,(a,r)=>{const o=`@${r}`;return t.push([o,a]),o}),{groups:t,path:e}},Ft=(e,t)=>{for(let a=t.length-1;a>=0;a--){const[r]=t[a];for(let o=e.length-1;o>=0;o--)if(e[o].includes(r)){e[o]=e[o].replace(r,t[a][1]);break}}return e},ke={},zt=(e,t)=>{if(e==="*")return"*";const a=e.match(/^\:([^\{\}]+)(?:\{(.+)\})?$/);if(a){const r=`${e}#${t}`;return ke[r]||(a[2]?ke[r]=t&&t[0]!==":"&&t[0]!=="*"?[r,a[1],new RegExp(`^${a[2]}(?=/${t})`)]:[e,a[1],new RegExp(`^${a[2]}$`)]:ke[r]=[e,a[1],!0]),ke[r]}return null},Me=(e,t)=>{try{return t(e)}catch{return e.replace(/(?:%[0-9A-Fa-f]{2})+/g,a=>{try{return t(a)}catch{return a}})}},Mt=e=>Me(e,decodeURI),st=e=>{const t=e.url,a=t.indexOf("/",t.indexOf(":")+4);let r=a;for(;r<t.length;r++){const o=t.charCodeAt(r);if(o===37){const n=t.indexOf("?",r),i=t.slice(a,n===-1?void 0:n);return Mt(i.includes("%25")?i.replace(/%25/g,"%2525"):i)}else if(o===63)break}return t.slice(a,r)},$t=e=>{const t=st(e);return t.length>1&&t.at(-1)==="/"?t.slice(0,-1):t},re=(e,t,...a)=>(a.length&&(t=re(t,...a)),`${(e==null?void 0:e[0])==="/"?"":"/"}${e}${t==="/"?"":`${(e==null?void 0:e.at(-1))==="/"?"":"/"}${(t==null?void 0:t[0])==="/"?t.slice(1):t}`}`),lt=e=>{if(e.charCodeAt(e.length-1)!==63||!e.includes(":"))return null;const t=e.split("/"),a=[];let r="";return t.forEach(o=>{if(o!==""&&!/\:/.test(o))r+="/"+o;else if(/\:/.test(o))if(/\?/.test(o)){a.length===0&&r===""?a.push("/"):a.push(r);const n=o.replace("?","");r+="/"+n,a.push(r)}else r+="/"+o}),a.filter((o,n,i)=>i.indexOf(o)===n)},Ue=e=>/[%+]/.test(e)?(e.indexOf("+")!==-1&&(e=e.replace(/\+/g," ")),e.indexOf("%")!==-1?Me(e,dt):e):e,ct=(e,t,a)=>{let r;if(!a&&t&&!/[%+]/.test(t)){let i=e.indexOf("?",8);if(i===-1)return;for(e.startsWith(t,i+1)||(i=e.indexOf(`&${t}`,i+1));i!==-1;){const d=e.charCodeAt(i+t.length+1);if(d===61){const s=i+t.length+2,c=e.indexOf("&",s);return Ue(e.slice(s,c===-1?void 0:c))}else if(d==38||isNaN(d))return"";i=e.indexOf(`&${t}`,i+1)}if(r=/[%+]/.test(e),!r)return}const o={};r??(r=/[%+]/.test(e));let n=e.indexOf("?",8);for(;n!==-1;){const i=e.indexOf("&",n+1);let d=e.indexOf("=",n);d>i&&i!==-1&&(d=-1);let s=e.slice(n+1,d===-1?i===-1?void 0:i:d);if(r&&(s=Ue(s)),n=i,s==="")continue;let c;d===-1?c="":(c=e.slice(d+1,i===-1?void 0:i),r&&(c=Ue(c))),a?(o[s]&&Array.isArray(o[s])||(o[s]=[]),o[s].push(c)):o[s]??(o[s]=c)}return t?o[t]:o},Gt=ct,_t=(e,t)=>ct(e,t,!0),dt=decodeURIComponent,Ke=e=>Me(e,dt),ie,R,F,gt,ht,ze,$,et,ut=(et=class{constructor(e,t="/",a=[[]]){p(this,F);f(this,"raw");p(this,ie);p(this,R);f(this,"routeIndex",0);f(this,"path");f(this,"bodyCache",{});p(this,$,e=>{const{bodyCache:t,raw:a}=this,r=t[e];if(r)return r;const o=Object.keys(t)[0];return o?t[o].then(n=>(o==="json"&&(n=JSON.stringify(n)),new Response(n)[e]())):t[e]=a[e]()});this.raw=e,this.path=t,h(this,R,a),h(this,ie,{})}param(e){return e?v(this,F,gt).call(this,e):v(this,F,ht).call(this)}query(e){return Gt(this.url,e)}queries(e){return _t(this.url,e)}header(e){if(e)return this.raw.headers.get(e)??void 0;const t={};return this.raw.headers.forEach((a,r)=>{t[r]=a}),t}async parseBody(e){var t;return(t=this.bodyCache).parsedBody??(t.parsedBody=await At(this,e))}json(){return l(this,$).call(this,"text").then(e=>JSON.parse(e))}text(){return l(this,$).call(this,"text")}arrayBuffer(){return l(this,$).call(this,"arrayBuffer")}blob(){return l(this,$).call(this,"blob")}formData(){return l(this,$).call(this,"formData")}addValidatedData(e,t){l(this,ie)[e]=t}valid(e){return l(this,ie)[e]}get url(){return this.raw.url}get method(){return this.raw.method}get[Bt](){return l(this,R)}get matchedRoutes(){return l(this,R)[0].map(([[,e]])=>e)}get routePath(){return l(this,R)[0].map(([[,e]])=>e)[this.routeIndex].path}},ie=new WeakMap,R=new WeakMap,F=new WeakSet,gt=function(e){const t=l(this,R)[0][this.routeIndex][1][e],a=v(this,F,ze).call(this,t);return a&&/\%/.test(a)?Ke(a):a},ht=function(){const e={},t=Object.keys(l(this,R)[0][this.routeIndex][1]);for(const a of t){const r=v(this,F,ze).call(this,l(this,R)[0][this.routeIndex][1][a]);r!==void 0&&(e[a]=/\%/.test(r)?Ke(r):r)}return e},ze=function(e){return l(this,R)[1]?l(this,R)[1][e]:e},$=new WeakMap,et),qt={Stringify:1},ft=async(e,t,a,r,o)=>{typeof e=="object"&&!(e instanceof String)&&(e instanceof Promise||(e=e.toString()),e instanceof Promise&&(e=await e));const n=e.callbacks;return n!=null&&n.length?(o?o[0]+=e:o=[e],Promise.all(n.map(d=>d({phase:t,buffer:o,context:r}))).then(d=>Promise.all(d.filter(Boolean).map(s=>ft(s,t,!1,r,o))).then(()=>o[0]))):Promise.resolve(e)},Wt="text/plain; charset=UTF-8",Ne=(e,t)=>({"Content-Type":e,...t}),be,xe,P,se,U,S,ve,le,ce,Y,ye,we,G,oe,tt,Zt=(tt=class{constructor(e,t){p(this,G);p(this,be);p(this,xe);f(this,"env",{});p(this,P);f(this,"finalized",!1);f(this,"error");p(this,se);p(this,U);p(this,S);p(this,ve);p(this,le);p(this,ce);p(this,Y);p(this,ye);p(this,we);f(this,"render",(...e)=>(l(this,le)??h(this,le,t=>this.html(t)),l(this,le).call(this,...e)));f(this,"setLayout",e=>h(this,ve,e));f(this,"getLayout",()=>l(this,ve));f(this,"setRenderer",e=>{h(this,le,e)});f(this,"header",(e,t,a)=>{this.finalized&&h(this,S,new Response(l(this,S).body,l(this,S)));const r=l(this,S)?l(this,S).headers:l(this,Y)??h(this,Y,new Headers);t===void 0?r.delete(e):a!=null&&a.append?r.append(e,t):r.set(e,t)});f(this,"status",e=>{h(this,se,e)});f(this,"set",(e,t)=>{l(this,P)??h(this,P,new Map),l(this,P).set(e,t)});f(this,"get",e=>l(this,P)?l(this,P).get(e):void 0);f(this,"newResponse",(...e)=>v(this,G,oe).call(this,...e));f(this,"body",(e,t,a)=>v(this,G,oe).call(this,e,t,a));f(this,"text",(e,t,a)=>!l(this,Y)&&!l(this,se)&&!t&&!a&&!this.finalized?new Response(e):v(this,G,oe).call(this,e,t,Ne(Wt,a)));f(this,"json",(e,t,a)=>v(this,G,oe).call(this,JSON.stringify(e),t,Ne("application/json",a)));f(this,"html",(e,t,a)=>{const r=o=>v(this,G,oe).call(this,o,t,Ne("text/html; charset=UTF-8",a));return typeof e=="object"?ft(e,qt.Stringify,!1,{}).then(r):r(e)});f(this,"redirect",(e,t)=>{const a=String(e);return this.header("Location",/[^\x00-\xFF]/.test(a)?encodeURI(a):a),this.newResponse(null,t??302)});f(this,"notFound",()=>(l(this,ce)??h(this,ce,()=>new Response),l(this,ce).call(this,this)));h(this,be,e),t&&(h(this,U,t.executionCtx),this.env=t.env,h(this,ce,t.notFoundHandler),h(this,we,t.path),h(this,ye,t.matchResult))}get req(){return l(this,xe)??h(this,xe,new ut(l(this,be),l(this,we),l(this,ye))),l(this,xe)}get event(){if(l(this,U)&&"respondWith"in l(this,U))return l(this,U);throw Error("This context has no FetchEvent")}get executionCtx(){if(l(this,U))return l(this,U);throw Error("This context has no ExecutionContext")}get res(){return l(this,S)||h(this,S,new Response(null,{headers:l(this,Y)??h(this,Y,new Headers)}))}set res(e){if(l(this,S)&&e){e=new Response(e.body,e);for(const[t,a]of l(this,S).headers.entries())if(t!=="content-type")if(t==="set-cookie"){const r=l(this,S).headers.getSetCookie();e.headers.delete("set-cookie");for(const o of r)e.headers.append("set-cookie",o)}else e.headers.set(t,a)}h(this,S,e),this.finalized=!0}get var(){return l(this,P)?Object.fromEntries(l(this,P)):{}}},be=new WeakMap,xe=new WeakMap,P=new WeakMap,se=new WeakMap,U=new WeakMap,S=new WeakMap,ve=new WeakMap,le=new WeakMap,ce=new WeakMap,Y=new WeakMap,ye=new WeakMap,we=new WeakMap,G=new WeakSet,oe=function(e,t,a){const r=l(this,S)?new Headers(l(this,S).headers):l(this,Y)??new Headers;if(typeof t=="object"&&"headers"in t){const n=t.headers instanceof Headers?t.headers:new Headers(t.headers);for(const[i,d]of n)i.toLowerCase()==="set-cookie"?r.append(i,d):r.set(i,d)}if(a)for(const[n,i]of Object.entries(a))if(typeof i=="string")r.set(n,i);else{r.delete(n);for(const d of i)r.append(n,d)}const o=typeof t=="number"?t:(t==null?void 0:t.status)??l(this,se);return new Response(e,{status:o,headers:r})},tt),w="ALL",Vt="all",Kt=["get","post","put","delete","options","patch"],mt="Can not add a route since the matcher is already built.",pt=class extends Error{},Yt="__COMPOSED_HANDLER",Jt=e=>e.text("404 Not Found",404),Ye=(e,t)=>{if("getResponse"in e){const a=e.getResponse();return t.newResponse(a.body,a)}return console.error(e),t.text("Internal Server Error",500)},D,I,bt,B,V,Ee,Se,de,Xt=(de=class{constructor(t={}){p(this,I);f(this,"get");f(this,"post");f(this,"put");f(this,"delete");f(this,"options");f(this,"patch");f(this,"all");f(this,"on");f(this,"use");f(this,"router");f(this,"getPath");f(this,"_basePath","/");p(this,D,"/");f(this,"routes",[]);p(this,B,Jt);f(this,"errorHandler",Ye);f(this,"onError",t=>(this.errorHandler=t,this));f(this,"notFound",t=>(h(this,B,t),this));f(this,"fetch",(t,...a)=>v(this,I,Se).call(this,t,a[1],a[0],t.method));f(this,"request",(t,a,r,o)=>t instanceof Request?this.fetch(a?new Request(t,a):t,r,o):(t=t.toString(),this.fetch(new Request(/^https?:\/\//.test(t)?t:`http://localhost${re("/",t)}`,a),r,o)));f(this,"fire",()=>{addEventListener("fetch",t=>{t.respondWith(v(this,I,Se).call(this,t.request,t,void 0,t.request.method))})});[...Kt,Vt].forEach(n=>{this[n]=(i,...d)=>(typeof i=="string"?h(this,D,i):v(this,I,V).call(this,n,l(this,D),i),d.forEach(s=>{v(this,I,V).call(this,n,l(this,D),s)}),this)}),this.on=(n,i,...d)=>{for(const s of[i].flat()){h(this,D,s);for(const c of[n].flat())d.map(u=>{v(this,I,V).call(this,c.toUpperCase(),l(this,D),u)})}return this},this.use=(n,...i)=>(typeof n=="string"?h(this,D,n):(h(this,D,"*"),i.unshift(n)),i.forEach(d=>{v(this,I,V).call(this,w,l(this,D),d)}),this);const{strict:r,...o}=t;Object.assign(this,o),this.getPath=r??!0?t.getPath??st:$t}route(t,a){const r=this.basePath(t);return a.routes.map(o=>{var i;let n;a.errorHandler===Ye?n=o.handler:(n=async(d,s)=>(await Ve([],a.errorHandler)(d,()=>o.handler(d,s))).res,n[Yt]=o.handler),v(i=r,I,V).call(i,o.method,o.path,n)}),this}basePath(t){const a=v(this,I,bt).call(this);return a._basePath=re(this._basePath,t),a}mount(t,a,r){let o,n;r&&(typeof r=="function"?n=r:(n=r.optionHandler,r.replaceRequest===!1?o=s=>s:o=r.replaceRequest));const i=n?s=>{const c=n(s);return Array.isArray(c)?c:[c]}:s=>{let c;try{c=s.executionCtx}catch{}return[s.env,c]};o||(o=(()=>{const s=re(this._basePath,t),c=s==="/"?0:s.length;return u=>{const g=new URL(u.url);return g.pathname=g.pathname.slice(c)||"/",new Request(g,u)}})());const d=async(s,c)=>{const u=await a(o(s.req.raw),...i(s));if(u)return u;await c()};return v(this,I,V).call(this,w,re(t,"*"),d),this}},D=new WeakMap,I=new WeakSet,bt=function(){const t=new de({router:this.router,getPath:this.getPath});return t.errorHandler=this.errorHandler,h(t,B,l(this,B)),t.routes=this.routes,t},B=new WeakMap,V=function(t,a,r){t=t.toUpperCase(),a=re(this._basePath,a);const o={basePath:this._basePath,path:a,method:t,handler:r};this.router.add(t,a,[r,o]),this.routes.push(o)},Ee=function(t,a){if(t instanceof Error)return this.errorHandler(t,a);throw t},Se=function(t,a,r,o){if(o==="HEAD")return(async()=>new Response(null,await v(this,I,Se).call(this,t,a,r,"GET")))();const n=this.getPath(t,{env:r}),i=this.router.match(o,n),d=new Zt(t,{path:n,matchResult:i,env:r,executionCtx:a,notFoundHandler:l(this,B)});if(i[0].length===1){let c;try{c=i[0][0][0][0](d,async()=>{d.res=await l(this,B).call(this,d)})}catch(u){return v(this,I,Ee).call(this,u,d)}return c instanceof Promise?c.then(u=>u||(d.finalized?d.res:l(this,B).call(this,d))).catch(u=>v(this,I,Ee).call(this,u,d)):c??l(this,B).call(this,d)}const s=Ve(i[0],this.errorHandler,l(this,B));return(async()=>{try{const c=await s(d);if(!c.finalized)throw new Error("Context is not finalized. Did you forget to return a Response object or `await next()`?");return c.res}catch(c){return v(this,I,Ee).call(this,c,d)}})()},de),xt=[];function Qt(e,t){const a=this.buildAllMatchers(),r=(o,n)=>{const i=a[o]||a[w],d=i[2][n];if(d)return d;const s=n.match(i[0]);if(!s)return[[],xt];const c=s.indexOf("",1);return[i[1][c],s]};return this.match=r,r(e,t)}var Le="[^/]+",me=".*",pe="(?:|/.*)",ne=Symbol(),ea=new Set(".\\+*[^]$()");function ta(e,t){return e.length===1?t.length===1?e<t?-1:1:-1:t.length===1||e===me||e===pe?1:t===me||t===pe?-1:e===Le?1:t===Le?-1:e.length===t.length?e<t?-1:1:t.length-e.length}var J,X,A,te,aa=(te=class{constructor(){p(this,J);p(this,X);p(this,A,Object.create(null))}insert(t,a,r,o,n){if(t.length===0){if(l(this,J)!==void 0)throw ne;if(n)return;h(this,J,a);return}const[i,...d]=t,s=i==="*"?d.length===0?["","",me]:["","",Le]:i==="/*"?["","",pe]:i.match(/^\:([^\{\}]+)(?:\{(.+)\})?$/);let c;if(s){const u=s[1];let g=s[2]||Le;if(u&&s[2]&&(g===".*"||(g=g.replace(/^\((?!\?:)(?=[^)]+\)$)/,"(?:"),/\((?!\?:)/.test(g))))throw ne;if(c=l(this,A)[g],!c){if(Object.keys(l(this,A)).some(m=>m!==me&&m!==pe))throw ne;if(n)return;c=l(this,A)[g]=new te,u!==""&&h(c,X,o.varIndex++)}!n&&u!==""&&r.push([u,l(c,X)])}else if(c=l(this,A)[i],!c){if(Object.keys(l(this,A)).some(u=>u.length>1&&u!==me&&u!==pe))throw ne;if(n)return;c=l(this,A)[i]=new te}c.insert(d,a,r,o,n)}buildRegExpStr(){const a=Object.keys(l(this,A)).sort(ta).map(r=>{const o=l(this,A)[r];return(typeof l(o,X)=="number"?`(${r})@${l(o,X)}`:ea.has(r)?`\\${r}`:r)+o.buildRegExpStr()});return typeof l(this,J)=="number"&&a.unshift(`#${l(this,J)}`),a.length===0?"":a.length===1?a[0]:"(?:"+a.join("|")+")"}},J=new WeakMap,X=new WeakMap,A=new WeakMap,te),Be,Ie,at,ra=(at=class{constructor(){p(this,Be,{varIndex:0});p(this,Ie,new aa)}insert(e,t,a){const r=[],o=[];for(let i=0;;){let d=!1;if(e=e.replace(/\{[^}]+\}/g,s=>{const c=`@\\${i}`;return o[i]=[c,s],i++,d=!0,c}),!d)break}const n=e.match(/(?::[^\/]+)|(?:\/\*$)|./g)||[];for(let i=o.length-1;i>=0;i--){const[d]=o[i];for(let s=n.length-1;s>=0;s--)if(n[s].indexOf(d)!==-1){n[s]=n[s].replace(d,o[i][1]);break}}return l(this,Ie).insert(n,t,r,l(this,Be),a),r}buildRegExp(){let e=l(this,Ie).buildRegExpStr();if(e==="")return[/^$/,[],[]];let t=0;const a=[],r=[];return e=e.replace(/#(\d+)|@(\d+)|\.\*\$/g,(o,n,i)=>n!==void 0?(a[++t]=Number(n),"$()"):(i!==void 0&&(r[Number(i)]=++t),"")),[new RegExp(`^${e}`),a,r]}},Be=new WeakMap,Ie=new WeakMap,at),oa=[/^$/,[],Object.create(null)],Re=Object.create(null);function vt(e){return Re[e]??(Re[e]=new RegExp(e==="*"?"":`^${e.replace(/\/\*$|([.\\+*[^\]$()])/g,(t,a)=>a?`\\${a}`:"(?:|/.*)")}$`))}function na(){Re=Object.create(null)}function ia(e){var c;const t=new ra,a=[];if(e.length===0)return oa;const r=e.map(u=>[!/\*|\/:/.test(u[0]),...u]).sort(([u,g],[m,b])=>u?1:m?-1:g.length-b.length),o=Object.create(null);for(let u=0,g=-1,m=r.length;u<m;u++){const[b,k,L]=r[u];b?o[k]=[L.map(([y])=>[y,Object.create(null)]),xt]:g++;let x;try{x=t.insert(k,g,b)}catch(y){throw y===ne?new pt(k):y}b||(a[g]=L.map(([y,z])=>{const Te=Object.create(null);for(z-=1;z>=0;z--){const[Ce,H]=x[z];Te[Ce]=H}return[y,Te]}))}const[n,i,d]=t.buildRegExp();for(let u=0,g=a.length;u<g;u++)for(let m=0,b=a[u].length;m<b;m++){const k=(c=a[u][m])==null?void 0:c[1];if(!k)continue;const L=Object.keys(k);for(let x=0,y=L.length;x<y;x++)k[L[x]]=d[k[L[x]]]}const s=[];for(const u in i)s[u]=a[i[u]];return[n,s,o]}function ae(e,t){if(e){for(const a of Object.keys(e).sort((r,o)=>o.length-r.length))if(vt(a).test(t))return[...e[a]]}}var _,q,Ae,yt,rt,sa=(rt=class{constructor(){p(this,Ae);f(this,"name","RegExpRouter");p(this,_);p(this,q);f(this,"match",Qt);h(this,_,{[w]:Object.create(null)}),h(this,q,{[w]:Object.create(null)})}add(e,t,a){var d;const r=l(this,_),o=l(this,q);if(!r||!o)throw new Error(mt);r[e]||[r,o].forEach(s=>{s[e]=Object.create(null),Object.keys(s[w]).forEach(c=>{s[e][c]=[...s[w][c]]})}),t==="/*"&&(t="*");const n=(t.match(/\/:/g)||[]).length;if(/\*$/.test(t)){const s=vt(t);e===w?Object.keys(r).forEach(c=>{var u;(u=r[c])[t]||(u[t]=ae(r[c],t)||ae(r[w],t)||[])}):(d=r[e])[t]||(d[t]=ae(r[e],t)||ae(r[w],t)||[]),Object.keys(r).forEach(c=>{(e===w||e===c)&&Object.keys(r[c]).forEach(u=>{s.test(u)&&r[c][u].push([a,n])})}),Object.keys(o).forEach(c=>{(e===w||e===c)&&Object.keys(o[c]).forEach(u=>s.test(u)&&o[c][u].push([a,n]))});return}const i=lt(t)||[t];for(let s=0,c=i.length;s<c;s++){const u=i[s];Object.keys(o).forEach(g=>{var m;(e===w||e===g)&&((m=o[g])[u]||(m[u]=[...ae(r[g],u)||ae(r[w],u)||[]]),o[g][u].push([a,n-c+s+1]))})}}buildAllMatchers(){const e=Object.create(null);return Object.keys(l(this,q)).concat(Object.keys(l(this,_))).forEach(t=>{e[t]||(e[t]=v(this,Ae,yt).call(this,t))}),h(this,_,h(this,q,void 0)),na(),e}},_=new WeakMap,q=new WeakMap,Ae=new WeakSet,yt=function(e){const t=[];let a=e===w;return[l(this,_),l(this,q)].forEach(r=>{const o=r[e]?Object.keys(r[e]).map(n=>[n,r[e][n]]):[];o.length!==0?(a||(a=!0),t.push(...o)):e!==w&&t.push(...Object.keys(r[w]).map(n=>[n,r[w][n]]))}),a?ia(t):null},rt),W,N,ot,la=(ot=class{constructor(e){f(this,"name","SmartRouter");p(this,W,[]);p(this,N,[]);h(this,W,e.routers)}add(e,t,a){if(!l(this,N))throw new Error(mt);l(this,N).push([e,t,a])}match(e,t){if(!l(this,N))throw new Error("Fatal error");const a=l(this,W),r=l(this,N),o=a.length;let n=0,i;for(;n<o;n++){const d=a[n];try{for(let s=0,c=r.length;s<c;s++)d.add(...r[s]);i=d.match(e,t)}catch(s){if(s instanceof pt)continue;throw s}this.match=d.match.bind(d),h(this,W,[d]),h(this,N,void 0);break}if(n===o)throw new Error("Fatal error");return this.name=`SmartRouter + ${this.activeRouter.name}`,i}get activeRouter(){if(l(this,N)||l(this,W).length!==1)throw new Error("No active router has been determined yet.");return l(this,W)[0]}},W=new WeakMap,N=new WeakMap,ot),fe=Object.create(null),Z,E,Q,ue,C,j,K,ge,ca=(ge=class{constructor(t,a,r){p(this,j);p(this,Z);p(this,E);p(this,Q);p(this,ue,0);p(this,C,fe);if(h(this,E,r||Object.create(null)),h(this,Z,[]),t&&a){const o=Object.create(null);o[t]={handler:a,possibleKeys:[],score:0},h(this,Z,[o])}h(this,Q,[])}insert(t,a,r){h(this,ue,++Ze(this,ue)._);let o=this;const n=Nt(a),i=[];for(let d=0,s=n.length;d<s;d++){const c=n[d],u=n[d+1],g=zt(c,u),m=Array.isArray(g)?g[0]:c;if(m in l(o,E)){o=l(o,E)[m],g&&i.push(g[1]);continue}l(o,E)[m]=new ge,g&&(l(o,Q).push(g),i.push(g[1])),o=l(o,E)[m]}return l(o,Z).push({[t]:{handler:r,possibleKeys:i.filter((d,s,c)=>c.indexOf(d)===s),score:l(this,ue)}}),o}search(t,a){var s;const r=[];h(this,C,fe);let n=[this];const i=it(a),d=[];for(let c=0,u=i.length;c<u;c++){const g=i[c],m=c===u-1,b=[];for(let k=0,L=n.length;k<L;k++){const x=n[k],y=l(x,E)[g];y&&(h(y,C,l(x,C)),m?(l(y,E)["*"]&&r.push(...v(this,j,K).call(this,l(y,E)["*"],t,l(x,C))),r.push(...v(this,j,K).call(this,y,t,l(x,C)))):b.push(y));for(let z=0,Te=l(x,Q).length;z<Te;z++){const Ce=l(x,Q)[z],H=l(x,C)===fe?{}:{...l(x,C)};if(Ce==="*"){const M=l(x,E)["*"];M&&(r.push(...v(this,j,K).call(this,M,t,l(x,C))),h(M,C,H),b.push(M));continue}const[St,qe,he]=Ce;if(!g&&!(he instanceof RegExp))continue;const O=l(x,E)[St],Rt=i.slice(c).join("/");if(he instanceof RegExp){const M=he.exec(Rt);if(M){if(H[qe]=M[0],r.push(...v(this,j,K).call(this,O,t,l(x,C),H)),Object.keys(l(O,E)).length){h(O,C,H);const Oe=((s=M[0].match(/\//))==null?void 0:s.length)??0;(d[Oe]||(d[Oe]=[])).push(O)}continue}}(he===!0||he.test(g))&&(H[qe]=g,m?(r.push(...v(this,j,K).call(this,O,t,H,l(x,C))),l(O,E)["*"]&&r.push(...v(this,j,K).call(this,l(O,E)["*"],t,H,l(x,C)))):(h(O,C,H),b.push(O)))}}n=b.concat(d.shift()??[])}return r.length>1&&r.sort((c,u)=>c.score-u.score),[r.map(({handler:c,params:u})=>[c,u])]}},Z=new WeakMap,E=new WeakMap,Q=new WeakMap,ue=new WeakMap,C=new WeakMap,j=new WeakSet,K=function(t,a,r,o){const n=[];for(let i=0,d=l(t,Z).length;i<d;i++){const s=l(t,Z)[i],c=s[a]||s[w],u={};if(c!==void 0&&(c.params=Object.create(null),n.push(c),r!==fe||o&&o!==fe))for(let g=0,m=c.possibleKeys.length;g<m;g++){const b=c.possibleKeys[g],k=u[c.score];c.params[b]=o!=null&&o[b]&&!k?o[b]:r[b]??(o==null?void 0:o[b]),u[c.score]=!0}}return n},ge),ee,nt,da=(nt=class{constructor(){f(this,"name","TrieRouter");p(this,ee);h(this,ee,new ca)}add(e,t,a){const r=lt(t);if(r){for(let o=0,n=r.length;o<n;o++)l(this,ee).insert(e,r[o],a);return}l(this,ee).insert(e,t,a)}match(e,t){return l(this,ee).search(e,t)}},ee=new WeakMap,nt),wt=class extends Xt{constructor(e={}){super(e),this.router=e.router??new la({routers:[new sa,new da]})}},ua=e=>{const a={...{origin:"*",allowMethods:["GET","HEAD","PUT","POST","DELETE","PATCH"],allowHeaders:[],exposeHeaders:[]},...e},r=(n=>typeof n=="string"?n==="*"?()=>n:i=>n===i?i:null:typeof n=="function"?n:i=>n.includes(i)?i:null)(a.origin),o=(n=>typeof n=="function"?n:Array.isArray(n)?()=>n:()=>[])(a.allowMethods);return async function(i,d){var u;function s(g,m){i.res.headers.set(g,m)}const c=await r(i.req.header("origin")||"",i);if(c&&s("Access-Control-Allow-Origin",c),a.credentials&&s("Access-Control-Allow-Credentials","true"),(u=a.exposeHeaders)!=null&&u.length&&s("Access-Control-Expose-Headers",a.exposeHeaders.join(",")),i.req.method==="OPTIONS"){a.origin!=="*"&&s("Vary","Origin"),a.maxAge!=null&&s("Access-Control-Max-Age",a.maxAge.toString());const g=await o(i.req.header("origin")||"",i);g.length&&s("Access-Control-Allow-Methods",g.join(","));let m=a.allowHeaders;if(!(m!=null&&m.length)){const b=i.req.header("Access-Control-Request-Headers");b&&(m=b.split(/\s*,\s*/))}return m!=null&&m.length&&(s("Access-Control-Allow-Headers",m.join(",")),i.res.headers.append("Vary","Access-Control-Request-Headers")),i.res.headers.delete("Content-Length"),i.res.headers.delete("Content-Type"),new Response(null,{headers:i.res.headers,status:204,statusText:"No Content"})}await d(),a.origin!=="*"&&i.header("Vary","Origin",{append:!0})}};const T=new wt,ga=5*60*1e3,$e=new Map;function It(e){const t=$e.get(e);return t?t.data:null}function Tt(e,t,a){$e.set(e,{data:t,timestamp:Date.now(),etag:a})}function Ct(e){const t=$e.get(e);return t?Date.now()-t.timestamp<ga:!1}const je=3,Je=1e3;async function De(e,t,a=je){try{const r=await fetch(e,t);if(r.status===429&&a>0){const o=Je*(je-a+1);return console.log(`Rate limited (429). Retrying in ${o}ms... (${a} retries left)`),await new Promise(n=>setTimeout(n,o)),De(e,t,a-1)}return r}catch(r){if(a>0){const o=Je*(je-a+1);return console.log(`Fetch failed. Retrying in ${o}ms... (${a} retries left)`),await new Promise(n=>setTimeout(n,o)),De(e,t,a-1)}throw r}}T.use("/api/*",ua());const Ge="cf2a50987a92a698e89d5efeb80cde82",Fe={face:"https://iili.io/fM9hV6B.png",outfit:"https://iili.io/fM99P3l.png",logo:"https://iili.io/fEiEfUB.png"};T.get("/api/bases",async e=>{const t=e.req.header("xc-token")||e.env.NOCODB_TOKEN;if(!t)return e.json({error:"Missing NocoDB token"},401);const a=`bases:${t.substring(0,10)}`,r=It(a),o=Ct(a);if(r&&o)return console.log("Returning cached bases data"),e.json(r);try{const i=await De("http://31.220.49.162:8080/api/v2/meta/bases",{headers:{"xc-token":t}});if(!i.ok){const g=await i.text();if(console.error("NocoDB API error:",i.status,g),r)return console.log("Returning stale cached data due to API error"),e.json({...r,_cached:!0,_cacheStale:!0,_error:`NocoDB API error: ${i.status}. Showing cached data.`});let m=`NocoDB API error: ${i.status}`;return i.status===429?m="NocoDB rate limit exceeded. Please wait a moment and try again.":(i.status===401||i.status===403)&&(m="Invalid or expired NocoDB token. Please check your token and try again."),e.json({error:m,details:g},i.status)}const d=await i.json();let s=d.list||d.bases||[];Array.isArray(s)||(s=[]);const u={bases:s.map(g=>({id:g.id,name:g.title||g.name||"Unnamed Base"}))};return Tt(a,u),console.log(`Total bases fetched and cached: ${s.length}`),e.json(u)}catch(n){return console.error("Error fetching bases:",n),r?(console.log("Returning stale cached data due to error"),e.json({...r,_cached:!0,_cacheStale:!0,_error:`Network error: ${n.message}. Showing cached data.`})):e.json({error:n.message||"Failed to fetch bases"},500)}});T.get("/api/bases/:baseId/tables",async e=>{const t=e.req.header("xc-token")||e.env.NOCODB_TOKEN;if(!t)return e.json({error:"Missing NocoDB token"},401);const a=e.req.param("baseId"),r=`tables:${a}:${t.substring(0,10)}`,o=It(r),n=Ct(r);if(o&&n)return console.log(`Returning cached tables for base ${a}`),e.json(o);console.log(`Fetching tables for base: ${a}, token present: ${t?"yes":"no"}, token prefix: ${t.substring(0,10)}...`);try{const i=await De(`http://31.220.49.162:8080/api/v2/meta/bases/${a}/tables`,{headers:{"xc-token":t}});if(!i.ok){const u=await i.text();if(console.error("NocoDB tables API error:",i.status,u),o)return console.log("Returning stale cached tables due to API error"),e.json({...o,_cached:!0,_cacheStale:!0,_error:`NocoDB API error: ${i.status}. Showing cached data.`});let g=`NocoDB API error: ${i.status}`;return i.status===429?g="NocoDB rate limit exceeded. Please wait a moment and try again.":i.status===401||i.status===403?g="Invalid or expired NocoDB token. Please check your token and try again.":i.status===404&&(g="Base not found. Please check if you have access to this base."),e.json({error:g,details:u},i.status)}const c={tables:((await i.json()).list||[]).map(u=>({id:u.id,name:u.title||u.table_name||u.name||"Unnamed Table",fields:u.columns||u.fields||[]}))};return Tt(r,c),console.log(`Fetched and cached ${c.tables.length} tables for base ${a}`),e.json(c)}catch(i){return console.error("Error fetching tables:",i),o?(console.log("Returning stale cached tables due to error"),e.json({...o,_cached:!0,_cacheStale:!0,_error:`Network error: ${i.message}. Showing cached data.`})):e.json({error:i.message||"Failed to fetch tables"},500)}});T.get("/api/records",async e=>{var i,d;const t=e.req.header("xc-token")||e.env.NOCODB_TOKEN;if(!t)return e.json({error:"Missing NocoDB token"},401);const a=e.req.query("tableId");if(e.req.query("filter"),!a)return e.json({error:"Missing tableId"},400);let r=`http://31.220.49.162:8080/api/v2/tables/${a}/records`;const n=await(await fetch(r,{headers:{"xc-token":t}})).json();return n.list&&Array.isArray(n.list)?e.json({records:n.list.map(s=>({id:s.Id||s.id,fields:s})),offset:(i=n.pageInfo)!=null&&i.isLastPage?null:((d=n.pageInfo)==null?void 0:d.page)+1}):e.json(n)});T.get("/api/records/:id",async e=>{const t=e.req.header("xc-token")||e.env.NOCODB_TOKEN;if(!t)return e.json({error:"Missing NocoDB token"},401);const a=e.req.query("tableId"),r=e.req.param("id");if(!a)return e.json({error:"Missing tableId"},400);const n=await(await fetch(`http://31.220.49.162:8080/api/v2/tables/${a}/records/${r}`,{headers:{"xc-token":t}})).json();return n&&!n.error?e.json({id:n.Id||n.id,fields:n}):e.json(n)});T.patch("/api/records/:id",async e=>{const t=e.req.header("xc-token")||e.env.NOCODB_TOKEN;if(!t)return e.json({error:"Missing NocoDB token"},401);const a=e.req.query("tableId"),r=e.req.param("id"),o=await e.req.json();if(!a)return e.json({error:"Missing tableId"},400);const n={Id:r,...o},d=await(await fetch(`http://31.220.49.162:8080/api/v2/tables/${a}/records`,{method:"PATCH",headers:{"xc-token":t,"Content-Type":"application/json"},body:JSON.stringify(n)})).json();return d&&!d.error?e.json({id:d.Id||r,fields:d}):e.json(d)});T.post("/api/generate-image",async e=>{const{prompt:t,imageUrls:a,aspectRatio:r}=await e.req.json(),o={model:"google/nano-banana",input:{prompt:t,image_urls:a||[Fe.face,Fe.outfit,Fe.logo],image_size:r||"16:9",output_format:"png"}};console.log("KieAI Nano Banana Request:",JSON.stringify(o,null,2));const n=await fetch("https://api.kie.ai/api/v1/jobs/createTask",{method:"POST",headers:{Authorization:`Bearer ${Ge}`,"Content-Type":"application/json"},body:JSON.stringify(o)});return e.json(await n.json())});const Xe={"16:9":"https://iili.io/fk9ypqB.png","9:16":"https://iili.io/fk9yy0P.png","1:1":"https://iili.io/fkH99g1.png"};T.post("/api/generate-image-ideogram",async e=>{const{prompt:t,imageUrl:a,aspectRatio:r}=await e.req.json(),o=Xe[r]||Xe["16:9"],n={model:"ideogram/character-edit",input:{prompt:t,image_url:a,mask_url:o,rendering_speed:"BALANCED",style:"AUTO",expand_prompt:!1,num_images:"1"}};console.log("Ideogram character-edit Request (text overlay):",JSON.stringify(n,null,2));const i=await fetch("https://api.kie.ai/api/v1/jobs/createTask",{method:"POST",headers:{Authorization:`Bearer ${Ge}`,"Content-Type":"application/json"},body:JSON.stringify(n)});return e.json(await i.json())});T.get("/api/task-status/:taskId",async e=>{const t=e.req.param("taskId"),a=await fetch(`https://api.kie.ai/api/v1/jobs/recordInfo?taskId=${t}`,{headers:{Authorization:`Bearer ${Ge}`}});return e.json(await a.json())});T.post("/api/upload-image",async e=>{const{base64Image:t}=await e.req.json(),a=new FormData;a.append("key","6d207e02198a847aa98d0a2a901485a5"),a.append("action","upload"),a.append("source",t),a.append("format","json");const r=await fetch("https://freeimage.host/api/1/upload",{method:"POST",body:a});return e.json(await r.json())});T.post("/api/proxy-image",async e=>{try{const{imageUrl:t}=await e.req.json();if(!t)return e.json({error:"Missing imageUrl"},400);const a=await fetch(t);if(!a.ok)return e.json({error:"Failed to fetch image: "+a.status},500);const r=await a.arrayBuffer(),o=new Uint8Array(r);let n="";for(let s=0;s<o.length;s++)n+=String.fromCharCode(o[s]);const i=btoa(n),d=a.headers.get("content-type")||"image/png";return e.json({success:!0,base64:i,contentType:d,dataUrl:"data:"+d+";base64,"+i})}catch(t){return e.json({error:"Proxy error: "+t.message},500)}});const _e={crypto:{baseId:"prs1ubx2662cbv6",tableId:"m5fb56hy2px2fuv",fieldMap:{url:"URL",title:"Title",notes:"Summary",platforms:"Platforms",status:"Status",statusValue:"Needs Review"}},ai:{baseId:"prs1ubx2662cbv6",tableId:"m5fb56hy2px2fuv",fieldMap:{url:"URL",title:"Title",notes:"Summary",platforms:"Platforms",status:"Status",statusValue:"Needs Review"}},general:{baseId:"prs1ubx2662cbv6",tableId:"m5fb56hy2px2fuv",fieldMap:{url:"URL",title:"Title",notes:"Summary",platforms:"Platforms",status:"Status",statusValue:"Needs Review"}}},ha=["Twitter","LinkedIn","Blog","Instagram","Facebook","Avatar"],He="htjKEaVOkCm8QoJgzxYQ4iA1SL8SX_ZRQbVSSi_7",fa={crypto:"https://fifthaveai.app.n8n.cloud/webhook/crypto-pickup",ai:"https://fifthaveai.app.n8n.cloud/webhook/ai-pickup"};async function kt(e,t,a){const r=fa[e];if(r)try{await new Promise(n=>setTimeout(n,2e3)),console.log(`[Instant Pickup] Triggering ${e} webhook for record ${t}`);const o=await fetch(r,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({recordId:t,sourceURL:a.sourceURL,sourceHeadline:a.sourceHeadline,sourceSummary:a.sourceSummary,topic:e,triggeredAt:new Date().toISOString()})});console.log(`[Instant Pickup] Webhook response: ${o.status}`)}catch(o){console.error("[Instant Pickup] Webhook error:",o.message)}}T.post("/api/save",async e=>{var t;try{const{url:a,title:r,notes:o,platforms:n,topic:i}=await e.req.json();if(!a)return e.json({success:!1,error:"URL is required"},400);const d=((t=e.env)==null?void 0:t.NOCODB_TOKEN)||He,s=i||"general",c=_e[s];if(!c)return e.json({success:!1,error:"Invalid topic. Use: crypto, ai, or general"},400);const u=c.fieldMap,g={};if(g[u.url]=a,g[u.title]=r||"",g[u.status]=u.statusValue,o&&(g[u.notes]=o),n&&n.length>0)if(s==="crypto"||s==="ai"){const x=n.filter(y=>ha.includes(y));x.length>0&&(g[u.platforms]=x)}else g[u.platforms]=n;s==="general"&&(g["Created Date"]=new Date().toISOString());const b=await(await fetch(`${NOCODB_BASE_URL}/api/v2/tables/${c.tableId}/records`,{method:"POST",headers:{"xc-token":d,"Content-Type":"application/json"},body:JSON.stringify(g)})).json();if(b.error){console.error("NocoDB error:",b.error);const x=typeof b.error=="string"?b.error:b.error.message||"NocoDB error";return e.json({success:!1,error:x},500)}const k={id:b.Id,fields:b};let L=!1;if((s==="crypto"||s==="ai")&&b.id){L=!0;const x=kt(s,b.id,{sourceURL:a,sourceHeadline:r||"",sourceSummary:o||""});e.executionCtx&&typeof e.executionCtx.waitUntil=="function"?e.executionCtx.waitUntil(x):x.catch(y=>console.error("[Instant Pickup] Background error:",y))}return e.json({success:!0,record:k,topic:s,table:s==="general"?"Content Pipeline":s==="crypto"?"Social Posts":"Social Posts - AI",processing:L?"started":"not_applicable"})}catch(a){return console.error("Save error:",a),e.json({success:!1,error:a.message||"Server error"},500)}});T.get("/api/process-status/:recordId",async e=>{var t;try{const a=e.req.param("recordId"),r=e.req.query("topic")||"crypto",o=_e[r];if(!o)return e.json({error:"Invalid topic"},400);const n=((t=e.env)==null?void 0:t.NOCODB_TOKEN)||He,s=await(await fetch(`${NOCODB_BASE_URL}/api/v2/tables/${o.tableId}/records/${a}`,{headers:{"xc-token":n}})).json()||{},c=!!(s.sourceSummary&&s.sourceSummary.length>50),u=!!(s.imagePrompt&&s.imagePrompt.length>10),g=!!(s.twitterCopy&&s.twitterCopy.length>5);let m="processing";return c&&u&&g?m="complete":c&&(m="generating_content"),e.json({recordId:a,status:m,fields:{hasResearch:c,hasImagePrompt:u,hasSocialContent:g,rewrittenHeadline:s.rewrittenHeadline||null}})}catch(a){return e.json({error:a.message},500)}});T.post("/api/process",async e=>{var t;try{const{recordId:a,topic:r}=await e.req.json();if(!a||!r)return e.json({error:"recordId and topic are required"},400);if(r==="general")return e.json({error:"Processing only available for crypto/ai topics"},400);const o=_e[r];if(!o)return e.json({error:"Invalid topic"},400);const n=((t=e.env)==null?void 0:t.NOCODB_TOKEN)||He,s=await(await fetch(`${NOCODB_BASE_URL}/api/v2/tables/${o.tableId}/records/${a}`,{headers:{"xc-token":n}})).json()||{};return await kt(r,a,{sourceURL:s.sourceURL||"",sourceHeadline:s.sourceHeadline||"",sourceSummary:s.sourceSummary||""}),e.json({success:!0,status:"processing_started",recordId:a})}catch(a){return e.json({error:a.message},500)}});T.get("/api/topics",e=>e.json({topics:[{id:"crypto",label:"🪙 Crypto News",description:"Save to 5th Ave Crypto pipeline"},{id:"ai",label:"🤖 AI News",description:"Save to 5th Ave AI pipeline"},{id:"general",label:"📋 General Pipeline",description:"Save to Content Pipeline"}]}));T.get("/",e=>e.html(`
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -164,6 +164,36 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
     /* Record cards for horizontal scroll */
     .record-card { transition: all 0.2s; }
     .record-card:hover { transform: translateY(-4px); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); }
+    /* Card image container: always fixed height, never collapses */
+    .card-img-container {
+      width: 100%;
+      height: 144px;       /* h-36 = 9rem = 144px */
+      min-height: 144px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: rgba(255,255,255,0.05);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .card-img-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    /* Placeholder shown when image is absent or fails to load */
+    .card-img-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
     .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     
     .status-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; }
@@ -1295,7 +1325,19 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
     // ========================================
     // CONFIGURATION
     // ========================================
-    const NOCODB_TOKEN = '${((t=e.env)==null?void 0:t.NOCODB_TOKEN)||"PzPjLnn3qdo8jhG048mWgZUx30tpHJ_J4JCqvQ5z"}';
+    const NOCODB_TOKEN = '${(e.env||{}).NOCODB_TOKEN||He}';
+
+    // Card image error handler - called from onerror attribute
+    // Replaces broken img with a clean placeholder while preserving container height
+    function handleCardImgError(imgEl) {
+      var container = imgEl.parentNode;
+      if (!container) return;
+      var placeholder = document.createElement('div');
+      placeholder.className = 'card-img-placeholder';
+      placeholder.innerHTML = '<i class="fas fa-image text-gray-600 text-2xl"></i><span class="text-xs text-gray-600" style="margin-top:4px">No preview</span>';
+      container.style.border = '1px solid rgba(255,255,255,0.05)';
+      container.replaceChild(placeholder, imgEl);
+    }
     
     const referenceCategories = [
       { id: 'face', name: 'Face', icon: 'fa-user-circle', default: 'https://iili.io/fM9hV6B.png', order: 1 },
@@ -1420,22 +1462,23 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
       
       // Check if outfit reference is set for current ratio - but NEVER copy exact outfit
       const outfitRefs = references['outfit'];
-      const hasOutfitRef = outfitRefs && (outfitRefs[ratio]?.url && outfitRefs[ratio]?.enabled);
+      const hasOutfitRef = outfitRefs && outfitRefs[ratio] && outfitRefs[ratio].url && outfitRefs[ratio].enabled;
       const outfitDescription = hasOutfitRef ? 
         'wearing a DIFFERENT outfit in the same style/aesthetic as the reference (NOT the exact same clothes - similar vibe but different garments and colors)' : 
         settings.outfit;
       
       // Check if custom reference is set for current ratio for additional context
       const customRefs = references['custom'];
-      const hasCustomRef = customRefs && (customRefs[ratio]?.url && customRefs[ratio]?.enabled);
+      const hasCustomRef = customRefs && customRefs[ratio] && customRefs[ratio].url && customRefs[ratio].enabled;
       const customContext = hasCustomRef ? ' incorporating elements from the custom reference image,' : '';
       
       // Extract key concepts from headline for visual context (not text)
       const headlineContext = extractVisualContext(headline);
       
       // Check if headline text toggle is on
-      const addHeadlineText = document.getElementById('addHeadlineText')?.checked;
-      const shortHeadline = document.getElementById('shortHeadline')?.value?.trim();
+      const addHeadlineText = document.getElementById('addHeadlineText') ? document.getElementById('addHeadlineText').checked : false;
+      const shortHeadlineEl = document.getElementById('shortHeadline');
+      const shortHeadline = shortHeadlineEl && shortHeadlineEl.value ? shortHeadlineEl.value.trim() : '';
       
       // Get current aspect ratio for composition guidance
       const aspectRatio = currentAspectRatio;
@@ -1450,7 +1493,7 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
       
       // Check if logo reference is enabled for current ratio
       const logoRefs = references['logo'];
-      const hasLogoRef = logoRefs && (logoRefs[ratio]?.url && logoRefs[ratio]?.enabled);
+      const hasLogoRef = logoRefs && logoRefs[ratio] && logoRefs[ratio].url && logoRefs[ratio].enabled;
       
       // Include logo watermark instruction if logo reference is enabled
       const logoInstruction = hasLogoRef ? 
@@ -1667,7 +1710,7 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
           referenceCategories.forEach(cat => {
             const oldRef = oldRefs[cat.id];
             references[cat.id] = {
-              '16:9': { url: oldRef?.url || cat.default || '', enabled: oldRef?.enabled || (cat.default ? true : false) },
+              '16:9': { url: (oldRef || {}).url || cat.default || '', enabled: (oldRef || {}).enabled || (cat.default ? true : false) },
               '9:16': { url: '', enabled: false },
               '1:1': { url: '', enabled: false }
             };
@@ -1749,11 +1792,15 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
         const optionsHtml = bases.map(b => \`<option value="\${b.id}">\${b.name}</option>\`).join('');
         selector.innerHTML = '<option value="">-- Select a Base --</option>' + optionsHtml;
         
-        // Default to "Getting Started" base if available, otherwise leave as "-- Select a Base --"
-        const defaultBase = bases.find(b => b.id === 'p5v5ffrepsxc7g5');
+        // Default to FifthAveAI VPS base (Articles table project) if available
+        const defaultBase = bases.find(b => b.id === 'prs1ubx2662cbv6');
         if (defaultBase) {
-          console.log('Defaulting to Getting Started base:', defaultBase.id);
+          console.log('Defaulting to FifthAveAI VPS base:', defaultBase.id);
           selector.value = defaultBase.id;
+          await onBaseChange();
+        } else if (bases.length > 0) {
+          // Fallback to first available base
+          selector.value = bases[0].id;
           await onBaseChange();
         }
       } catch (err) {
@@ -1772,7 +1819,7 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
         const container = selector.closest('.glass') || selector.parentElement;
         const existingError = document.getElementById('baseLoadError');
         if (existingError) existingError.remove();
-        container?.insertBefore(errorDiv, container.firstChild);
+        if (container) container.insertBefore(errorDiv, container.firstChild);
         
         setTimeout(() => {
           errorDiv.style.opacity = '0';
@@ -1810,7 +1857,7 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
       }
       
       currentBase = bases.find(b => b.id === baseId);
-      console.log('Base changed to:', currentBase?.name || 'Unknown', 'ID:', baseId);
+      console.log('Base changed to:', (currentBase || {}).name || 'Unknown', 'ID:', baseId);
       
       tableSelector.innerHTML = '<option value="">Loading tables...</option>';
       
@@ -1829,7 +1876,7 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
         const tablesCacheStale = data._cacheStale;
         
         tables = data.tables || [];
-        console.log('Loaded ' + tables.length + ' tables' + (tablesCached ? ' (from cache)' : '') + ' for base ' + (currentBase?.name || 'Unknown') + ':', tables.map(t => t.name));
+        console.log('Loaded ' + tables.length + ' tables' + (tablesCached ? ' (from cache)' : '') + ' for base ' + ((currentBase || {}).name || 'Unknown') + ':', tables.map(t => t.name));
         
         // Show debug info if using cached/stale data
         if (tablesCached && tablesCacheStale) {
@@ -1870,7 +1917,7 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
         const container = tableSelector.closest('.glass') || tableSelector.parentElement;
         const existingError = document.getElementById('tableLoadError');
         if (existingError) existingError.remove();
-        container?.insertBefore(errorDiv, container.firstChild);
+        if (container) container.insertBefore(errorDiv, container.firstChild);
         
         // Auto-dismiss after 8 seconds
         setTimeout(() => {
@@ -1892,7 +1939,8 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
       }
       
       currentTable = tables.find(t => t.id === tableId);
-      tableFields = currentTable?.fields || [];
+      console.log('onTableChange - selected tableId:', tableId, 'found table:', (currentTable || {}).name, 'id:', (currentTable || {}).id);
+      tableFields = (currentTable || {}).fields || [];
       
       currentRecordId = null;
       currentRecord = null;
@@ -1922,7 +1970,7 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
         const statusSelect = document.getElementById('statusFilter');
         let options = '<option value="all" class="bg-black text-white">All Records</option>';
         
-        if (statusField?.options?.choices) {
+        if (((statusField || {}).options || {}).choices) {
           statusField.options.choices.forEach(choice => {
             options += \`<option value="\${choice.name}" class="bg-black text-white">\${choice.name}</option>\`;
           });
@@ -1947,7 +1995,7 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
       socialSection.classList.toggle('hidden', !hasSocialFields);
       
       // Auto-detect topic from table name
-      const tableName = (currentTable?.name || '').toLowerCase();
+      const tableName = ((currentTable || {}).name || '').toLowerCase();
       if (tableName.includes('ai') || tableName.includes('artificial intelligence')) {
         currentTopic = 'ai';
       } else {
@@ -1971,7 +2019,11 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
     // RECORDS
     // ========================================
     async function loadRecords() {
-      if (!currentBase || !currentTable) return;
+      console.log('loadRecords called - currentBase:', (currentBase || {}).id, 'currentTable:', (currentTable || {}).id);
+      if (!currentBase || !currentTable) {
+        console.log('loadRecords early return - missing base or table');
+        return;
+      }
       
       const recordsList = document.getElementById('recordsList');
       recordsList.innerHTML = '<div class="p-4 text-center"><div class="loading-spinner mx-auto"></div></div>';
@@ -1980,11 +2032,15 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
       const filter = hasStatus ? document.getElementById('statusFilter').value : 'all';
       
       try {
-        const res = await fetch(\`/api/records?baseId=\${currentBase.id}&tableId=\${currentTable.id}&filter=\${encodeURIComponent(filter)}\`, {
+        const url = \`/api/records?baseId=\${currentBase.id}&tableId=\${currentTable.id}&filter=\${encodeURIComponent(filter)}\`;
+        console.log('Fetching records from:', url);
+        const res = await fetch(url, {
           headers: { 'xc-token': NOCODB_TOKEN }
         });
+        console.log('Records API response status:', res.status);
         const data = await res.json();
-        
+        console.log('Records data received:', data.records ? data.records.length + ' records' : 'no records', 'error:', data.error);
+
         if (data.error) {
           const errorMsg = typeof data.error === 'string' ? data.error : (data.error.message || 'Error loading records');
           recordsList.innerHTML = '<p class="text-red-500 text-sm p-4">' + errorMsg + '</p>';
@@ -1992,51 +2048,140 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
         }
         
         const records = data.records || [];
+        console.log('Processing', records.length, 'records for rendering');
         
-        // Find title field - prioritize headline/title fields over generic text fields
-        const titleFieldPriority = ['sourceHeadline', 'Title', 'Name', 'Headline', 'Topic', 'Keyword', 'Subject'];
+        // Detect available fields from first record (if available)
+        const sampleFields = records.length > 0 ? Object.keys(records[0].fields || {}) : [];
+        console.log('Available fields from records:', sampleFields);
+        
+        // Find title field - prioritize Headline (NocoDB field name), then fall back to other options
+        // First check table schema, then fall back to checking record fields directly
+        const titleFieldPriority = ['Headline', 'Title', 'Name', 'Topic', 'Keyword', 'Subject'];
         let titleField = null;
+        
+        // Try to find from table schema first
         for (const fieldName of titleFieldPriority) {
           if (tableFields.find(f => f.name === fieldName)) {
             titleField = fieldName;
             break;
           }
         }
-        // Fallback to first non-URL text field
+        
+        // If not found in schema, check actual record fields
         if (!titleField) {
-          const textField = tableFields.find(f => 
-            (f.type === 'singleLineText' || f.type === 'multilineText') && 
-            !f.name.toLowerCase().includes('url') &&
-            !f.name.toLowerCase().includes('link')
-          );
-          titleField = textField?.name || tableFields[0]?.name;
+          for (const fieldName of titleFieldPriority) {
+            if (sampleFields.includes(fieldName)) {
+              titleField = fieldName;
+              break;
+            }
+          }
         }
         
-        // Find image field
-        const imageField = tableFields.find(f => IMAGE_FIELD_TYPES.includes(f.type))?.name;
+        // Fallback to first available text-like field from records
+        if (!titleField && sampleFields.length > 0) {
+          const textLikeFields = sampleFields.filter(f => 
+            !f.toLowerCase().includes('url') && 
+            !f.toLowerCase().includes('link') &&
+            !f.toLowerCase().includes('id') &&
+            !f.toLowerCase().includes('date')
+          );
+          titleField = textLikeFields[0];
+        }
         
+        console.log('Selected titleField:', titleField, 'tableFields count:', tableFields.length, 'sampleFields:', sampleFields.length);
+
+        // Find image attachment field - check table schema first, then record fields
+        const foundImageField = tableFields.find(f => IMAGE_FIELD_TYPES.includes(f.type) && f.name.includes('Image'));
+        let imageAttachmentField = foundImageField ? foundImageField.name : null;
+        
+        // If not in schema, check if 'Post Image Preview' exists in record fields
+        if (!imageAttachmentField && sampleFields.includes('Post Image Preview')) {
+          imageAttachmentField = 'Post Image Preview';
+        }
+        
+        console.log('Image field detection:', { imageAttachmentField, hasPostImagePreview: sampleFields.includes('Post Image Preview'), hasPostImage: sampleFields.includes('Post Image') });
+
+        // Helper to validate image URL - avoids regex with // which can be parsed as comment
+        const isValidImageUrl = (url) => typeof url === 'string' && (url.startsWith('https://') || url.startsWith('http://')) && url.length > 12;
+
+        // Robust image URL extraction from attachment objects
+        const extractImageUrl = (attachmentField) => {
+          if (!attachmentField || !Array.isArray(attachmentField) || attachmentField.length === 0) {
+            return null;
+          }
+          const img = attachmentField[0];
+          if (!img || typeof img !== 'object') return null;
+
+          // Priority order for URL extraction from attachment object:
+          // 1. Direct url/signedUrl at top level
+          // 2. Nested thumbnails object
+          // 3. Any other URL-like property
+          // Note: Using traditional property access for browser compatibility (no optional chaining)
+          const thumbnails = img.thumbnails || {};
+          const possibleUrls = [
+            img.url,
+            img.signedUrl,
+            img.signedURL,
+            img.path,
+            (thumbnails.large || {}).url,
+            (thumbnails.small || {}).url,
+            (thumbnails.full || {}).url,
+            (thumbnails.card_cover || {}).url,
+            img.thumbnail
+          ];
+
+          for (const url of possibleUrls) {
+            if (isValidImageUrl(url)) {
+              return url;
+            }
+          }
+          return null;
+        };
+
         const html = records.map(r => {
           const status = r.fields.Status || '';
           const statusClass = status.replace(/\\s+/g, '-').toLowerCase();
-          const title = r.fields[titleField] || 'Untitled';
+          const title = r.fields[titleField] || r.fields.Headline || 'No headline';
           const displayTitle = typeof title === 'string' ? title : JSON.stringify(title);
-          
+
           let thumbUrl = '';
-          // Check imageURL text field first (new method), fallback to attachment field (old method)
-          if (r.fields.imageURL) {
-            thumbUrl = r.fields.imageURL;
-          } else if (imageField && r.fields[imageField] && Array.isArray(r.fields[imageField]) && r.fields[imageField].length > 0) {
-            // Fallback: Use large thumbnail or full URL for better quality (not small/blurry)
-            const img = r.fields[imageField][0];
-            thumbUrl = img.thumbnails?.large?.url || img.thumbnails?.full?.url || img.url || '';
+
+          // Fallback chain: Post Image Preview (attachment) -> Post Image (URL) -> legacy imageURL -> placeholder
+          if (imageAttachmentField) {
+            thumbUrl = extractImageUrl(r.fields[imageAttachmentField]) || '';
           }
-          
+
+          // Fallback 1: Post Image field (direct URL)
+          if (!isValidImageUrl(thumbUrl) && isValidImageUrl(r.fields['Post Image'])) {
+            thumbUrl = r.fields['Post Image'];
+          }
+
+          // Fallback 2: legacy imageURL field
+          if (!isValidImageUrl(thumbUrl) && isValidImageUrl(r.fields.imageURL)) {
+            thumbUrl = r.fields.imageURL;
+          }
+
+          // Build image block: always render a fixed-height container (never collapses)
+          // onerror replaces only the <img> with a placeholder div inside the container
+          // so the container h-36 is preserved in all cases.
+          const imgBlock = thumbUrl
+            ? \`<div class="card-img-container">
+                <img src="\${thumbUrl}"
+                     alt="\${escapeHtml(displayTitle.substring(0, 40))}"
+                     onerror="handleCardImgError(this)">
+               </div>\`
+            : \`<div class="card-img-container" style="border:1px solid rgba(255,255,255,0.05)">
+                <div class="card-img-placeholder">
+                  <i class="fas fa-image text-gray-600 text-2xl"></i>
+                  <span class="text-xs text-gray-600">No image</span>
+                </div>
+               </div>\`;
+
           return \`
             <div class="record-card flex-shrink-0 w-64 p-3 rounded-xl cursor-pointer border border-white/10 hover:border-amber-500 transition-all \${currentRecordId === r.id ? 'border-amber-500 bg-amber-500/10' : 'bg-white/5'}" 
                  onclick="selectRecord('\${r.id}', event)">
               <div class="flex flex-col gap-2">
-                \${thumbUrl ? \`<img src="\${thumbUrl}" class="w-full h-36 object-cover rounded-lg">\` : 
-                  '<div class="w-full h-36 bg-white/5 rounded-lg flex items-center justify-center"><i class="fas fa-image text-gray-500 text-2xl"></i></div>'}
+                \${imgBlock}
                 <div class="min-w-0">
                   <p class="text-sm font-medium line-clamp-2 mb-1">\${escapeHtml(displayTitle.substring(0, 80))}</p>
                   \${status ? \`<span class="status-badge status-\${statusClass}">\${status}</span>\` : ''}
@@ -2046,8 +2191,20 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
           \`;
         }).join('');
         
-        recordsList.innerHTML = html || '<p class="text-gray-500 text-sm p-4 text-center">No records found</p>';
+        // Count images vs placeholders for debugging
+        const withImages = records.filter(r => {
+            const hasPreview = extractImageUrl(r.fields['Post Image Preview']);
+            const hasPostImage = isValidImageUrl(r.fields['Post Image']);
+            const hasLegacy = isValidImageUrl(r.fields.imageURL);
+            return hasPreview || hasPostImage || hasLegacy;
+          }).length;
+        const withPlaceholders = records.length - withImages;
+        console.log('Rendering summary: ' + withImages + ' with images, ' + withPlaceholders + ' with placeholders, total ' + records.length);
         
+        console.log('Generated HTML length:', html.length, 'first 200 chars:', html.substring(0, 200));
+        recordsList.innerHTML = html || '<p class="text-gray-500 text-sm p-4 text-center">No records found</p>';
+        console.log('Records rendered to DOM, recordsList innerHTML length:', recordsList.innerHTML.length);
+
         // Also load calendar posts
         loadCalendarPosts();
       } catch (err) {
@@ -2085,24 +2242,42 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
           statusEl.classList.add('hidden');
         }
         
-        // Title - prioritize headline/title fields
-        const titleFieldPriority = ['sourceHeadline', 'Title', 'Name', 'Headline', 'Topic', 'Keyword', 'Subject'];
+        // Title - prioritize Headline (NocoDB field), then fall back to other options
+        // Check both table schema and actual record fields
+        const recordFields = Object.keys(f);
+        const titleFieldPriority = ['Headline', 'Title', 'Name', 'Topic', 'Keyword', 'Subject'];
         let titleField = null;
+        
+        // Try to find from table schema first
         for (const fieldName of titleFieldPriority) {
           if (tableFields.find(tf => tf.name === fieldName)) {
             titleField = fieldName;
             break;
           }
         }
+        
+        // If not found in schema, check actual record fields
         if (!titleField) {
-          const textField = tableFields.find(tf => 
-            (tf.type === 'singleLineText' || tf.type === 'multilineText') && 
-            !tf.name.toLowerCase().includes('url') &&
-            !tf.name.toLowerCase().includes('link')
-          );
-          titleField = textField?.name || tableFields[0]?.name;
+          for (const fieldName of titleFieldPriority) {
+            if (recordFields.includes(fieldName)) {
+              titleField = fieldName;
+              break;
+            }
+          }
         }
-        const titleValue = f[titleField] || 'Untitled';
+        
+        // Fallback to first available text-like field
+        if (!titleField && recordFields.length > 0) {
+          const textLikeFields = recordFields.filter(rf => 
+            !rf.toLowerCase().includes('url') && 
+            !rf.toLowerCase().includes('link') &&
+            !rf.toLowerCase().includes('id') &&
+            !rf.toLowerCase().includes('date')
+          );
+          titleField = textLikeFields[0];
+        }
+        
+        const titleValue = f[titleField] || f.Headline || 'No headline';
         const titleText = typeof titleValue === 'string' ? titleValue : JSON.stringify(titleValue);
         document.getElementById('detailTitle').textContent = titleText;
         // Also update the collapsed preview
@@ -2137,15 +2312,21 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
         }
         
         // Images - load from NocoDB with X button to remove
-        // Check imageURL text field first (new method), fallback to attachment field (old method)
-        const imageField = tableFields.find(tf => IMAGE_FIELD_TYPES.includes(tf.type))?.name;
-        
-        if (f.imageURL) {
-          // New method: use imageURL text field
+        // Fallback chain: Post Image Preview (attachment) -> Post Image (URL) -> legacy imageURL
+        const foundImgField = tableFields.find(tf => IMAGE_FIELD_TYPES.includes(tf.type) && tf.name.includes('Image'));
+        const imageAttachmentField = foundImgField ? foundImgField.name : null;
+
+        if (imageAttachmentField && f[imageAttachmentField] && f[imageAttachmentField].length > 0) {
+          // Use Post Image Preview attachment
+          const img = f[imageAttachmentField][0];
+          const imgUrl = ((img.thumbnails || {}).large || {}).url || ((img.thumbnails || {}).full || {}).url || img.url || img.signedUrl || '';
+          setContentImage('16:9', imgUrl);
+        } else if (f['Post Image']) {
+          // Fallback to Post Image URL field
+          setContentImage('16:9', f['Post Image']);
+        } else if (f.imageURL) {
+          // Legacy fallback: use imageURL text field
           setContentImage('16:9', f.imageURL);
-        } else if (imageField && f[imageField] && f[imageField].length > 0) {
-          // Fallback: use attachment field
-          setContentImage('16:9', f[imageField][0].url);
         } else {
           clearContentImage('16:9');
         }
@@ -2155,7 +2336,7 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
         clearContentImage('1:1');
         
         // Auto-generate image prompt based on headline and category
-        const headline = f.sourceHeadline || f.Title || f.Headline || titleValue || '';
+        const headline = f.Headline || f.Title || titleValue || '';
         const category = f.category || 'default';
         
         // Auto-fill the short headline field
@@ -2237,8 +2418,8 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
         const isExpanded = expandedCategories[cat.id];
         
         // Count how many sizes have images
-        const imageCount = ratios.filter(r => catRefs[r]?.url).length;
-        const activeCount = ratios.filter(r => catRefs[r]?.url && catRefs[r]?.enabled).length;
+        const imageCount = ratios.filter(r => (catRefs[r] || {}).url).length;
+        const activeCount = ratios.filter(r => (catRefs[r] || {}).url && (catRefs[r] || {}).enabled).length;
         
         return \`
           <div class="category-section rounded-xl border border-white/10 overflow-hidden">
@@ -2259,9 +2440,9 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
               <div class="flex items-center gap-2">
                 <div class="flex gap-1">
                   \${ratios.map(r => {
-                    const ref = catRefs[r];
-                    const hasImg = ref?.url;
-                    const isActive = hasImg && ref?.enabled;
+                    const ref = catRefs[r] || {};
+                    const hasImg = ref.url;
+                    const isActive = hasImg && ref.enabled;
                     const colors = ratioColors[r];
                     return \`<div class="w-2 h-2 rounded-full \${isActive ? 'bg-' + colors.bg + '-500' : hasImg ? 'bg-' + colors.bg + '-500/30' : 'bg-gray-600'}"></div>\`;
                   }).join('')}
@@ -2379,7 +2560,7 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
     }
 
     function toggleSizeReference(categoryId, ratio) {
-      if (references[categoryId]?.[ratio]?.url) {
+      if (((references[categoryId] || {})[ratio] || {}).url) {
         references[categoryId][ratio].enabled = !references[categoryId][ratio].enabled;
         saveReferences();
         renderReferenceGridExpanded();
@@ -2430,7 +2611,7 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
         const catRefs = references[cat.id];
         if (catRefs) {
           ['16:9', '9:16', '1:1'].forEach(ratio => {
-            if (catRefs[ratio]?.url && catRefs[ratio]?.enabled) {
+            if ((catRefs[ratio] || {}).url && (catRefs[ratio] || {}).enabled) {
               activeRefs.push(cat.name + ' (' + ratio + ')');
             }
           });
@@ -2491,7 +2672,7 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
       // Each category can have a per-size image, so we gather all enabled ones for this ratio
       referenceCategories.forEach(cat => {
         const catRefs = references[cat.id];
-        if (catRefs && catRefs[ratioToGenerate]?.url && catRefs[ratioToGenerate]?.enabled) {
+        if (catRefs && (catRefs[ratioToGenerate] || {}).url && (catRefs[ratioToGenerate] || {}).enabled) {
           activeRefs.push(catRefs[ratioToGenerate].url);
         }
       });
@@ -2506,14 +2687,14 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
           const catRefs = references[catId];
           if (catRefs) {
             // First check if there's a reference for the current ratio
-            if (catRefs[ratioToGenerate]?.url) {
+            if ((catRefs[ratioToGenerate] || {}).url) {
               activeRefs.push(catRefs[ratioToGenerate].url);
               console.log('Using ' + catId + ' reference for ' + ratioToGenerate);
               break;
             }
             // Then try any available ratio as fallback
             for (const r of ['16:9', '9:16', '1:1']) {
-              if (catRefs[r]?.url && catRefs[r]?.enabled) {
+              if ((catRefs[r] || {}).url && (catRefs[r] || {}).enabled) {
                 activeRefs.push(catRefs[r].url);
                 console.log('FALLBACK: Using ' + catId + ' (' + r + ') reference for ' + ratioToGenerate + ' output');
                 break;
@@ -2536,8 +2717,11 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
       const status = document.getElementById('generationStatus');
       
       // Check if we're doing two-step generation (with headline)
-      const addHeadlineText = document.getElementById('addHeadlineText')?.checked;
-      const shortHeadline = document.getElementById('shortHeadline')?.value?.trim();
+      const addHeadlineTextEl = document.getElementById('addHeadlineText');
+      const addHeadlineText = addHeadlineTextEl ? addHeadlineTextEl.checked : false;
+      const shortHeadlineEl = document.getElementById('shortHeadline');
+      const shortHeadlineVal = shortHeadlineEl && shortHeadlineEl.value ? shortHeadlineEl.value.trim() : '';
+      const shortHeadline = shortHeadlineVal;
       const isTwoStep = addHeadlineText && shortHeadline;
       
       btn.disabled = true;
@@ -2578,7 +2762,7 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
           const statusRes = await fetch('/api/task-status/' + taskId);
           const statusData = await statusRes.json();
 
-          if (statusData.data?.state === 'success') {
+          if ((statusData.data || {}).state === 'success') {
             const resultJson = JSON.parse(statusData.data.resultJson);
             const imageUrl = resultJson.resultUrls[0];
             await showGeneratedImage(imageUrl, ratioToGenerate);
@@ -2586,7 +2770,7 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
             // Auto-save to NocoDB (newest first, append to existing)
             await autoSaveImageToNocoDB(imageUrl);
             break;
-          } else if (statusData.data?.state === 'failed') {
+          } else if ((statusData.data || {}).state === 'failed') {
             throw new Error(statusData.data.failMsg || 'Generation failed');
           }
           attempts++;
@@ -2610,8 +2794,10 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
       const finalRatio = ratio || currentAspectRatio;
       
       // Check if we need to add text overlay
-      const addHeadlineText = document.getElementById('addHeadlineText')?.checked;
-      const shortHeadline = document.getElementById('shortHeadline')?.value?.trim();
+      const addHeadlineTextEl = document.getElementById('addHeadlineText');
+      const addHeadlineText = addHeadlineTextEl ? addHeadlineTextEl.checked : false;
+      const shortHeadlineEl = document.getElementById('shortHeadline');
+      const shortHeadline = shortHeadlineEl && shortHeadlineEl.value ? shortHeadlineEl.value.trim() : '';
       
       let finalUrl = url;
       
@@ -2699,8 +2885,10 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
           const generatedUrl = await cropImageToRatio(referenceUrl, size.ratio);
           
           // Check if headline text should be added
-          const addHeadlineText = document.getElementById('addHeadlineText')?.checked;
-          const shortHeadline = document.getElementById('shortHeadline')?.value?.trim();
+          const addHeadlineTextEl = document.getElementById('addHeadlineText');
+          const addHeadlineText = addHeadlineTextEl ? addHeadlineTextEl.checked : false;
+          const shortHeadlineEl = document.getElementById('shortHeadline');
+          const shortHeadline = shortHeadlineEl && shortHeadlineEl.value ? shortHeadlineEl.value.trim() : '';
           
           let finalUrl = generatedUrl;
           if (addHeadlineText && shortHeadline) {
@@ -2778,10 +2966,10 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
         const statusRes = await fetch('/api/task-status/' + taskId);
         const statusData = await statusRes.json();
         
-        if (statusData.data?.state === 'success') {
+        if ((statusData.data || {}).state === 'success') {
           const resultJson = JSON.parse(statusData.data.resultJson);
           return resultJson.resultUrls[0];
-        } else if (statusData.data?.state === 'failed') {
+        } else if ((statusData.data || {}).state === 'failed') {
           throw new Error(statusData.data.failMsg || 'Generation failed for ' + targetRatio);
         }
         attempts++;
@@ -3129,14 +3317,14 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
 
     function addToHistory(url, prompt) {
       // Store the record ID, base ID, and table ID with each image
-      generationHistory.unshift({ 
-        url, 
-        prompt, 
+      generationHistory.unshift({
+        url,
+        prompt,
         timestamp: Date.now(),
         recordId: currentRecordId || null,
-        baseId: currentBase?.id || null,
-        tableId: currentTable?.id || null,
-        articleTitle: currentRecord?.fields?.sourceHeadline || currentRecord?.fields?.Title || 'Unknown'
+        baseId: (currentBase || {}).id || null,
+        tableId: (currentTable || {}).id || null,
+        articleTitle: ((currentRecord || {}).fields || {}).sourceHeadline || ((currentRecord || {}).fields || {}).Title || 'Unknown'
       });
       if (generationHistory.length > 20) generationHistory.pop();
       localStorage.setItem('imageGenHistory', JSON.stringify(generationHistory));
@@ -3251,7 +3439,7 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
           try {
             // Save only the first image URL to the imageURL text field (NOT attachment field)
             // Multiple images per record not supported with text field - use first image only
-            const imageUrl = record.images[0]?.url || '';
+            const imageUrl = (record.images[0] || {}).url || '';
             if (!imageUrl) {
               console.log('No image URL for record: ' + record.articleTitle);
               continue;
@@ -3403,7 +3591,8 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
       
       // Copy tabs to expanded view
       const expandedTabs = document.getElementById('expandedTabsContainer');
-      const activeTab = document.querySelector('.tab-btn.tab-active')?.dataset.tab || 'twitter';
+      const activeTabEl = document.querySelector('.tab-btn.tab-active');
+      const activeTab = (activeTabEl ? activeTabEl.dataset.tab : null) || 'twitter';
       expandedTabs.innerHTML = ['twitter', 'threads', 'bluesky', 'linkedin', 'facebook', 'instagram', 'blog', 'script']
         .map(tab => \`<button onclick="switchExpandedTab('\${tab}')" class="tab-btn \${tab === activeTab ? 'tab-active' : ''} px-4 py-3 text-base whitespace-nowrap" data-expanded-tab="\${tab}">
           <i class="\${getTabIcon(tab)} mr-2"></i>\${getTabLabel(tab)}
@@ -3411,7 +3600,7 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
       
       // Sync current content
       const currentTextarea = document.getElementById(\`content\${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}\`);
-      document.getElementById('expandedContent').value = currentTextarea?.value || '';
+      document.getElementById('expandedContent').value = (currentTextarea ? currentTextarea.value : null) || '';
       document.getElementById('expandedContent').dataset.currentTab = activeTab;
       
       document.getElementById('socialExpandOverlay').classList.remove('hidden');
@@ -3446,7 +3635,7 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
       
       // Load new tab content
       const newTextarea = document.getElementById(\`content\${tab.charAt(0).toUpperCase() + tab.slice(1)}\`);
-      expandedContent.value = newTextarea?.value || '';
+      expandedContent.value = (newTextarea ? newTextarea.value : null) || '';
       expandedContent.dataset.currentTab = tab;
       
       // Update tab styling
@@ -3757,7 +3946,7 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
         });
         const uploadData = await uploadRes.json();
         
-        if (uploadData.image?.url) {
+        if ((uploadData.image || {}).url) {
           setContentImage(aspectRatio, uploadData.image.url);
         } else {
           throw new Error('Upload failed');
@@ -3881,8 +4070,10 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
           }
           
           // Check if headline text should be added
-          const addHeadlineText = document.getElementById('addHeadlineText')?.checked;
-          const shortHeadline = document.getElementById('shortHeadline')?.value?.trim();
+          const addHeadlineTextEl = document.getElementById('addHeadlineText');
+          const addHeadlineText = addHeadlineTextEl ? addHeadlineTextEl.checked : false;
+          const shortHeadlineEl = document.getElementById('shortHeadline');
+          const shortHeadline = shortHeadlineEl && shortHeadlineEl.value ? shortHeadlineEl.value.trim() : '';
           
           if (addHeadlineText && shortHeadline) {
             statusText.textContent = 'Adding text to ' + targetRatio + '...';
@@ -4240,10 +4431,11 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
         const records = data.records || [];
         
         // Find date field and image field
-        const dateField = tableFields.find(f => f.type === 'date')?.name || 'Start date';
-        const imageField = tableFields.find(f => IMAGE_FIELD_TYPES.includes(f.type))?.name;
+        const dateField = (tableFields.find(f => f.type === 'date') || {}).name || 'Start date';
+        const imageField = (tableFields.find(f => IMAGE_FIELD_TYPES.includes(f.type)) || {}).name;
         const titleFieldPriority = ['sourceHeadline', 'Title', 'Name', 'Headline'];
-        let titleField = titleFieldPriority.find(f => tableFields.find(tf => tf.name === f)) || tableFields[0]?.name;
+        const foundTitleField = titleFieldPriority.find(f => tableFields.find(tf => tf.name === f));
+        let titleField = foundTitleField || (tableFields[0] || {}).name;
         
         calendarPosts = [];
         unscheduledPosts = [];
@@ -4260,7 +4452,7 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
             thumbnail = r.fields.imageURL;
           } else if (imageField && r.fields[imageField] && Array.isArray(r.fields[imageField]) && r.fields[imageField].length > 0) {
             const img = r.fields[imageField][0];
-            thumbnail = img.thumbnails?.large?.url || img.thumbnails?.small?.url || img.url || '';
+            thumbnail = ((img.thumbnails || {}).large || {}).url || ((img.thumbnails || {}).small || {}).url || img.url || '';
           }
           
           const postObj = {
@@ -4437,7 +4629,7 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
       
       try {
         // Find the date field name
-        const dateField = tableFields.find(f => f.type === 'date')?.name || 'Start date';
+        const dateField = (tableFields.find(f => f.type === 'date') || {}).name || 'Start date';
         
         // Update NocoDB record
         const res = await fetch('/api/records/' + postId + '?baseId=' + currentBase.id + '&tableId=' + currentTable.id, {
@@ -4470,4 +4662,4 @@ var Lt=Object.defineProperty;var We=e=>{throw TypeError(e)};var Dt=(e,t,a)=>t in
   <\/script>
 </body>
 </html>
-  `)});const Qe=new wt,pa=Object.assign({"/src/index.tsx":C});let kt=!1;for(const[,e]of Object.entries(pa))e&&(Qe.route("/",e),Qe.notFound(e.notFoundHandler),kt=!0);if(!kt)throw new Error("Can't import modules from ['/src/index.tsx','/app/server.ts']");export{Qe as default};
+  `));T.get("/favicon.ico",e=>e.body(null,204));T.all("*",e=>e.json({error:"Not found"},404));const Qe=new wt,ma=Object.assign({"/src/index.tsx":T});let Et=!1;for(const[,e]of Object.entries(ma))e&&(Qe.route("/",e),Qe.notFound(e.notFoundHandler),Et=!0);if(!Et)throw new Error("Can't import modules from ['/src/index.tsx','/app/server.ts']");export{Qe as default};

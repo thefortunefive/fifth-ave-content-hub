@@ -5,6 +5,6 @@
   "pages_build_output_dir": "./dist",
   "compatibility_flags": ["nodejs_compat"],
   "vars": {
-    "NOCODB_TOKEN": "PzPjLnn3qdo8jhG048mWgZUx30tpHJ_J4JCqvQ5z"
+    "NOCODB_TOKEN": "htjKEaVOkCm8QoJgzxYQ4iA1SL8SX_ZRQbVSSi_7"
   }
 }

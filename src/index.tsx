@@ -101,10 +101,11 @@ app.get('/api/bases', async (c) => {
   // If we have stale cached data and request fails, we'll return the stale data
   try {
     // NocoDB API for listing bases
-    const url = 'https://open-buckets-study.loca.lt/api/v2/meta/bases'
+    // VPS NocoDB - FifthAveAI Mode
+    const url = 'http://31.220.49.162:8080/api/v2/meta/bases'
     
     const res = await fetchWithRetry(url, {
-      headers: { 'xc-token': token, 'bypass-tunnel-reminder': 'true' }
+      headers: { 'xc-token': token }
     })
     
     if (!res.ok) {
@@ -136,13 +137,19 @@ app.get('/api/bases', async (c) => {
     const data = await res.json()
 
     // Transform NocoDB response to match expected format
-    // NocoDB returns { bases: [...] } or array directly
-    let bases = data.bases || data || []
+    // NocoDB VPS returns { list: [...], pageInfo: {...} } with fields: id, title
+    let bases = data.list || data.bases || []
     if (!Array.isArray(bases)) {
       bases = []
     }
     
-    const result = { bases }
+    // Map NocoDB format to frontend expected format (id, name)
+    const mappedBases = bases.map((b: any) => ({
+      id: b.id,
+      name: b.title || b.name || 'Unnamed Base'
+    }))
+    
+    const result = { bases: mappedBases }
     
     // Cache the result
     setCached(cacheKey, result)
@@ -188,8 +195,8 @@ app.get('/api/bases/:baseId/tables', async (c) => {
   console.log(`Fetching tables for base: ${baseId}, token present: ${token ? 'yes' : 'no'}, token prefix: ${token.substring(0, 10)}...`)
 
   try {
-    const res = await fetchWithRetry(`https://open-buckets-study.loca.lt/api/v2/meta/bases/${baseId}/tables`, {
-      headers: { 'xc-token': token, 'bypass-tunnel-reminder': 'true' }
+    const res = await fetchWithRetry(`http://31.220.49.162:8080/api/v2/meta/bases/${baseId}/tables`, {
+      headers: { 'xc-token': token }
     })
 
     if (!res.ok) {
@@ -222,11 +229,20 @@ app.get('/api/bases/:baseId/tables', async (c) => {
     
     const data = await res.json()
     
-    // Cache the result
-    setCached(cacheKey, data)
-    console.log(`Fetched and cached ${data.tables?.length || 0} tables for base ${baseId}`)
+    // NocoDB VPS returns { list: [...] } with fields: id, title, columns
+    // Map to frontend expected format: id, name, fields
+    const tables = (data.list || []).map((t: any) => ({
+      id: t.id,
+      name: t.title || t.table_name || t.name || 'Unnamed Table',
+      fields: t.columns || t.fields || []
+    }))
+    const result = { tables }
     
-    return c.json(data)
+    // Cache the result
+    setCached(cacheKey, result)
+    console.log(`Fetched and cached ${result.tables.length} tables for base ${baseId}`)
+    
+    return c.json(result)
   } catch (err: any) {
     console.error('Error fetching tables:', err)
     
@@ -256,14 +272,14 @@ app.get('/api/records', async (c) => {
   if (!tableId) return c.json({ error: 'Missing tableId' }, 400)
 
   // NocoDB API for listing records
-  let url = `https://open-buckets-study.loca.lt/api/v2/tables/${tableId}/records`
+  let url = `http://31.220.49.162:8080/api/v2/tables/${tableId}/records`
   if (filter && filter !== 'all') {
     // NocoDB uses different filter syntax - for now, fetch all and filter client-side
     // or use NocoDB's where parameter: url += `?where=(Status,eq,${filter})`
   }
 
   const res = await fetch(url, {
-    headers: { 'xc-token': token, 'bypass-tunnel-reminder': 'true' }
+    headers: { 'xc-token': token }
   })
 
   const data = await res.json()
@@ -294,8 +310,8 @@ app.get('/api/records/:id', async (c) => {
   if (!tableId) return c.json({ error: 'Missing tableId' }, 400)
 
   // NocoDB API for single record
-  const res = await fetch(`https://open-buckets-study.loca.lt/api/v2/tables/${tableId}/records/${id}`, {
-    headers: { 'xc-token': token, 'bypass-tunnel-reminder': 'true' }
+  const res = await fetch(`http://31.220.49.162:8080/api/v2/tables/${tableId}/records/${id}`, {
+    headers: { 'xc-token': token }
   })
 
   const data = await res.json()
@@ -328,12 +344,11 @@ app.patch('/api/records/:id', async (c) => {
     ...body
   }
 
-  const res = await fetch(`https://open-buckets-study.loca.lt/api/v2/tables/${tableId}/records`, {
+  const res = await fetch(`http://31.220.49.162:8080/api/v2/tables/${tableId}/records`, {
     method: 'PATCH',
     headers: {
       'xc-token': token,
-      'Content-Type': 'application/json',
-      'bypass-tunnel-reminder': 'true'
+      'Content-Type': 'application/json'
     },
     body: JSON.stringify(nocoBody)
   })
@@ -490,41 +505,88 @@ app.post('/api/proxy-image', async (c) => {
 // ============================================
 
 // Table routing configuration for the browser extension
+// ============================================
+// BRAND MODE CONFIGURATION: FifthAveAI (Production)
+// ============================================
+const BRAND_CONFIG = {
+  // Current active brand mode - can be switched between FifthAveAI and FifthAveCrypto
+  currentMode: 'FifthAveAI',
+  
+  // VPS NocoDB connection
+  vpsNocoDB: {
+    baseUrl: 'http://31.220.49.162:8080',
+    projectId: 'prs1ubx2662cbv6'
+  },
+  
+  // Brand-specific configurations
+  brands: {
+    FifthAveAI: {
+      baseId: 'prs1ubx2662cbv6',  // VPS project ID
+      tableId: 'm5fb56hy2px2fuv',   // Articles table
+      tableName: 'Articles',
+      fieldMap: {
+        url: 'URL',
+        title: 'Title',
+        notes: 'Summary',
+        platforms: 'Platforms',
+        status: 'Status',
+        statusValue: 'Needs Review'
+      }
+    },
+    FifthAveCrypto: {
+      // Reserved for future crypto mode - currently same as AI mode for structure
+      baseId: 'prs1ubx2662cbv6',
+      tableId: 'm5fb56hy2px2fuv',
+      tableName: 'Articles',
+      fieldMap: {
+        url: 'URL',
+        title: 'Title',
+        notes: 'Summary',
+        platforms: 'Platforms',
+        status: 'Status',
+        statusValue: 'Needs Review'
+      }
+    }
+  }
+}
+
+// Legacy EXTENSION_ROUTES - maintained for backward compatibility
+// These will be deprecated in favor of BRAND_CONFIG
 const EXTENSION_ROUTES = {
   crypto: {
-    baseId: 'p5v5ffrepsxc7g5',
-    tableId: 'm9m6gh688zrhkb4',
+    baseId: 'prs1ubx2662cbv6',
+    tableId: 'm5fb56hy2px2fuv',
     fieldMap: {
-      url: 'sourceURL',
-      title: 'sourceHeadline',
-      notes: 'sourceSummary',
-      platforms: 'socialChannels',
+      url: 'URL',
+      title: 'Title',
+      notes: 'Summary',
+      platforms: 'Platforms',
       status: 'Status',
-      statusValue: 'Needs Approval'
+      statusValue: 'Needs Review'
     }
   },
   ai: {
-    baseId: 'p5v5ffrepsxc7g5',
-    tableId: 'mi0xcrv7gp5inbh',
+    baseId: 'prs1ubx2662cbv6',
+    tableId: 'm5fb56hy2px2fuv',
     fieldMap: {
-      url: 'sourceURL',
-      title: 'sourceHeadline',
-      notes: 'sourceSummary',
-      platforms: 'socialChannels',
+      url: 'URL',
+      title: 'Title',
+      notes: 'Summary',
+      platforms: 'Platforms',
       status: 'Status',
-      statusValue: 'Needs Approval'
+      statusValue: 'Needs Review'
     }
   },
   general: {
-    baseId: 'p5v5ffrepsxc7g5',
-    tableId: 'm48lt8phy1o2y04',
+    baseId: 'prs1ubx2662cbv6',
+    tableId: 'm5fb56hy2px2fuv',
     fieldMap: {
-      url: 'Video URL',
-      title: 'Video Title',
-      notes: 'Notes',
+      url: 'URL',
+      title: 'Title',
+      notes: 'Summary',
       platforms: 'Platforms',
       status: 'Status',
-      statusValue: 'Pending Review'
+      statusValue: 'Needs Review'
     }
   }
 }
@@ -533,7 +595,7 @@ const EXTENSION_ROUTES = {
 const VALID_SOCIAL_CHANNELS = ['Twitter', 'LinkedIn', 'Blog', 'Instagram', 'Facebook', 'Avatar']
 
 // NocoDB token for extension saves
-const EXTENSION_NOCODB_TOKEN = 'PzPjLnn3qdo8jhG048mWgZUx30tpHJ_J4JCqvQ5z'
+const EXTENSION_NOCODB_TOKEN = 'htjKEaVOkCm8QoJgzxYQ4iA1SL8SX_ZRQbVSSi_7'
 
 // ============================================
 // INSTANT PROCESSING: n8n Webhook Triggers
@@ -965,6 +1027,36 @@ app.get('/', (c) => {
     /* Record cards for horizontal scroll */
     .record-card { transition: all 0.2s; }
     .record-card:hover { transform: translateY(-4px); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); }
+    /* Card image container: always fixed height, never collapses */
+    .card-img-container {
+      width: 100%;
+      height: 144px;       /* h-36 = 9rem = 144px */
+      min-height: 144px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: rgba(255,255,255,0.05);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .card-img-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    /* Placeholder shown when image is absent or fails to load */
+    .card-img-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
     .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     
     .status-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; }
@@ -2096,7 +2188,19 @@ app.get('/', (c) => {
     // ========================================
     // CONFIGURATION
     // ========================================
-    const NOCODB_TOKEN = '${c.env?.NOCODB_TOKEN || "PzPjLnn3qdo8jhG048mWgZUx30tpHJ_J4JCqvQ5z"}';
+    const NOCODB_TOKEN = '${(c.env || {}).NOCODB_TOKEN || EXTENSION_NOCODB_TOKEN}';
+
+    // Card image error handler - called from onerror attribute
+    // Replaces broken img with a clean placeholder while preserving container height
+    function handleCardImgError(imgEl) {
+      var container = imgEl.parentNode;
+      if (!container) return;
+      var placeholder = document.createElement('div');
+      placeholder.className = 'card-img-placeholder';
+      placeholder.innerHTML = '<i class="fas fa-image text-gray-600 text-2xl"></i><span class="text-xs text-gray-600" style="margin-top:4px">No preview</span>';
+      container.style.border = '1px solid rgba(255,255,255,0.05)';
+      container.replaceChild(placeholder, imgEl);
+    }
     
     const referenceCategories = [
       { id: 'face', name: 'Face', icon: 'fa-user-circle', default: 'https://iili.io/fM9hV6B.png', order: 1 },
@@ -2221,22 +2325,23 @@ app.get('/', (c) => {
       
       // Check if outfit reference is set for current ratio - but NEVER copy exact outfit
       const outfitRefs = references['outfit'];
-      const hasOutfitRef = outfitRefs && (outfitRefs[ratio]?.url && outfitRefs[ratio]?.enabled);
+      const hasOutfitRef = outfitRefs && outfitRefs[ratio] && outfitRefs[ratio].url && outfitRefs[ratio].enabled;
       const outfitDescription = hasOutfitRef ? 
         'wearing a DIFFERENT outfit in the same style/aesthetic as the reference (NOT the exact same clothes - similar vibe but different garments and colors)' : 
         settings.outfit;
       
       // Check if custom reference is set for current ratio for additional context
       const customRefs = references['custom'];
-      const hasCustomRef = customRefs && (customRefs[ratio]?.url && customRefs[ratio]?.enabled);
+      const hasCustomRef = customRefs && customRefs[ratio] && customRefs[ratio].url && customRefs[ratio].enabled;
       const customContext = hasCustomRef ? ' incorporating elements from the custom reference image,' : '';
       
       // Extract key concepts from headline for visual context (not text)
       const headlineContext = extractVisualContext(headline);
       
       // Check if headline text toggle is on
-      const addHeadlineText = document.getElementById('addHeadlineText')?.checked;
-      const shortHeadline = document.getElementById('shortHeadline')?.value?.trim();
+      const addHeadlineText = document.getElementById('addHeadlineText') ? document.getElementById('addHeadlineText').checked : false;
+      const shortHeadlineEl = document.getElementById('shortHeadline');
+      const shortHeadline = shortHeadlineEl && shortHeadlineEl.value ? shortHeadlineEl.value.trim() : '';
       
       // Get current aspect ratio for composition guidance
       const aspectRatio = currentAspectRatio;
@@ -2251,7 +2356,7 @@ app.get('/', (c) => {
       
       // Check if logo reference is enabled for current ratio
       const logoRefs = references['logo'];
-      const hasLogoRef = logoRefs && (logoRefs[ratio]?.url && logoRefs[ratio]?.enabled);
+      const hasLogoRef = logoRefs && logoRefs[ratio] && logoRefs[ratio].url && logoRefs[ratio].enabled;
       
       // Include logo watermark instruction if logo reference is enabled
       const logoInstruction = hasLogoRef ? 
@@ -2468,7 +2573,7 @@ app.get('/', (c) => {
           referenceCategories.forEach(cat => {
             const oldRef = oldRefs[cat.id];
             references[cat.id] = {
-              '16:9': { url: oldRef?.url || cat.default || '', enabled: oldRef?.enabled || (cat.default ? true : false) },
+              '16:9': { url: (oldRef || {}).url || cat.default || '', enabled: (oldRef || {}).enabled || (cat.default ? true : false) },
               '9:16': { url: '', enabled: false },
               '1:1': { url: '', enabled: false }
             };
@@ -2550,11 +2655,15 @@ app.get('/', (c) => {
         const optionsHtml = bases.map(b => \`<option value="\${b.id}">\${b.name}</option>\`).join('');
         selector.innerHTML = '<option value="">-- Select a Base --</option>' + optionsHtml;
         
-        // Default to "Getting Started" base if available, otherwise leave as "-- Select a Base --"
-        const defaultBase = bases.find(b => b.id === 'p5v5ffrepsxc7g5');
+        // Default to FifthAveAI VPS base (Articles table project) if available
+        const defaultBase = bases.find(b => b.id === 'prs1ubx2662cbv6');
         if (defaultBase) {
-          console.log('Defaulting to Getting Started base:', defaultBase.id);
+          console.log('Defaulting to FifthAveAI VPS base:', defaultBase.id);
           selector.value = defaultBase.id;
+          await onBaseChange();
+        } else if (bases.length > 0) {
+          // Fallback to first available base
+          selector.value = bases[0].id;
           await onBaseChange();
         }
       } catch (err) {
@@ -2573,7 +2682,7 @@ app.get('/', (c) => {
         const container = selector.closest('.glass') || selector.parentElement;
         const existingError = document.getElementById('baseLoadError');
         if (existingError) existingError.remove();
-        container?.insertBefore(errorDiv, container.firstChild);
+        if (container) container.insertBefore(errorDiv, container.firstChild);
         
         setTimeout(() => {
           errorDiv.style.opacity = '0';
@@ -2611,7 +2720,7 @@ app.get('/', (c) => {
       }
       
       currentBase = bases.find(b => b.id === baseId);
-      console.log('Base changed to:', currentBase?.name || 'Unknown', 'ID:', baseId);
+      console.log('Base changed to:', (currentBase || {}).name || 'Unknown', 'ID:', baseId);
       
       tableSelector.innerHTML = '<option value="">Loading tables...</option>';
       
@@ -2630,7 +2739,7 @@ app.get('/', (c) => {
         const tablesCacheStale = data._cacheStale;
         
         tables = data.tables || [];
-        console.log('Loaded ' + tables.length + ' tables' + (tablesCached ? ' (from cache)' : '') + ' for base ' + (currentBase?.name || 'Unknown') + ':', tables.map(t => t.name));
+        console.log('Loaded ' + tables.length + ' tables' + (tablesCached ? ' (from cache)' : '') + ' for base ' + ((currentBase || {}).name || 'Unknown') + ':', tables.map(t => t.name));
         
         // Show debug info if using cached/stale data
         if (tablesCached && tablesCacheStale) {
@@ -2671,7 +2780,7 @@ app.get('/', (c) => {
         const container = tableSelector.closest('.glass') || tableSelector.parentElement;
         const existingError = document.getElementById('tableLoadError');
         if (existingError) existingError.remove();
-        container?.insertBefore(errorDiv, container.firstChild);
+        if (container) container.insertBefore(errorDiv, container.firstChild);
         
         // Auto-dismiss after 8 seconds
         setTimeout(() => {
@@ -2693,7 +2802,8 @@ app.get('/', (c) => {
       }
       
       currentTable = tables.find(t => t.id === tableId);
-      tableFields = currentTable?.fields || [];
+      console.log('onTableChange - selected tableId:', tableId, 'found table:', (currentTable || {}).name, 'id:', (currentTable || {}).id);
+      tableFields = (currentTable || {}).fields || [];
       
       currentRecordId = null;
       currentRecord = null;
@@ -2723,7 +2833,7 @@ app.get('/', (c) => {
         const statusSelect = document.getElementById('statusFilter');
         let options = '<option value="all" class="bg-black text-white">All Records</option>';
         
-        if (statusField?.options?.choices) {
+        if (((statusField || {}).options || {}).choices) {
           statusField.options.choices.forEach(choice => {
             options += \`<option value="\${choice.name}" class="bg-black text-white">\${choice.name}</option>\`;
           });
@@ -2748,7 +2858,7 @@ app.get('/', (c) => {
       socialSection.classList.toggle('hidden', !hasSocialFields);
       
       // Auto-detect topic from table name
-      const tableName = (currentTable?.name || '').toLowerCase();
+      const tableName = ((currentTable || {}).name || '').toLowerCase();
       if (tableName.includes('ai') || tableName.includes('artificial intelligence')) {
         currentTopic = 'ai';
       } else {
@@ -2772,7 +2882,11 @@ app.get('/', (c) => {
     // RECORDS
     // ========================================
     async function loadRecords() {
-      if (!currentBase || !currentTable) return;
+      console.log('loadRecords called - currentBase:', (currentBase || {}).id, 'currentTable:', (currentTable || {}).id);
+      if (!currentBase || !currentTable) {
+        console.log('loadRecords early return - missing base or table');
+        return;
+      }
       
       const recordsList = document.getElementById('recordsList');
       recordsList.innerHTML = '<div class="p-4 text-center"><div class="loading-spinner mx-auto"></div></div>';
@@ -2781,11 +2895,15 @@ app.get('/', (c) => {
       const filter = hasStatus ? document.getElementById('statusFilter').value : 'all';
       
       try {
-        const res = await fetch(\`/api/records?baseId=\${currentBase.id}&tableId=\${currentTable.id}&filter=\${encodeURIComponent(filter)}\`, {
+        const url = \`/api/records?baseId=\${currentBase.id}&tableId=\${currentTable.id}&filter=\${encodeURIComponent(filter)}\`;
+        console.log('Fetching records from:', url);
+        const res = await fetch(url, {
           headers: { 'xc-token': NOCODB_TOKEN }
         });
+        console.log('Records API response status:', res.status);
         const data = await res.json();
-        
+        console.log('Records data received:', data.records ? data.records.length + ' records' : 'no records', 'error:', data.error);
+
         if (data.error) {
           const errorMsg = typeof data.error === 'string' ? data.error : (data.error.message || 'Error loading records');
           recordsList.innerHTML = '<p class="text-red-500 text-sm p-4">' + errorMsg + '</p>';
@@ -2793,51 +2911,140 @@ app.get('/', (c) => {
         }
         
         const records = data.records || [];
+        console.log('Processing', records.length, 'records for rendering');
         
-        // Find title field - prioritize headline/title fields over generic text fields
-        const titleFieldPriority = ['sourceHeadline', 'Title', 'Name', 'Headline', 'Topic', 'Keyword', 'Subject'];
+        // Detect available fields from first record (if available)
+        const sampleFields = records.length > 0 ? Object.keys(records[0].fields || {}) : [];
+        console.log('Available fields from records:', sampleFields);
+        
+        // Find title field - prioritize Headline (NocoDB field name), then fall back to other options
+        // First check table schema, then fall back to checking record fields directly
+        const titleFieldPriority = ['Headline', 'Title', 'Name', 'Topic', 'Keyword', 'Subject'];
         let titleField = null;
+        
+        // Try to find from table schema first
         for (const fieldName of titleFieldPriority) {
           if (tableFields.find(f => f.name === fieldName)) {
             titleField = fieldName;
             break;
           }
         }
-        // Fallback to first non-URL text field
+        
+        // If not found in schema, check actual record fields
         if (!titleField) {
-          const textField = tableFields.find(f => 
-            (f.type === 'singleLineText' || f.type === 'multilineText') && 
-            !f.name.toLowerCase().includes('url') &&
-            !f.name.toLowerCase().includes('link')
-          );
-          titleField = textField?.name || tableFields[0]?.name;
+          for (const fieldName of titleFieldPriority) {
+            if (sampleFields.includes(fieldName)) {
+              titleField = fieldName;
+              break;
+            }
+          }
         }
         
-        // Find image field
-        const imageField = tableFields.find(f => IMAGE_FIELD_TYPES.includes(f.type))?.name;
+        // Fallback to first available text-like field from records
+        if (!titleField && sampleFields.length > 0) {
+          const textLikeFields = sampleFields.filter(f => 
+            !f.toLowerCase().includes('url') && 
+            !f.toLowerCase().includes('link') &&
+            !f.toLowerCase().includes('id') &&
+            !f.toLowerCase().includes('date')
+          );
+          titleField = textLikeFields[0];
+        }
         
+        console.log('Selected titleField:', titleField, 'tableFields count:', tableFields.length, 'sampleFields:', sampleFields.length);
+
+        // Find image attachment field - check table schema first, then record fields
+        const foundImageField = tableFields.find(f => IMAGE_FIELD_TYPES.includes(f.type) && f.name.includes('Image'));
+        let imageAttachmentField = foundImageField ? foundImageField.name : null;
+        
+        // If not in schema, check if 'Post Image Preview' exists in record fields
+        if (!imageAttachmentField && sampleFields.includes('Post Image Preview')) {
+          imageAttachmentField = 'Post Image Preview';
+        }
+        
+        console.log('Image field detection:', { imageAttachmentField, hasPostImagePreview: sampleFields.includes('Post Image Preview'), hasPostImage: sampleFields.includes('Post Image') });
+
+        // Helper to validate image URL - avoids regex with // which can be parsed as comment
+        const isValidImageUrl = (url) => typeof url === 'string' && (url.startsWith('https://') || url.startsWith('http://')) && url.length > 12;
+
+        // Robust image URL extraction from attachment objects
+        const extractImageUrl = (attachmentField) => {
+          if (!attachmentField || !Array.isArray(attachmentField) || attachmentField.length === 0) {
+            return null;
+          }
+          const img = attachmentField[0];
+          if (!img || typeof img !== 'object') return null;
+
+          // Priority order for URL extraction from attachment object:
+          // 1. Direct url/signedUrl at top level
+          // 2. Nested thumbnails object
+          // 3. Any other URL-like property
+          // Note: Using traditional property access for browser compatibility (no optional chaining)
+          const thumbnails = img.thumbnails || {};
+          const possibleUrls = [
+            img.url,
+            img.signedUrl,
+            img.signedURL,
+            img.path,
+            (thumbnails.large || {}).url,
+            (thumbnails.small || {}).url,
+            (thumbnails.full || {}).url,
+            (thumbnails.card_cover || {}).url,
+            img.thumbnail
+          ];
+
+          for (const url of possibleUrls) {
+            if (isValidImageUrl(url)) {
+              return url;
+            }
+          }
+          return null;
+        };
+
         const html = records.map(r => {
           const status = r.fields.Status || '';
           const statusClass = status.replace(/\\s+/g, '-').toLowerCase();
-          const title = r.fields[titleField] || 'Untitled';
+          const title = r.fields[titleField] || r.fields.Headline || 'No headline';
           const displayTitle = typeof title === 'string' ? title : JSON.stringify(title);
-          
+
           let thumbUrl = '';
-          // Check imageURL text field first (new method), fallback to attachment field (old method)
-          if (r.fields.imageURL) {
-            thumbUrl = r.fields.imageURL;
-          } else if (imageField && r.fields[imageField] && Array.isArray(r.fields[imageField]) && r.fields[imageField].length > 0) {
-            // Fallback: Use large thumbnail or full URL for better quality (not small/blurry)
-            const img = r.fields[imageField][0];
-            thumbUrl = img.thumbnails?.large?.url || img.thumbnails?.full?.url || img.url || '';
+
+          // Fallback chain: Post Image Preview (attachment) -> Post Image (URL) -> legacy imageURL -> placeholder
+          if (imageAttachmentField) {
+            thumbUrl = extractImageUrl(r.fields[imageAttachmentField]) || '';
           }
-          
+
+          // Fallback 1: Post Image field (direct URL)
+          if (!isValidImageUrl(thumbUrl) && isValidImageUrl(r.fields['Post Image'])) {
+            thumbUrl = r.fields['Post Image'];
+          }
+
+          // Fallback 2: legacy imageURL field
+          if (!isValidImageUrl(thumbUrl) && isValidImageUrl(r.fields.imageURL)) {
+            thumbUrl = r.fields.imageURL;
+          }
+
+          // Build image block: always render a fixed-height container (never collapses)
+          // onerror replaces only the <img> with a placeholder div inside the container
+          // so the container h-36 is preserved in all cases.
+          const imgBlock = thumbUrl
+            ? \`<div class="card-img-container">
+                <img src="\${thumbUrl}"
+                     alt="\${escapeHtml(displayTitle.substring(0, 40))}"
+                     onerror="handleCardImgError(this)">
+               </div>\`
+            : \`<div class="card-img-container" style="border:1px solid rgba(255,255,255,0.05)">
+                <div class="card-img-placeholder">
+                  <i class="fas fa-image text-gray-600 text-2xl"></i>
+                  <span class="text-xs text-gray-600">No image</span>
+                </div>
+               </div>\`;
+
           return \`
             <div class="record-card flex-shrink-0 w-64 p-3 rounded-xl cursor-pointer border border-white/10 hover:border-amber-500 transition-all \${currentRecordId === r.id ? 'border-amber-500 bg-amber-500/10' : 'bg-white/5'}" 
                  onclick="selectRecord('\${r.id}', event)">
               <div class="flex flex-col gap-2">
-                \${thumbUrl ? \`<img src="\${thumbUrl}" class="w-full h-36 object-cover rounded-lg">\` : 
-                  '<div class="w-full h-36 bg-white/5 rounded-lg flex items-center justify-center"><i class="fas fa-image text-gray-500 text-2xl"></i></div>'}
+                \${imgBlock}
                 <div class="min-w-0">
                   <p class="text-sm font-medium line-clamp-2 mb-1">\${escapeHtml(displayTitle.substring(0, 80))}</p>
                   \${status ? \`<span class="status-badge status-\${statusClass}">\${status}</span>\` : ''}
@@ -2847,8 +3054,20 @@ app.get('/', (c) => {
           \`;
         }).join('');
         
-        recordsList.innerHTML = html || '<p class="text-gray-500 text-sm p-4 text-center">No records found</p>';
+        // Count images vs placeholders for debugging
+        const withImages = records.filter(r => {
+            const hasPreview = extractImageUrl(r.fields['Post Image Preview']);
+            const hasPostImage = isValidImageUrl(r.fields['Post Image']);
+            const hasLegacy = isValidImageUrl(r.fields.imageURL);
+            return hasPreview || hasPostImage || hasLegacy;
+          }).length;
+        const withPlaceholders = records.length - withImages;
+        console.log('Rendering summary: ' + withImages + ' with images, ' + withPlaceholders + ' with placeholders, total ' + records.length);
         
+        console.log('Generated HTML length:', html.length, 'first 200 chars:', html.substring(0, 200));
+        recordsList.innerHTML = html || '<p class="text-gray-500 text-sm p-4 text-center">No records found</p>';
+        console.log('Records rendered to DOM, recordsList innerHTML length:', recordsList.innerHTML.length);
+
         // Also load calendar posts
         loadCalendarPosts();
       } catch (err) {
@@ -2886,24 +3105,42 @@ app.get('/', (c) => {
           statusEl.classList.add('hidden');
         }
         
-        // Title - prioritize headline/title fields
-        const titleFieldPriority = ['sourceHeadline', 'Title', 'Name', 'Headline', 'Topic', 'Keyword', 'Subject'];
+        // Title - prioritize Headline (NocoDB field), then fall back to other options
+        // Check both table schema and actual record fields
+        const recordFields = Object.keys(f);
+        const titleFieldPriority = ['Headline', 'Title', 'Name', 'Topic', 'Keyword', 'Subject'];
         let titleField = null;
+        
+        // Try to find from table schema first
         for (const fieldName of titleFieldPriority) {
           if (tableFields.find(tf => tf.name === fieldName)) {
             titleField = fieldName;
             break;
           }
         }
+        
+        // If not found in schema, check actual record fields
         if (!titleField) {
-          const textField = tableFields.find(tf => 
-            (tf.type === 'singleLineText' || tf.type === 'multilineText') && 
-            !tf.name.toLowerCase().includes('url') &&
-            !tf.name.toLowerCase().includes('link')
-          );
-          titleField = textField?.name || tableFields[0]?.name;
+          for (const fieldName of titleFieldPriority) {
+            if (recordFields.includes(fieldName)) {
+              titleField = fieldName;
+              break;
+            }
+          }
         }
-        const titleValue = f[titleField] || 'Untitled';
+        
+        // Fallback to first available text-like field
+        if (!titleField && recordFields.length > 0) {
+          const textLikeFields = recordFields.filter(rf => 
+            !rf.toLowerCase().includes('url') && 
+            !rf.toLowerCase().includes('link') &&
+            !rf.toLowerCase().includes('id') &&
+            !rf.toLowerCase().includes('date')
+          );
+          titleField = textLikeFields[0];
+        }
+        
+        const titleValue = f[titleField] || f.Headline || 'No headline';
         const titleText = typeof titleValue === 'string' ? titleValue : JSON.stringify(titleValue);
         document.getElementById('detailTitle').textContent = titleText;
         // Also update the collapsed preview
@@ -2938,15 +3175,21 @@ app.get('/', (c) => {
         }
         
         // Images - load from NocoDB with X button to remove
-        // Check imageURL text field first (new method), fallback to attachment field (old method)
-        const imageField = tableFields.find(tf => IMAGE_FIELD_TYPES.includes(tf.type))?.name;
-        
-        if (f.imageURL) {
-          // New method: use imageURL text field
+        // Fallback chain: Post Image Preview (attachment) -> Post Image (URL) -> legacy imageURL
+        const foundImgField = tableFields.find(tf => IMAGE_FIELD_TYPES.includes(tf.type) && tf.name.includes('Image'));
+        const imageAttachmentField = foundImgField ? foundImgField.name : null;
+
+        if (imageAttachmentField && f[imageAttachmentField] && f[imageAttachmentField].length > 0) {
+          // Use Post Image Preview attachment
+          const img = f[imageAttachmentField][0];
+          const imgUrl = ((img.thumbnails || {}).large || {}).url || ((img.thumbnails || {}).full || {}).url || img.url || img.signedUrl || '';
+          setContentImage('16:9', imgUrl);
+        } else if (f['Post Image']) {
+          // Fallback to Post Image URL field
+          setContentImage('16:9', f['Post Image']);
+        } else if (f.imageURL) {
+          // Legacy fallback: use imageURL text field
           setContentImage('16:9', f.imageURL);
-        } else if (imageField && f[imageField] && f[imageField].length > 0) {
-          // Fallback: use attachment field
-          setContentImage('16:9', f[imageField][0].url);
         } else {
           clearContentImage('16:9');
         }
@@ -2956,7 +3199,7 @@ app.get('/', (c) => {
         clearContentImage('1:1');
         
         // Auto-generate image prompt based on headline and category
-        const headline = f.sourceHeadline || f.Title || f.Headline || titleValue || '';
+        const headline = f.Headline || f.Title || titleValue || '';
         const category = f.category || 'default';
         
         // Auto-fill the short headline field
@@ -3038,8 +3281,8 @@ app.get('/', (c) => {
         const isExpanded = expandedCategories[cat.id];
         
         // Count how many sizes have images
-        const imageCount = ratios.filter(r => catRefs[r]?.url).length;
-        const activeCount = ratios.filter(r => catRefs[r]?.url && catRefs[r]?.enabled).length;
+        const imageCount = ratios.filter(r => (catRefs[r] || {}).url).length;
+        const activeCount = ratios.filter(r => (catRefs[r] || {}).url && (catRefs[r] || {}).enabled).length;
         
         return \`
           <div class="category-section rounded-xl border border-white/10 overflow-hidden">
@@ -3060,9 +3303,9 @@ app.get('/', (c) => {
               <div class="flex items-center gap-2">
                 <div class="flex gap-1">
                   \${ratios.map(r => {
-                    const ref = catRefs[r];
-                    const hasImg = ref?.url;
-                    const isActive = hasImg && ref?.enabled;
+                    const ref = catRefs[r] || {};
+                    const hasImg = ref.url;
+                    const isActive = hasImg && ref.enabled;
                     const colors = ratioColors[r];
                     return \`<div class="w-2 h-2 rounded-full \${isActive ? 'bg-' + colors.bg + '-500' : hasImg ? 'bg-' + colors.bg + '-500/30' : 'bg-gray-600'}"></div>\`;
                   }).join('')}
@@ -3180,7 +3423,7 @@ app.get('/', (c) => {
     }
 
     function toggleSizeReference(categoryId, ratio) {
-      if (references[categoryId]?.[ratio]?.url) {
+      if (((references[categoryId] || {})[ratio] || {}).url) {
         references[categoryId][ratio].enabled = !references[categoryId][ratio].enabled;
         saveReferences();
         renderReferenceGridExpanded();
@@ -3231,7 +3474,7 @@ app.get('/', (c) => {
         const catRefs = references[cat.id];
         if (catRefs) {
           ['16:9', '9:16', '1:1'].forEach(ratio => {
-            if (catRefs[ratio]?.url && catRefs[ratio]?.enabled) {
+            if ((catRefs[ratio] || {}).url && (catRefs[ratio] || {}).enabled) {
               activeRefs.push(cat.name + ' (' + ratio + ')');
             }
           });
@@ -3292,7 +3535,7 @@ app.get('/', (c) => {
       // Each category can have a per-size image, so we gather all enabled ones for this ratio
       referenceCategories.forEach(cat => {
         const catRefs = references[cat.id];
-        if (catRefs && catRefs[ratioToGenerate]?.url && catRefs[ratioToGenerate]?.enabled) {
+        if (catRefs && (catRefs[ratioToGenerate] || {}).url && (catRefs[ratioToGenerate] || {}).enabled) {
           activeRefs.push(catRefs[ratioToGenerate].url);
         }
       });
@@ -3307,14 +3550,14 @@ app.get('/', (c) => {
           const catRefs = references[catId];
           if (catRefs) {
             // First check if there's a reference for the current ratio
-            if (catRefs[ratioToGenerate]?.url) {
+            if ((catRefs[ratioToGenerate] || {}).url) {
               activeRefs.push(catRefs[ratioToGenerate].url);
               console.log('Using ' + catId + ' reference for ' + ratioToGenerate);
               break;
             }
             // Then try any available ratio as fallback
             for (const r of ['16:9', '9:16', '1:1']) {
-              if (catRefs[r]?.url && catRefs[r]?.enabled) {
+              if ((catRefs[r] || {}).url && (catRefs[r] || {}).enabled) {
                 activeRefs.push(catRefs[r].url);
                 console.log('FALLBACK: Using ' + catId + ' (' + r + ') reference for ' + ratioToGenerate + ' output');
                 break;
@@ -3337,8 +3580,11 @@ app.get('/', (c) => {
       const status = document.getElementById('generationStatus');
       
       // Check if we're doing two-step generation (with headline)
-      const addHeadlineText = document.getElementById('addHeadlineText')?.checked;
-      const shortHeadline = document.getElementById('shortHeadline')?.value?.trim();
+      const addHeadlineTextEl = document.getElementById('addHeadlineText');
+      const addHeadlineText = addHeadlineTextEl ? addHeadlineTextEl.checked : false;
+      const shortHeadlineEl = document.getElementById('shortHeadline');
+      const shortHeadlineVal = shortHeadlineEl && shortHeadlineEl.value ? shortHeadlineEl.value.trim() : '';
+      const shortHeadline = shortHeadlineVal;
       const isTwoStep = addHeadlineText && shortHeadline;
       
       btn.disabled = true;
@@ -3379,7 +3625,7 @@ app.get('/', (c) => {
           const statusRes = await fetch('/api/task-status/' + taskId);
           const statusData = await statusRes.json();
 
-          if (statusData.data?.state === 'success') {
+          if ((statusData.data || {}).state === 'success') {
             const resultJson = JSON.parse(statusData.data.resultJson);
             const imageUrl = resultJson.resultUrls[0];
             await showGeneratedImage(imageUrl, ratioToGenerate);
@@ -3387,7 +3633,7 @@ app.get('/', (c) => {
             // Auto-save to NocoDB (newest first, append to existing)
             await autoSaveImageToNocoDB(imageUrl);
             break;
-          } else if (statusData.data?.state === 'failed') {
+          } else if ((statusData.data || {}).state === 'failed') {
             throw new Error(statusData.data.failMsg || 'Generation failed');
           }
           attempts++;
@@ -3411,8 +3657,10 @@ app.get('/', (c) => {
       const finalRatio = ratio || currentAspectRatio;
       
       // Check if we need to add text overlay
-      const addHeadlineText = document.getElementById('addHeadlineText')?.checked;
-      const shortHeadline = document.getElementById('shortHeadline')?.value?.trim();
+      const addHeadlineTextEl = document.getElementById('addHeadlineText');
+      const addHeadlineText = addHeadlineTextEl ? addHeadlineTextEl.checked : false;
+      const shortHeadlineEl = document.getElementById('shortHeadline');
+      const shortHeadline = shortHeadlineEl && shortHeadlineEl.value ? shortHeadlineEl.value.trim() : '';
       
       let finalUrl = url;
       
@@ -3500,8 +3748,10 @@ app.get('/', (c) => {
           const generatedUrl = await cropImageToRatio(referenceUrl, size.ratio);
           
           // Check if headline text should be added
-          const addHeadlineText = document.getElementById('addHeadlineText')?.checked;
-          const shortHeadline = document.getElementById('shortHeadline')?.value?.trim();
+          const addHeadlineTextEl = document.getElementById('addHeadlineText');
+          const addHeadlineText = addHeadlineTextEl ? addHeadlineTextEl.checked : false;
+          const shortHeadlineEl = document.getElementById('shortHeadline');
+          const shortHeadline = shortHeadlineEl && shortHeadlineEl.value ? shortHeadlineEl.value.trim() : '';
           
           let finalUrl = generatedUrl;
           if (addHeadlineText && shortHeadline) {
@@ -3579,10 +3829,10 @@ app.get('/', (c) => {
         const statusRes = await fetch('/api/task-status/' + taskId);
         const statusData = await statusRes.json();
         
-        if (statusData.data?.state === 'success') {
+        if ((statusData.data || {}).state === 'success') {
           const resultJson = JSON.parse(statusData.data.resultJson);
           return resultJson.resultUrls[0];
-        } else if (statusData.data?.state === 'failed') {
+        } else if ((statusData.data || {}).state === 'failed') {
           throw new Error(statusData.data.failMsg || 'Generation failed for ' + targetRatio);
         }
         attempts++;
@@ -3930,14 +4180,14 @@ app.get('/', (c) => {
 
     function addToHistory(url, prompt) {
       // Store the record ID, base ID, and table ID with each image
-      generationHistory.unshift({ 
-        url, 
-        prompt, 
+      generationHistory.unshift({
+        url,
+        prompt,
         timestamp: Date.now(),
         recordId: currentRecordId || null,
-        baseId: currentBase?.id || null,
-        tableId: currentTable?.id || null,
-        articleTitle: currentRecord?.fields?.sourceHeadline || currentRecord?.fields?.Title || 'Unknown'
+        baseId: (currentBase || {}).id || null,
+        tableId: (currentTable || {}).id || null,
+        articleTitle: ((currentRecord || {}).fields || {}).sourceHeadline || ((currentRecord || {}).fields || {}).Title || 'Unknown'
       });
       if (generationHistory.length > 20) generationHistory.pop();
       localStorage.setItem('imageGenHistory', JSON.stringify(generationHistory));
@@ -4052,7 +4302,7 @@ app.get('/', (c) => {
           try {
             // Save only the first image URL to the imageURL text field (NOT attachment field)
             // Multiple images per record not supported with text field - use first image only
-            const imageUrl = record.images[0]?.url || '';
+            const imageUrl = (record.images[0] || {}).url || '';
             if (!imageUrl) {
               console.log('No image URL for record: ' + record.articleTitle);
               continue;
@@ -4204,7 +4454,8 @@ app.get('/', (c) => {
       
       // Copy tabs to expanded view
       const expandedTabs = document.getElementById('expandedTabsContainer');
-      const activeTab = document.querySelector('.tab-btn.tab-active')?.dataset.tab || 'twitter';
+      const activeTabEl = document.querySelector('.tab-btn.tab-active');
+      const activeTab = (activeTabEl ? activeTabEl.dataset.tab : null) || 'twitter';
       expandedTabs.innerHTML = ['twitter', 'threads', 'bluesky', 'linkedin', 'facebook', 'instagram', 'blog', 'script']
         .map(tab => \`<button onclick="switchExpandedTab('\${tab}')" class="tab-btn \${tab === activeTab ? 'tab-active' : ''} px-4 py-3 text-base whitespace-nowrap" data-expanded-tab="\${tab}">
           <i class="\${getTabIcon(tab)} mr-2"></i>\${getTabLabel(tab)}
@@ -4212,7 +4463,7 @@ app.get('/', (c) => {
       
       // Sync current content
       const currentTextarea = document.getElementById(\`content\${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}\`);
-      document.getElementById('expandedContent').value = currentTextarea?.value || '';
+      document.getElementById('expandedContent').value = (currentTextarea ? currentTextarea.value : null) || '';
       document.getElementById('expandedContent').dataset.currentTab = activeTab;
       
       document.getElementById('socialExpandOverlay').classList.remove('hidden');
@@ -4247,7 +4498,7 @@ app.get('/', (c) => {
       
       // Load new tab content
       const newTextarea = document.getElementById(\`content\${tab.charAt(0).toUpperCase() + tab.slice(1)}\`);
-      expandedContent.value = newTextarea?.value || '';
+      expandedContent.value = (newTextarea ? newTextarea.value : null) || '';
       expandedContent.dataset.currentTab = tab;
       
       // Update tab styling
@@ -4558,7 +4809,7 @@ app.get('/', (c) => {
         });
         const uploadData = await uploadRes.json();
         
-        if (uploadData.image?.url) {
+        if ((uploadData.image || {}).url) {
           setContentImage(aspectRatio, uploadData.image.url);
         } else {
           throw new Error('Upload failed');
@@ -4682,8 +4933,10 @@ app.get('/', (c) => {
           }
           
           // Check if headline text should be added
-          const addHeadlineText = document.getElementById('addHeadlineText')?.checked;
-          const shortHeadline = document.getElementById('shortHeadline')?.value?.trim();
+          const addHeadlineTextEl = document.getElementById('addHeadlineText');
+          const addHeadlineText = addHeadlineTextEl ? addHeadlineTextEl.checked : false;
+          const shortHeadlineEl = document.getElementById('shortHeadline');
+          const shortHeadline = shortHeadlineEl && shortHeadlineEl.value ? shortHeadlineEl.value.trim() : '';
           
           if (addHeadlineText && shortHeadline) {
             statusText.textContent = 'Adding text to ' + targetRatio + '...';
@@ -5041,10 +5294,11 @@ app.get('/', (c) => {
         const records = data.records || [];
         
         // Find date field and image field
-        const dateField = tableFields.find(f => f.type === 'date')?.name || 'Start date';
-        const imageField = tableFields.find(f => IMAGE_FIELD_TYPES.includes(f.type))?.name;
+        const dateField = (tableFields.find(f => f.type === 'date') || {}).name || 'Start date';
+        const imageField = (tableFields.find(f => IMAGE_FIELD_TYPES.includes(f.type)) || {}).name;
         const titleFieldPriority = ['sourceHeadline', 'Title', 'Name', 'Headline'];
-        let titleField = titleFieldPriority.find(f => tableFields.find(tf => tf.name === f)) || tableFields[0]?.name;
+        const foundTitleField = titleFieldPriority.find(f => tableFields.find(tf => tf.name === f));
+        let titleField = foundTitleField || (tableFields[0] || {}).name;
         
         calendarPosts = [];
         unscheduledPosts = [];
@@ -5061,7 +5315,7 @@ app.get('/', (c) => {
             thumbnail = r.fields.imageURL;
           } else if (imageField && r.fields[imageField] && Array.isArray(r.fields[imageField]) && r.fields[imageField].length > 0) {
             const img = r.fields[imageField][0];
-            thumbnail = img.thumbnails?.large?.url || img.thumbnails?.small?.url || img.url || '';
+            thumbnail = ((img.thumbnails || {}).large || {}).url || ((img.thumbnails || {}).small || {}).url || img.url || '';
           }
           
           const postObj = {
@@ -5238,7 +5492,7 @@ app.get('/', (c) => {
       
       try {
         // Find the date field name
-        const dateField = tableFields.find(f => f.type === 'date')?.name || 'Start date';
+        const dateField = (tableFields.find(f => f.type === 'date') || {}).name || 'Start date';
         
         // Update NocoDB record
         const res = await fetch('/api/records/' + postId + '?baseId=' + currentBase.id + '&tableId=' + currentTable.id, {
@@ -5272,6 +5526,16 @@ app.get('/', (c) => {
 </body>
 </html>
   `)
+})
+
+// Handle favicon.ico requests to prevent 500 errors
+app.get('/favicon.ico', (c) => {
+  return c.body(null, 204) // Return 204 No Content
+})
+
+// Catch-all route to prevent "Context is not finalized" errors
+app.all('*', (c) => {
+  return c.json({ error: 'Not found' }, 404)
 })
 
 export default app
