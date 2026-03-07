@@ -779,7 +779,7 @@ app.get('/api/process-status/:recordId', async (c) => {
     // Check which fields have been populated
     const hasResearch = !!(fields.sourceSummary && fields.sourceSummary.length > 50)
     const hasImagePrompt = !!(fields.imagePrompt && fields.imagePrompt.length > 10)
-    const hasSocialContent = !!(fields.twitterCopy && fields.twitterCopy.length > 5)
+    const hasSocialContent = !!(fields['Twitter Copy'] && fields['Twitter Copy'].length > 5)
     
     let status = 'processing'
     if (hasResearch && hasImagePrompt && hasSocialContent) {
@@ -1997,52 +1997,80 @@ app.get('/', (c) => {
       </div>
 
       <div id="recordDetail" class="hidden">
-        
-        <!-- COLLAPSIBLE: Record Details (Header + Dynamic Fields) -->
+
+        <!-- RECORD OVERVIEW: always visible on select -->
         <div class="glass rounded-2xl mb-4 overflow-hidden">
-          <div class="p-4 cursor-pointer flex items-center justify-between border-b border-white/10" onclick="toggleRecordDetails()">
-            <div class="flex items-center gap-3">
-              <i class="fas fa-file-alt text-amber-500"></i>
-              <h3 class="font-semibold">Record Details</h3>
-              <span id="detailStatus" class="status-badge status-needs-approval hidden">Status</span>
-            </div>
-            <div class="flex items-center gap-3">
-              <span id="detailTitlePreview" class="text-sm text-gray-400 truncate max-w-md"></span>
-              <i id="recordDetailsToggle" class="fas fa-chevron-down text-gray-400 transition-transform"></i>
-            </div>
-          </div>
-          <div id="recordDetailsContent" class="hidden">
-            <!-- Record Header -->
-            <div class="p-4 border-b border-white/10">
-              <div class="flex items-start justify-between">
-                <div class="flex-1">
-                  <h2 id="detailTitle" class="text-xl font-bold mb-2">Title</h2>
-                  <p id="detailSubtitle" class="text-amber-500 text-sm hidden"></p>
-                </div>
-                <div id="actionButtons" class="flex gap-2 hidden">
-                  <button onclick="approveRecord()" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded font-medium text-sm">
-                    <i class="fas fa-check mr-1"></i>Approve
-                  </button>
-                  <button onclick="declineRecord()" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded font-medium text-sm">
-                    <i class="fas fa-times mr-1"></i>Decline
-                  </button>
-                </div>
+          <!-- Header bar: title + status + approve/decline -->
+          <div class="p-4 border-b border-white/10">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex-1 min-w-0">
+                <h2 id="detailTitle" class="text-xl font-bold leading-snug mb-1">Headline</h2>
+                <span id="detailStatus" class="status-badge status-needs-approval hidden">Status</span>
+              </div>
+              <div id="actionButtons" class="flex gap-2 flex-shrink-0">
+                <button onclick="approveRecord()" class="bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded font-medium text-sm whitespace-nowrap">
+                  <i class="fas fa-check mr-1"></i>Approve
+                </button>
+                <button onclick="declineRecord()" class="bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded font-medium text-sm whitespace-nowrap">
+                  <i class="fas fa-times mr-1"></i>Decline
+                </button>
               </div>
             </div>
-            <!-- Dynamic Fields -->
-            <div id="dynamicFieldsContainer" class="p-4">
-              <!-- Fields will be rendered here based on table schema -->
+          </div>
+
+          <!-- Image + meta row -->
+          <div class="flex gap-4 p-4 border-b border-white/10">
+            <!-- Post image -->
+            <div id="detailImageWrap" class="flex-shrink-0 w-48 h-28 rounded-lg overflow-hidden bg-white/5 flex items-center justify-center border border-white/10">
+              <img id="detailThumb" src="" alt="" class="w-full h-full object-cover hidden"
+                   onerror="this.classList.add('hidden'); document.getElementById('detailThumbFallback').classList.remove('hidden');">
+              <div id="detailThumbFallback" class="text-center">
+                <i class="fas fa-image text-gray-600 text-2xl"></i>
+              </div>
+            </div>
+            <!-- Key meta fields -->
+            <div class="flex-1 min-w-0 flex flex-col gap-2">
+              <div id="detailLeadWrap" class="hidden">
+                <p class="text-xs text-gray-500 uppercase tracking-wide mb-0.5">Lead</p>
+                <p id="detailLead" class="text-sm text-gray-200 leading-snug"></p>
+              </div>
+              <div id="detailCaptionWrap" class="hidden">
+                <p class="text-xs text-gray-500 uppercase tracking-wide mb-0.5">Caption</p>
+                <p id="detailCaption" class="text-sm text-gray-200 leading-snug"></p>
+              </div>
+              <div id="detailRewrittenWrap" class="hidden">
+                <p class="text-xs text-gray-500 uppercase tracking-wide mb-0.5">Rewritten Headline</p>
+                <p id="detailRewritten" class="text-sm text-amber-300 font-medium leading-snug"></p>
+              </div>
             </div>
           </div>
+
+          <!-- Why It Matters + Source row -->
+          <div class="p-4 flex flex-col gap-3">
+            <div id="detailWhyWrap" class="hidden">
+              <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Why It Matters</p>
+              <p id="detailWhy" class="text-sm text-gray-300 leading-relaxed"></p>
+            </div>
+            <div id="detailSourceWrap" class="hidden">
+              <p class="text-xs text-gray-500 uppercase tracking-wide mb-1">Source</p>
+              <p id="detailSource" class="text-sm text-blue-400 break-all"></p>
+            </div>
+          </div>
+
+          <!-- hidden containers kept for backward compatibility with other code -->
+          <span id="detailTitlePreview" class="hidden"></span>
+          <span id="detailSubtitle" class="hidden"></span>
+          <div id="dynamicFieldsContainer" class="hidden"></div>
+          <div id="recordDetailsContent"></div>
         </div>
 
-        <!-- SOCIAL CONTENT SECTION - COLLAPSIBLE, EXPANDABLE -->
-        <div id="socialContentSection" class="glass rounded-2xl hidden overflow-hidden">
+        <!-- SOCIAL CONTENT SECTION - always shown for Articles -->
+        <div id="socialContentSection" class="glass rounded-2xl overflow-hidden">
           <!-- Collapsible Header -->
           <div class="p-4 cursor-pointer flex items-center justify-between border-b border-white/10" onclick="toggleSocialContent()">
             <div class="flex items-center gap-3">
               <i class="fas fa-share-alt text-amber-500"></i>
-              <h3 class="font-semibold">Social Media Content</h3>
+              <h3 class="font-semibold">Platform Content</h3>
             </div>
             <div class="flex items-center gap-3">
               <span class="text-xs text-gray-500">Auto-saves on edit</span>
@@ -2092,7 +2120,7 @@ app.get('/', (c) => {
                   <i class="fas fa-copy mr-2"></i>Copy
                 </button>
               </div>
-              <textarea id="contentTwitter" data-field="twitterCopy" rows="8" maxlength="280"
+              <textarea id="contentTwitter" data-field="Twitter Copy" rows="8" maxlength="280"
                 class="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-base resize-y editable-field focus:border-amber-500 focus:outline-none transition-colors"
                 style="min-height: 200px;"
                 oninput="document.getElementById('twitterCount').textContent = this.value.length"></textarea>
@@ -2104,7 +2132,7 @@ app.get('/', (c) => {
                   <i class="fas fa-copy mr-2"></i>Copy
                 </button>
               </div>
-              <textarea id="contentThreads" data-field="threadsCopy" rows="12"
+              <textarea id="contentThreads" data-field="Threads Copy" rows="12"
                 class="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-base resize-y editable-field focus:border-amber-500 focus:outline-none transition-colors"
                 style="min-height: 300px;"></textarea>
             </div>
@@ -2115,7 +2143,7 @@ app.get('/', (c) => {
                   <i class="fas fa-copy mr-2"></i>Copy
                 </button>
               </div>
-              <textarea id="contentBluesky" data-field="blueskyCopy" rows="8" maxlength="300"
+              <textarea id="contentBluesky" data-field="Bluesky Copy" rows="8" maxlength="300"
                 class="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-base resize-y editable-field focus:border-amber-500 focus:outline-none transition-colors"
                 style="min-height: 200px;"
                 oninput="document.getElementById('blueskyCount').textContent = this.value.length"></textarea>
@@ -2127,7 +2155,7 @@ app.get('/', (c) => {
                   <i class="fas fa-copy mr-2"></i>Copy
                 </button>
               </div>
-              <textarea id="contentLinkedin" data-field="linkedinCopy" rows="15"
+              <textarea id="contentLinkedin" data-field="LinkedIn Copy" rows="15"
                 class="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-base resize-y editable-field focus:border-amber-500 focus:outline-none transition-colors"
                 style="min-height: 350px;"></textarea>
             </div>
@@ -2138,7 +2166,7 @@ app.get('/', (c) => {
                   <i class="fas fa-copy mr-2"></i>Copy
                 </button>
               </div>
-              <textarea id="contentFacebook" data-field="facebookCopy" rows="12"
+              <textarea id="contentFacebook" data-field="Facebook Copy" rows="12"
                 class="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-base resize-y editable-field focus:border-amber-500 focus:outline-none transition-colors"
                 style="min-height: 300px;"></textarea>
             </div>
@@ -2149,7 +2177,7 @@ app.get('/', (c) => {
                   <i class="fas fa-copy mr-2"></i>Copy
                 </button>
               </div>
-              <textarea id="contentInstagram" data-field="instagramCopy" rows="12"
+              <textarea id="contentInstagram" data-field="Instagram Copy" rows="12"
                 class="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-base resize-y editable-field focus:border-amber-500 focus:outline-none transition-colors"
                 style="min-height: 300px;"></textarea>
             </div>
@@ -2160,7 +2188,7 @@ app.get('/', (c) => {
                   <i class="fas fa-copy mr-2"></i>Copy
                 </button>
               </div>
-              <textarea id="contentBlog" data-field="blogCopy" rows="20"
+              <textarea id="contentBlog" data-field="Blog Copy" rows="20"
                 class="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-base resize-y editable-field focus:border-amber-500 focus:outline-none transition-colors"
                 style="min-height: 450px;"></textarea>
             </div>
@@ -2171,7 +2199,7 @@ app.get('/', (c) => {
                   <i class="fas fa-copy mr-1"></i>Copy
                 </button>
               </div>
-              <textarea id="contentScript" data-field="shortScript" rows="5"
+              <textarea id="contentScript" data-field="Short Script" rows="5"
                 class="w-full bg-white/5 border border-white/10 rounded p-2 text-sm resize-y editable-field"></textarea>
             </div>
           </div>
@@ -2215,7 +2243,7 @@ app.get('/', (c) => {
 
     // Fields to skip/handle specially
     const SKIP_FIELDS = ['Status', 'ID', 'Record ID', 'Generate Image', 'goToArticle', 'Start date', 'Date Posted', 'Date Created', 'datePosted', 'Calculation', 'Created', 'Last Modified'];
-    const SOCIAL_FIELDS = ['twitterCopy', 'threadsCopy', 'blueskyCopy', 'linkedinCopy', 'facebookCopy', 'instagramCopy', 'blogCopy', 'shortScript'];
+    const SOCIAL_FIELDS = ['Twitter Copy', 'Threads Copy', 'Bluesky Copy', 'LinkedIn Copy', 'Facebook Copy', 'Instagram Copy', 'Blog Copy', 'Short Script'];
     const IMAGE_FIELD_TYPES = ['multipleAttachments', 'singleAttachment'];
 
     // Category-based image prompt settings for Angel
@@ -3079,9 +3107,14 @@ app.get('/', (c) => {
     async function selectRecord(id, event) {
       currentRecordId = id;
       
-      document.querySelectorAll('.record-item').forEach(el => el.classList.remove('active'));
+      // Highlight selected card
+      document.querySelectorAll('.record-card').forEach(el => {
+        el.classList.remove('border-amber-500', 'bg-amber-500/10');
+        el.classList.add('border-white/10', 'bg-white/5');
+      });
       if (event && event.currentTarget) {
-        event.currentTarget.classList.add('active');
+        event.currentTarget.classList.remove('border-white/10', 'bg-white/5');
+        event.currentTarget.classList.add('border-amber-500', 'bg-amber-500/10');
       }
       
       try {
@@ -3090,130 +3123,148 @@ app.get('/', (c) => {
         });
         currentRecord = await res.json();
         const f = currentRecord.fields || {};
-        
+
         document.getElementById('noSelection').classList.add('hidden');
         document.getElementById('recordDetail').classList.remove('hidden');
-        
-        // Status
+
+        // ── STATUS ──────────────────────────────────────────────────
         const status = f.Status || '';
         const statusEl = document.getElementById('detailStatus');
         if (status) {
           statusEl.textContent = status;
-          statusEl.className = 'status-badge status-' + status.replace(/\\s+/g, '-').toLowerCase() + ' mb-2 inline-block';
+          statusEl.className = 'status-badge status-' + status.replace(/\\s+/g, '-').toLowerCase() + ' ml-2 inline-block';
           statusEl.classList.remove('hidden');
         } else {
           statusEl.classList.add('hidden');
         }
-        
-        // Title - prioritize Headline (NocoDB field), then fall back to other options
-        // Check both table schema and actual record fields
-        const recordFields = Object.keys(f);
-        const titleFieldPriority = ['Headline', 'Title', 'Name', 'Topic', 'Keyword', 'Subject'];
-        let titleField = null;
-        
-        // Try to find from table schema first
-        for (const fieldName of titleFieldPriority) {
-          if (tableFields.find(tf => tf.name === fieldName)) {
-            titleField = fieldName;
-            break;
-          }
-        }
-        
-        // If not found in schema, check actual record fields
-        if (!titleField) {
-          for (const fieldName of titleFieldPriority) {
-            if (recordFields.includes(fieldName)) {
-              titleField = fieldName;
-              break;
-            }
-          }
-        }
-        
-        // Fallback to first available text-like field
-        if (!titleField && recordFields.length > 0) {
-          const textLikeFields = recordFields.filter(rf => 
-            !rf.toLowerCase().includes('url') && 
-            !rf.toLowerCase().includes('link') &&
-            !rf.toLowerCase().includes('id') &&
-            !rf.toLowerCase().includes('date')
-          );
-          titleField = textLikeFields[0];
-        }
-        
-        const titleValue = f[titleField] || f.Headline || 'No headline';
-        const titleText = typeof titleValue === 'string' ? titleValue : JSON.stringify(titleValue);
-        document.getElementById('detailTitle').textContent = titleText;
-        // Also update the collapsed preview
-        document.getElementById('detailTitlePreview').textContent = titleText.length > 60 ? titleText.substring(0, 60) + '...' : titleText;
-        
-        // Subtitle
-        const subtitleEl = document.getElementById('detailSubtitle');
-        if (f.category) {
-          subtitleEl.innerHTML = '<i class="fas fa-tag mr-1"></i>' + f.category;
-          subtitleEl.classList.remove('hidden');
-        } else {
-          subtitleEl.classList.add('hidden');
-        }
-        
-        // Render dynamic fields
-        renderDynamicFields(f);
-        
-        // Social content
-        const hasSocialFields = tableFields.some(tf => SOCIAL_FIELDS.includes(tf.name));
-        if (hasSocialFields) {
-          document.getElementById('contentTwitter').value = f.twitterCopy || '';
-          document.getElementById('contentThreads').value = f.threadsCopy || '';
-          document.getElementById('contentBluesky').value = f.blueskyCopy || '';
-          document.getElementById('contentLinkedin').value = f.linkedinCopy || '';
-          document.getElementById('contentFacebook').value = f.facebookCopy || '';
-          document.getElementById('contentInstagram').value = f.instagramCopy || '';
-          document.getElementById('contentBlog').value = f.blogCopy || '';
-          document.getElementById('contentScript').value = f.shortScript || '';
-          
-          document.getElementById('twitterCount').textContent = (f.twitterCopy || '').length;
-          document.getElementById('blueskyCount').textContent = (f.blueskyCopy || '').length;
-        }
-        
-        // Images - load from NocoDB with X button to remove
-        // Fallback chain: Post Image Preview (attachment) -> Post Image (URL) -> legacy imageURL
-        const foundImgField = tableFields.find(tf => IMAGE_FIELD_TYPES.includes(tf.type) && tf.name.includes('Image'));
-        const imageAttachmentField = foundImgField ? foundImgField.name : null;
 
-        if (imageAttachmentField && f[imageAttachmentField] && f[imageAttachmentField].length > 0) {
-          // Use Post Image Preview attachment
-          const img = f[imageAttachmentField][0];
-          const imgUrl = ((img.thumbnails || {}).large || {}).url || ((img.thumbnails || {}).full || {}).url || img.url || img.signedUrl || '';
-          setContentImage('16:9', imgUrl);
-        } else if (f['Post Image']) {
-          // Fallback to Post Image URL field
-          setContentImage('16:9', f['Post Image']);
+        // ── HEADLINE ─────────────────────────────────────────────────
+        const headline = f.Headline || f.Title || f.Name || 'No headline';
+        document.getElementById('detailTitle').textContent = headline;
+        // legacy compat
+        document.getElementById('detailTitlePreview').textContent = headline.length > 60 ? headline.substring(0, 60) + '...' : headline;
+
+        // ── THUMBNAIL ────────────────────────────────────────────────
+        // Priority: Post Image Preview attachment → Post Image URL → hide
+        var detailThumb = document.getElementById('detailThumb');
+        var detailFallback = document.getElementById('detailThumbFallback');
+        var thumbUrl = '';
+        if (f['Post Image Preview'] && Array.isArray(f['Post Image Preview']) && f['Post Image Preview'].length > 0) {
+          var att = f['Post Image Preview'][0];
+          thumbUrl = att.url || att.signedUrl || ((att.thumbnails || {}).large || {}).url || ((att.thumbnails || {}).full || {}).url || '';
+        }
+        if (!thumbUrl && f['Post Image'] && f['Post Image'].startsWith('http')) {
+          thumbUrl = f['Post Image'];
+        }
+        if (thumbUrl) {
+          detailThumb.src = thumbUrl;
+          detailThumb.classList.remove('hidden');
+          detailFallback.classList.add('hidden');
+        } else {
+          detailThumb.src = '';
+          detailThumb.classList.add('hidden');
+          detailFallback.classList.remove('hidden');
+        }
+
+        // ── LEAD ─────────────────────────────────────────────────────
+        var leadWrap = document.getElementById('detailLeadWrap');
+        if (f.Lead) {
+          document.getElementById('detailLead').textContent = f.Lead;
+          leadWrap.classList.remove('hidden');
+        } else {
+          leadWrap.classList.add('hidden');
+        }
+
+        // ── CAPTION ──────────────────────────────────────────────────
+        var captionWrap = document.getElementById('detailCaptionWrap');
+        if (f.Caption) {
+          document.getElementById('detailCaption').textContent = f.Caption;
+          captionWrap.classList.remove('hidden');
+        } else {
+          captionWrap.classList.add('hidden');
+        }
+
+        // ── REWRITTEN HEADLINE ────────────────────────────────────────
+        var rewrittenWrap = document.getElementById('detailRewrittenWrap');
+        if (f['Rewritten Headline']) {
+          document.getElementById('detailRewritten').textContent = f['Rewritten Headline'];
+          rewrittenWrap.classList.remove('hidden');
+        } else {
+          rewrittenWrap.classList.add('hidden');
+        }
+
+        // ── WHY IT MATTERS ───────────────────────────────────────────
+        var whyWrap = document.getElementById('detailWhyWrap');
+        if (f['Why It Matters']) {
+          document.getElementById('detailWhy').textContent = f['Why It Matters'];
+          whyWrap.classList.remove('hidden');
+        } else {
+          whyWrap.classList.add('hidden');
+        }
+
+        // ── SOURCE ───────────────────────────────────────────────────
+        var sourceWrap = document.getElementById('detailSourceWrap');
+        if (f.Source) {
+          document.getElementById('detailSource').textContent = f.Source;
+          sourceWrap.classList.remove('hidden');
+        } else {
+          sourceWrap.classList.add('hidden');
+        }
+
+        // ── APPROVAL BUTTONS ─────────────────────────────────────────
+        // Show for statuses that need a decision
+        var actionButtons = document.getElementById('actionButtons');
+        var reviewStatuses = ['ready', 'needs review', 'needs-review', 'pending', 'draft'];
+        if (reviewStatuses.includes((status || '').toLowerCase())) {
+          actionButtons.classList.remove('hidden');
+        } else {
+          actionButtons.classList.add('hidden');
+        }
+
+        // ── PLATFORM CONTENT (real NocoDB field names) ───────────────
+        // NocoDB uses spaces in field names: "Twitter Copy", "Blog Copy" etc.
+        document.getElementById('contentTwitter').value  = f['Twitter Copy']   || '';
+        document.getElementById('contentThreads').value  = f['Threads Copy']   || '';
+        document.getElementById('contentBluesky').value  = f['Bluesky Copy']   || '';
+        document.getElementById('contentLinkedin').value = f['LinkedIn Copy']  || '';
+        document.getElementById('contentFacebook').value = f['Facebook Copy']  || '';
+        document.getElementById('contentInstagram').value= f['Instagram Copy'] || '';
+        document.getElementById('contentBlog').value     = f['Blog Copy']      || '';
+        document.getElementById('contentScript').value   = f['Short Script']   || '';
+
+        document.getElementById('twitterCount').textContent  = (f['Twitter Copy']  || '').length;
+        document.getElementById('blueskyCount').textContent  = (f['Bluesky Copy']  || '').length;
+
+        // ── SOCIAL SECTION always visible for Articles ───────────────
+        document.getElementById('socialContentSection').classList.remove('hidden');
+        // Ensure body is open on fresh select
+        var socialBody = document.getElementById('socialContentBody');
+        socialBody.classList.remove('hidden');
+        document.getElementById('socialContentToggle').style.transform = 'rotate(0deg)';
+        // Reset to twitter tab on new record
+        showTab('twitter');
+
+        // ── IMAGE GENERATION PANEL (keep existing behaviour) ─────────
+        if (thumbUrl) {
+          setContentImage('16:9', thumbUrl);
         } else if (f.imageURL) {
-          // Legacy fallback: use imageURL text field
           setContentImage('16:9', f.imageURL);
         } else {
           clearContentImage('16:9');
         }
-        
-        // Reset other image slots
         clearContentImage('9:16');
         clearContentImage('1:1');
-        
-        // Auto-generate image prompt based on headline and category
-        const headline = f.Headline || f.Title || titleValue || '';
+
+        // ── AUTO PROMPT ──────────────────────────────────────────────
         const category = f.category || 'default';
-        
-        // Auto-fill the short headline field
         const shortHeadlineInput = document.getElementById('shortHeadline');
-        if (shortHeadlineInput) {
-          shortHeadlineInput.value = createShortHeadline(headline);
-        }
-        
+        if (shortHeadlineInput) shortHeadlineInput.value = createShortHeadline(headline);
         if (headline && headline !== 'Untitled') {
           const autoPrompt = generateImagePrompt(headline, category);
           document.getElementById('promptInput').value = autoPrompt;
           document.getElementById('charCount').textContent = autoPrompt.length + ' characters';
         }
-        
+
         setupAutoSave();
       } catch (err) {
         console.error('Failed to select record:', err);
