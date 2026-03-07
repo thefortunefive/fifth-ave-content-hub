@@ -2000,6 +2000,11 @@ app.get('/', (c) => {
 
         <!-- RECORD OVERVIEW: always visible on select -->
         <div class="glass rounded-2xl mb-4 overflow-hidden">
+          <!-- Data mismatch warning banner (shown when DB record has mixed-article content) -->
+          <div id="detailMismatchBanner" class="hidden px-4 py-2 bg-orange-500/20 border-b border-orange-500/40 flex items-center gap-2 text-xs text-orange-300">
+            <i class="fas fa-exclamation-triangle text-orange-400"></i>
+            <span>⚠️ Data mismatch detected: some fields in this record (Caption, Rewritten Headline, or platform copy) appear to belong to a different article. This is a data integrity issue in the database — the AI pipeline may have written fields from the wrong source article. The display is correct; the underlying data needs to be regenerated.</span>
+          </div>
           <!-- Header bar: title + status + approve/decline -->
           <div class="p-4 border-b border-white/10">
             <div class="flex items-start justify-between gap-3">
@@ -3116,6 +3121,31 @@ app.get('/', (c) => {
         event.currentTarget.classList.remove('border-white/10', 'bg-white/5');
         event.currentTarget.classList.add('border-amber-500', 'bg-amber-500/10');
       }
+
+      // ── CLEAR STALE STATE before fetching new record ─────────────
+      // Wipe all detail fields immediately so previous record content
+      // never bleeds through while the new record is loading.
+      document.getElementById('detailTitle').textContent = '';
+      document.getElementById('detailStatus').classList.add('hidden');
+      document.getElementById('detailThumb').src = '';
+      document.getElementById('detailThumb').classList.add('hidden');
+      document.getElementById('detailThumbFallback').classList.remove('hidden');
+      document.getElementById('detailLeadWrap').classList.add('hidden');
+      document.getElementById('detailCaptionWrap').classList.add('hidden');
+      document.getElementById('detailRewrittenWrap').classList.add('hidden');
+      document.getElementById('detailWhyWrap').classList.add('hidden');
+      document.getElementById('detailSourceWrap').classList.add('hidden');
+      document.getElementById('detailMismatchBanner').classList.add('hidden');
+      document.getElementById('contentTwitter').value  = '';
+      document.getElementById('contentThreads').value  = '';
+      document.getElementById('contentBluesky').value  = '';
+      document.getElementById('contentLinkedin').value = '';
+      document.getElementById('contentFacebook').value = '';
+      document.getElementById('contentInstagram').value= '';
+      document.getElementById('contentBlog').value     = '';
+      document.getElementById('contentScript').value   = '';
+      document.getElementById('twitterCount').textContent  = '0';
+      document.getElementById('blueskyCount').textContent  = '0';
       
       try {
         const res = await fetch(\`/api/records/\${id}?baseId=\${currentBase.id}&tableId=\${currentTable.id}\`, {
@@ -3209,6 +3239,38 @@ app.get('/', (c) => {
           sourceWrap.classList.remove('hidden');
         } else {
           sourceWrap.classList.add('hidden');
+        }
+
+        // ── DATA MISMATCH DETECTION ───────────────────────────────────
+        // Detect when Caption or Rewritten Headline belongs to a different article.
+        // Strategy: extract the first meaningful non-generic words from the Headline
+        // (e.g., company names like "Block", "Microsoft") and verify they appear in
+        // Caption and/or Rewritten Headline. If none do, flag as a mismatch.
+        var mismatchBanner = document.getElementById('detailMismatchBanner');
+        var captionText = (f.Caption || '').toLowerCase();
+        var rewrittenText = (f['Rewritten Headline'] || '').toLowerCase();
+        var twitterText = (f['Twitter Copy'] || '').toLowerCase();
+        // Generic words that appear in almost all layoff/tech headlines — not useful for matching
+        var stopWords = {what:1,means:1,your:1,their:1,this:1,that:1,with:1,from:1,have:1,will:1,
+          could:1,would:1,should:1,jobs:1,half:1,next:1,about:1,after:1,into:1,more:1,just:1,
+          when:1,they:1,make:1,here:1,work:1,workers:1,staff:1,layoffs:1,workforce:1,
+          employees:1,company:1,roles:1,team:1,automation:1,future:1,amid:1,cuts:1,lays:1,
+          cutting:1,slashes:1,slash:1,focus:1,boost:1,boost:1,shift:1,toward:1,embrace:1};
+        var allHeadlineWords = (headline || '').toLowerCase().split(/[^a-z0-9]+/);
+        // Named words: 4+ chars, not in stop list, not starting with 'ai'
+        var namedWords = allHeadlineWords.filter(function(w) {
+          return w.length >= 4 && !stopWords[w] && w.indexOf('ai') !== 0;
+        });
+        // Use the first 2 named words (usually the company/topic entity)
+        var keyWords = namedWords.slice(0, 2);
+        var hasContent = captionText.length > 30 || rewrittenText.length > 10 || twitterText.length > 10;
+        var captionHasKeyword = keyWords.some(function(w) { return captionText.indexOf(w) >= 0; });
+        var rewrittenHasKeyword = keyWords.some(function(w) { return rewrittenText.indexOf(w) >= 0; });
+        var isMismatch = keyWords.length >= 1 && hasContent && !captionHasKeyword && !rewrittenHasKeyword;
+        if (isMismatch) {
+          mismatchBanner.classList.remove('hidden');
+        } else {
+          mismatchBanner.classList.add('hidden');
         }
 
         // ── APPROVAL BUTTONS ─────────────────────────────────────────
@@ -5347,9 +5409,11 @@ app.get('/', (c) => {
         // Find date field and image field
         const dateField = (tableFields.find(f => f.type === 'date') || {}).name || 'Start date';
         const imageField = (tableFields.find(f => IMAGE_FIELD_TYPES.includes(f.type)) || {}).name;
-        const titleFieldPriority = ['sourceHeadline', 'Title', 'Name', 'Headline'];
+        // Title: prefer actual NocoDB field names used in Articles table
+        const titleFieldPriority = ['Headline', 'Title', 'Name', 'sourceHeadline'];
         const foundTitleField = titleFieldPriority.find(f => tableFields.find(tf => tf.name === f));
-        let titleField = foundTitleField || (tableFields[0] || {}).name;
+        // Fallback: use 'Headline' directly if tableFields is empty (NocoDB Articles table always has it)
+        let titleField = foundTitleField || 'Headline';
         
         calendarPosts = [];
         unscheduledPosts = [];
@@ -5359,12 +5423,24 @@ app.get('/', (c) => {
           const status = (r.fields.Status || '').toLowerCase();
           const title = r.fields[titleField] || 'Untitled';
           
-          // Get thumbnail
-          // Check imageURL text field first (new method), fallback to attachment field (old method)
+          // Get thumbnail - use same priority as card rendering:
+          // 1. Post Image Preview attachment (NocoDB attachment field)
+          // 2. Post Image URL text field
+          // 3. Legacy imageURL field
+          // 4. Generic imageField from tableFields schema
           let thumbnail = '';
-          if (r.fields.imageURL) {
+          var pip = r.fields['Post Image Preview'];
+          if (pip && Array.isArray(pip) && pip.length > 0) {
+            var att = pip[0];
+            thumbnail = att.url || att.signedUrl || ((att.thumbnails || {}).large || {}).url || ((att.thumbnails || {}).small || {}).url || '';
+          }
+          if (!thumbnail && r.fields['Post Image'] && r.fields['Post Image'].startsWith('http')) {
+            thumbnail = r.fields['Post Image'];
+          }
+          if (!thumbnail && r.fields.imageURL) {
             thumbnail = r.fields.imageURL;
-          } else if (imageField && r.fields[imageField] && Array.isArray(r.fields[imageField]) && r.fields[imageField].length > 0) {
+          }
+          if (!thumbnail && imageField && r.fields[imageField] && Array.isArray(r.fields[imageField]) && r.fields[imageField].length > 0) {
             const img = r.fields[imageField][0];
             thumbnail = ((img.thumbnails || {}).large || {}).url || ((img.thumbnails || {}).small || {}).url || img.url || '';
           }
