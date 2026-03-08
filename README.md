@@ -23,13 +23,25 @@ pm2 logs --nostream
 
 ## Features
 
-### Instant Webhook Processing (NEW)
+### Instant Webhook Processing (NocoDB-Native)
 - **No more 15-minute wait!** Content saved via browser extension is processed instantly
-- `/api/save` creates Airtable record, then fires a webhook to n8n for immediate processing
+- `/api/save` creates NocoDB record, then fires a webhook to n8n for immediate processing
 - n8n pipeline: Perplexity research + OpenAI image prompt + social content (all platforms)
 - Popup shows real-time processing status with polling (`/api/process-status/:recordId`)
-- Full pipeline takes ~60 seconds from save to complete content generation
+- Full pipeline takes ~90 seconds from save to complete content generation + image
 - Crypto and AI topics trigger instant processing; General saves without processing
+
+### n8n Workflow: FifthAveAIContentMaster (Fixed 2026-03-08)
+- **Workflow**: `5th Ave AI - Extension Pickup (NANO BANANA PRO)` (ID: `ptL1slQw6YD7xm2I`)
+- **Key fixes applied**: 10 node fixes correcting Airtable→NocoDB migration
+- **Find Extension Records**: Now HTTP Request to NocoDB, filter `Status=draft AND ImagePrompt=null AND Source!=null`
+- **Has Records?**: Checks `$json.list[0].Headline` (NocoDB list format)
+- **Set Record Data**: Maps NocoDB fields `Id, Headline, Lead, Source, Body` → internal camelCase
+- **Generate Image Prompt**: Article-specific scene (no generic "blonde woman" bias); rule 9 bans hair color
+- **Save imagePrompt**: NocoDB PATCH with `Id` in body, field `ImagePrompt`
+- **Save Social Content**: NocoDB PATCH with exact spaced field names (`Rewritten Headline`, `Caption`, etc.)
+- **Save postImage**: NocoDB PATCH to `Post Image` (text URL) + `Post Image Preview` (attachment), Status→`ready`
+- **Record ID integrity**: All code nodes pin ID to `$('Set Record Data').first().json.id`
 
 ### Dual-Topic Support (Crypto & AI)
 - **Auto-detect mode** from selected Airtable table name
