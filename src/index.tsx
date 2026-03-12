@@ -1,14 +1,15 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 
-const app = new Hono()
-
-// Add environment bindings
-type Bindings = {
-  NOCODB_TOKEN?: string
+// Cloudflare Worker environment bindings
+export interface Env {
+  NOCODB_TOKEN: string
   PERPLEXITY_API_KEY?: string
   OPENAI_API_KEY?: string
+  nocodbBaseUrl: string
 }
+
+const app = new Hono<{ Bindings: Env }>()
 
 // Simple in-memory cache with TTL
 interface CacheEntry {
@@ -73,9 +74,8 @@ async function fetchWithRetry(url: string, options: RequestInit, retries = MAX_R
 app.use('/api/*', cors())
 
 // Environment configuration - use env vars with fallbacks for local dev
-const NOCODB_BASE_URL = (typeof process !== 'undefined' && process.env && process.env.NOCODB_BASE_URL) || 
-                        'http://31.220.49.162:8080'
-const KIEAI_API_KEY = (typeof process !== 'undefined' && process.env && process.env.KIEAI_API_KEY) || 
+const DEFAULT_NOCODB_BASE_URL = 'http://31.220.49.162:8080'
+const KIEAI_API_KEY = (typeof process !== 'undefined' && process.env && process.env.KIEAI_API_KEY) ||
                       'cf2a50987a92a698e89d5efeb80cde82'
 
 // Reference images for 5th Ave Angel
@@ -105,7 +105,8 @@ app.get('/api/bases', async (c) => {
   try {
     // NocoDB API for listing bases
     // VPS NocoDB - FifthAveAI Mode
-    const url = NOCODB_BASE_URL + '/api/v2/meta/bases'
+    const nocodbBaseUrl = c.env.NOCODB_BASE_URL || DEFAULT_NOCODB_BASE_URL
+    const url = nocodbBaseUrl + '/api/v2/meta/bases'
     
     const res = await fetchWithRetry(url, {
       headers: { 'xc-token': token }
@@ -198,7 +199,7 @@ app.get('/api/bases/:baseId/tables', async (c) => {
   console.log(`Fetching tables for base: ${baseId}, token present: ${token ? 'yes' : 'no'}, token prefix: ${token.substring(0, 10)}...`)
 
   try {
-    const res = await fetchWithRetry(NOCODB_BASE_URL + `/api/v2/meta/bases/${baseId}/tables`, {
+    const res = await fetchWithRetry(nocodbBaseUrl + `/api/v2/meta/bases/${baseId}/tables`, {
       headers: { 'xc-token': token }
     })
 
@@ -275,7 +276,8 @@ app.get('/api/records', async (c) => {
   if (!tableId) return c.json({ error: 'Missing tableId' }, 400)
 
   // NocoDB API for listing records
-  let url = NOCODB_BASE_URL + `/api/v2/tables/${tableId}/records`
+  const nocodbBaseUrl = c.env.nocodbBaseUrl || DEFAULT_nocodbBaseUrl
+  let url = nocodbBaseUrl + `/api/v2/tables/${tableId}/records`
   if (filter && filter !== 'all') {
     // NocoDB uses different filter syntax - for now, fetch all and filter client-side
     // or use NocoDB's where parameter: url += `?where=(Status,eq,${filter})`
@@ -313,7 +315,7 @@ app.get('/api/records/:id', async (c) => {
   if (!tableId) return c.json({ error: 'Missing tableId' }, 400)
 
   // NocoDB API for single record
-  const res = await fetch(NOCODB_BASE_URL + `/api/v2/tables/${tableId}/records/${id}`, {
+  const res = await fetch(nocodbBaseUrl + `/api/v2/tables/${tableId}/records/${id}`, {
     headers: { 'xc-token': token }
   })
 
@@ -347,7 +349,8 @@ app.patch('/api/records/:id', async (c) => {
     ...body
   }
 
-  const res = await fetch(NOCODB_BASE_URL + `/api/v2/tables/${tableId}/records`, {
+  const nocodbBaseUrl = c.env.nocodbBaseUrl || DEFAULT_nocodbBaseUrl
+  const res = await fetch(nocodbBaseUrl + `/api/v2/tables/${tableId}/records`, {
     method: 'PATCH',
     headers: {
       'xc-token': token,
@@ -521,7 +524,7 @@ app.get('/api/nocodb-proxy/*', async (c) => {
   }
   
   // Construct the full NocoDB URL
-  const nocodbUrl = NOCODB_BASE_URL + '/' + path
+  const nocodbUrl = nocodbBaseUrl + '/' + path
   
   try {
     const headers: Record<string, string> = {}
@@ -567,7 +570,7 @@ const BRAND_CONFIG = {
   
   // VPS NocoDB connection
   vpsNocoDB: {
-    baseUrl: NOCODB_BASE_URL,
+    baseUrl: nocodbBaseUrl,
     projectId: 'prs1ubx2662cbv6'
   },
   
@@ -746,7 +749,7 @@ app.post('/api/save', async (c) => {
     // Create the record in NocoDB
     // NocoDB uses tableId only, no baseId in record URLs
     // NocoDB expects flat fields, not wrapped in { fields: {...} }
-    const res = await fetch(`${NOCODB_BASE_URL}/api/v2/tables/${route.tableId}/records`, {
+    const res = await fetch(`${nocodbBaseUrl}/api/v2/tables/${route.tableId}/records`, {
       method: 'POST',
       headers: {
         'xc-token': nocodbToken,
@@ -821,7 +824,7 @@ app.get('/api/process-status/:recordId', async (c) => {
     
     // Fetch the record from NocoDB to check if it's been enriched
     // NocoDB uses tableId only, no baseId in record URLs
-    const res = await fetch(`${NOCODB_BASE_URL}/api/v2/tables/${route.tableId}/records/${recordId}`, {
+    const res = await fetch(`${nocodbBaseUrl}/api/v2/tables/${route.tableId}/records/${recordId}`, {
       headers: { 'xc-token': nocodbToken }
     })
     
@@ -879,7 +882,7 @@ app.post('/api/process', async (c) => {
     
     // Fetch the record from NocoDB to get current data
     // NocoDB uses tableId only, no baseId in record URLs
-    const nocodbRes = await fetch(`${NOCODB_BASE_URL}/api/v2/tables/${route.tableId}/records/${recordId}`, {
+    const nocodbRes = await fetch(`${nocodbBaseUrl}/api/v2/tables/${route.tableId}/records/${recordId}`, {
       headers: { 'xc-token': nocodbToken }
     })
     const record: any = await nocodbRes.json()
@@ -2179,7 +2182,7 @@ app.get('/', (c) => {
                 </button>
               </div>
               <textarea id="contentTwitter" data-field="Twitter Copy" rows="8" maxlength="280"
-                class="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-base resize-y editable-field focus:border-amber-500 focus:outline-none transition-colors"
+                class="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-base resize-y editable-field fococus:border-amber-500 focus:outline-none transition-colors"
                 style="min-height: 200px;"
                 oninput="document.getElementById('twitterCount').textContent = this.value.length"></textarea>
             </div>
@@ -3750,6 +3753,7 @@ app.get('/', (c) => {
             }
             // Then try any available ratio as fallback
             for (const r of ['16:9', '9:16', '1:1']) {
+              if ((cat      for (const r of ['16:9', '9:16', '1:1']) {
               if ((catRefs[r] || {}).url && (catRefs[r] || {}).enabled) {
                 activeRefs.push(catRefs[r].url);
                 console.log('FALLBACK: Using ' + catId + ' (' + r + ') reference for ' + ratioToGenerate + ' output');
@@ -4558,8 +4562,7 @@ app.get('/', (c) => {
         const hasArticle = item.recordId;
         const shortTitle = item.articleTitle ? (item.articleTitle.length > 15 ? item.articleTitle.substring(0, 15) + '...' : item.articleTitle) : '';
         return \`
-          <div class="history-item relative" draggable="true" 
-            ondragstart="handleHistoryDragStart(event, '\${item.url}')" 
+          <div class="history-item relative" draggable="true")" 
             onclick="openLightbox('\${item.url}')"
             title="\${item.articleTitle || 'No article assigned'}">
             <img src="\${item.url}" alt="History \${i + 1}">

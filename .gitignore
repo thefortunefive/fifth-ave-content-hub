@@ -4,3 +4,11 @@ dist/
 .dev.vars
 *.log
 .env
+
+# Python scripts
+*.py
+*.sql
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json

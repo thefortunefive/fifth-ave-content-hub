@@ -1,0 +1,13 @@
+name = "fifth-ave-content-hub"
+main = "dist/_worker.js"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Environment variables (non-sensitive)
+[vars]
+NOCODB_BASE_URL = "http://31.220.49.162:8080"
+
+# Secrets (use `wrangler secret put` for these):
+# - NOCODB_TOKEN
+# - PERPLEXITY_API_KEY (if needed)
+# - OPENAI_API_KEY (if needed)
