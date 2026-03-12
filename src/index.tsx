@@ -72,8 +72,11 @@ async function fetchWithRetry(url: string, options: RequestInit, retries = MAX_R
 
 app.use('/api/*', cors())
 
-// KieAI config
-const KIEAI_API_KEY = 'cf2a50987a92a698e89d5efeb80cde82'
+// Environment configuration - use env vars with fallbacks for local dev
+const NOCODB_BASE_URL = (typeof process !== 'undefined' && process.env && process.env.NOCODB_BASE_URL) || 
+                        'http://31.220.49.162:8080'
+const KIEAI_API_KEY = (typeof process !== 'undefined' && process.env && process.env.KIEAI_API_KEY) || 
+                      'cf2a50987a92a698e89d5efeb80cde82'
 
 // Reference images for 5th Ave Angel
 const REFERENCE_IMAGES = {
@@ -102,7 +105,7 @@ app.get('/api/bases', async (c) => {
   try {
     // NocoDB API for listing bases
     // VPS NocoDB - FifthAveAI Mode
-    const url = 'http://31.220.49.162:8080/api/v2/meta/bases'
+    const url = NOCODB_BASE_URL + '/api/v2/meta/bases'
     
     const res = await fetchWithRetry(url, {
       headers: { 'xc-token': token }
@@ -195,7 +198,7 @@ app.get('/api/bases/:baseId/tables', async (c) => {
   console.log(`Fetching tables for base: ${baseId}, token present: ${token ? 'yes' : 'no'}, token prefix: ${token.substring(0, 10)}...`)
 
   try {
-    const res = await fetchWithRetry(`http://31.220.49.162:8080/api/v2/meta/bases/${baseId}/tables`, {
+    const res = await fetchWithRetry(NOCODB_BASE_URL + `/api/v2/meta/bases/${baseId}/tables`, {
       headers: { 'xc-token': token }
     })
 
@@ -272,7 +275,7 @@ app.get('/api/records', async (c) => {
   if (!tableId) return c.json({ error: 'Missing tableId' }, 400)
 
   // NocoDB API for listing records
-  let url = `http://31.220.49.162:8080/api/v2/tables/${tableId}/records`
+  let url = NOCODB_BASE_URL + `/api/v2/tables/${tableId}/records`
   if (filter && filter !== 'all') {
     // NocoDB uses different filter syntax - for now, fetch all and filter client-side
     // or use NocoDB's where parameter: url += `?where=(Status,eq,${filter})`
@@ -310,7 +313,7 @@ app.get('/api/records/:id', async (c) => {
   if (!tableId) return c.json({ error: 'Missing tableId' }, 400)
 
   // NocoDB API for single record
-  const res = await fetch(`http://31.220.49.162:8080/api/v2/tables/${tableId}/records/${id}`, {
+  const res = await fetch(NOCODB_BASE_URL + `/api/v2/tables/${tableId}/records/${id}`, {
     headers: { 'xc-token': token }
   })
 
@@ -344,7 +347,7 @@ app.patch('/api/records/:id', async (c) => {
     ...body
   }
 
-  const res = await fetch(`http://31.220.49.162:8080/api/v2/tables/${tableId}/records`, {
+  const res = await fetch(NOCODB_BASE_URL + `/api/v2/tables/${tableId}/records`, {
     method: 'PATCH',
     headers: {
       'xc-token': token,
@@ -501,6 +504,56 @@ app.post('/api/proxy-image', async (c) => {
 })
 
 // ============================================
+// NocoDB PROXY: Serve attachments/images over HTTPS
+// ============================================
+
+// Proxy any NocoDB file/attachment request
+// Usage: /api/nocodb-proxy/download/2026/03/12/.../file.jpg
+// This proxies to: http://31.220.49.162:8080/download/2026/03/12/.../file.jpg
+app.get('/api/nocodb-proxy/*', async (c) => {
+  const token = c.req.header('xc-token') || c.env.NOCODB_TOKEN
+  
+  // Get the path after /api/nocodb-proxy/
+  const path = c.req.path.replace('/api/nocodb-proxy/', '')
+  
+  if (!path) {
+    return c.json({ error: 'Missing path' }, 400)
+  }
+  
+  // Construct the full NocoDB URL
+  const nocodbUrl = NOCODB_BASE_URL + '/' + path
+  
+  try {
+    const headers: Record<string, string> = {}
+    if (token) {
+      headers['xc-token'] = token
+    }
+    
+    const res = await fetch(nocodbUrl, { headers })
+    
+    if (!res.ok) {
+      return c.json({ error: 'Failed to fetch from NocoDB: ' + res.status }, res.status)
+    }
+    
+    // Get the response body as an array buffer
+    const arrayBuffer = await res.arrayBuffer()
+    
+    // Get content type from response or default to octet-stream
+    const contentType = res.headers.get('content-type') || 'application/octet-stream'
+    
+    // Return the proxied response with proper content type
+    return new Response(arrayBuffer, {
+      headers: {
+        'Content-Type': contentType,
+        'Cache-Control': 'public, max-age=3600' // Cache for 1 hour
+      }
+    })
+  } catch (err) {
+    return c.json({ error: 'Proxy error: ' + (err as Error).message }, 500)
+  }
+})
+
+// ============================================
 // BROWSER EXTENSION: Save to Pipeline
 // ============================================
 
@@ -514,7 +567,7 @@ const BRAND_CONFIG = {
   
   // VPS NocoDB connection
   vpsNocoDB: {
-    baseUrl: 'http://31.220.49.162:8080',
+    baseUrl: NOCODB_BASE_URL,
     projectId: 'prs1ubx2662cbv6'
   },
   
@@ -2997,8 +3050,18 @@ app.get('/', (c) => {
         
         console.log('Image field detection:', { imageAttachmentField, hasPostImagePreview: sampleFields.includes('Post Image Preview'), hasPostImage: sampleFields.includes('Post Image') });
 
+        const NOCODB_PROXY_BASE = '/api/nocodb-proxy/';
+
         // Helper to validate image URL - avoids regex with // which can be parsed as comment
         const isValidImageUrl = (url) => typeof url === 'string' && (url.startsWith('https://') || url.startsWith('http://')) && url.length > 12;
+
+        // Convert a NocoDB path to a proxied URL (relative, same origin)
+        const toProxyUrl = (path) => {
+          if (!path) return null;
+          // Remove leading slash if present
+          const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+          return NOCODB_PROXY_BASE + cleanPath;
+        };
 
         // Robust image URL extraction from attachment objects
         const extractImageUrl = (attachmentField) => {
@@ -3018,11 +3081,15 @@ app.get('/', (c) => {
             img.url,
             img.signedUrl,
             img.signedURL,
-            img.path,
+            toProxyUrl(img.path),
+            toProxyUrl(img.signedPath),
             (thumbnails.large || {}).url,
+            toProxyUrl((thumbnails.large || {}).signedPath),
             (thumbnails.small || {}).url,
+            toProxyUrl((thumbnails.small || {}).signedPath),
             (thumbnails.full || {}).url,
             (thumbnails.card_cover || {}).url,
+            toProxyUrl((thumbnails.card_cover || {}).signedPath),
             img.thumbnail
           ];
 
@@ -3178,10 +3245,23 @@ app.get('/', (c) => {
         // Priority: Post Image Preview attachment → Post Image URL → hide
         var detailThumb = document.getElementById('detailThumb');
         var detailFallback = document.getElementById('detailThumbFallback');
+        var detailToProxyUrl = function(path) {
+          if (!path) return '';
+          var cleanPath = path.startsWith('/') ? path.substring(1) : path;
+          return '/api/nocodb-proxy/' + cleanPath;
+        };
         var thumbUrl = '';
         if (f['Post Image Preview'] && Array.isArray(f['Post Image Preview']) && f['Post Image Preview'].length > 0) {
           var att = f['Post Image Preview'][0];
-          thumbUrl = att.url || att.signedUrl || ((att.thumbnails || {}).large || {}).url || ((att.thumbnails || {}).full || {}).url || '';
+          var thumbnails = att.thumbnails || {};
+          thumbUrl = att.url || att.signedUrl || 
+            (att.signedPath ? detailToProxyUrl(att.signedPath) : '') ||
+            (att.path ? detailToProxyUrl(att.path) : '') ||
+            (thumbnails.large || {}).url || 
+            ((thumbnails.large || {}).signedPath ? detailToProxyUrl((thumbnails.large || {}).signedPath) : '') ||
+            (thumbnails.full || {}).url || 
+            (thumbnails.card_cover || {}).url || 
+            '';
         }
         if (!thumbUrl && f['Post Image'] && f['Post Image'].startsWith('http')) {
           thumbUrl = f['Post Image'];
