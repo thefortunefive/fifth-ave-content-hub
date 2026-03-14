@@ -6,6 +6,7 @@ export interface Env {
   NOCODB_TOKEN: string
   PERPLEXITY_API_KEY?: string
   OPENAI_API_KEY?: string
+  FAL_API_KEY?: string
   NOCODB_BASE_URL?: string
 }
 
@@ -465,6 +466,99 @@ app.post('/api/generate-image', async (c) => {
     body: JSON.stringify(requestBody)
   })
   return c.json(await res.json())
+})
+
+// API: Generate image with fal.ai Flux (queue-based)
+app.post('/api/generate-image-fal', async (c) => {
+  const falKey = c.env.FAL_API_KEY
+  if (!falKey) {
+    return c.json({ error: 'FAL_API_KEY not configured. Add FAL_API_KEY to .dev.vars' }, 500)
+  }
+
+  const { prompt, aspectRatio } = await c.req.json()
+  if (!prompt) {
+    return c.json({ error: 'Prompt is required' }, 400)
+  }
+
+  // Map aspect ratio to fal.ai image_size enum
+  const sizeMap: Record<string, string> = {
+    '16:9': 'landscape_16_9',
+    '9:16': 'portrait_16_9',
+    '1:1': 'square_hd'
+  }
+  const imageSize = sizeMap[aspectRatio] || 'landscape_16_9'
+
+  try {
+    // Submit to fal.ai queue
+    const submitRes = await fetch('https://queue.fal.run/fal-ai/flux/dev', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Key ${falKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        prompt,
+        image_size: imageSize,
+        num_inference_steps: 28,
+        guidance_scale: 3.5,
+        num_images: 1,
+        enable_safety_checker: true,
+        output_format: 'png'
+      })
+    })
+
+    if (!submitRes.ok) {
+      const errText = await submitRes.text()
+      console.error('fal.ai submit error:', submitRes.status, errText)
+      return c.json({ error: `fal.ai error: ${submitRes.status}` }, submitRes.status as any)
+    }
+
+    const submitData = await submitRes.json() as { request_id: string; status_url: string; response_url: string }
+    console.log('fal.ai submitted:', submitData.request_id)
+
+    return c.json({
+      requestId: submitData.request_id,
+      statusUrl: submitData.status_url,
+      responseUrl: submitData.response_url
+    })
+  } catch (err: any) {
+    console.error('fal.ai submit exception:', err)
+    return c.json({ error: err.message || 'Failed to submit to fal.ai' }, 500)
+  }
+})
+
+// API: Check fal.ai request status
+app.get('/api/fal-status/:requestId', async (c) => {
+  const falKey = c.env.FAL_API_KEY
+  if (!falKey) {
+    return c.json({ error: 'FAL_API_KEY not configured' }, 500)
+  }
+
+  const requestId = c.req.param('requestId')
+
+  try {
+    const statusRes = await fetch(`https://queue.fal.run/fal-ai/flux/dev/requests/${requestId}/status?logs=1`, {
+      headers: { 'Authorization': `Key ${falKey}` }
+    })
+    const statusData = await statusRes.json() as { status: string }
+
+    if (statusData.status === 'COMPLETED') {
+      // Fetch the actual result
+      const resultRes = await fetch(`https://queue.fal.run/fal-ai/flux/dev/requests/${requestId}`, {
+        headers: { 'Authorization': `Key ${falKey}` }
+      })
+      const resultData = await resultRes.json() as { images?: Array<{ url: string; width: number; height: number }> }
+      return c.json({
+        status: 'COMPLETED',
+        images: resultData.images || []
+      })
+    }
+
+    return c.json(statusData)
+  } catch (err: any) {
+    console.error('fal.ai status error:', err)
+    return c.json({ error: err.message || 'Failed to check fal.ai status' }, 500)
+  }
 })
 
 // Pre-made mask URLs for text banner area (black = edit area at bottom, white = preserve)
@@ -3857,52 +3951,57 @@ app.get('/', (c) => {
       if (!prompt) { alert('Please enter a prompt'); return; }
 
       const ratioToGenerate = currentAspectRatio;
+
+      // Detect image model from selected record
+      var modelNameEl = document.getElementById('imageModelName');
+      var imageModel = (modelNameEl && modelNameEl.textContent && modelNameEl.textContent !== '—') ? modelNameEl.textContent.trim().toLowerCase() : 'nano-banana';
+      console.log('Image model for generation:', imageModel);
+
+      var useFlux = imageModel.indexOf('flux') !== -1;
+
+      // For nano-banana: collect reference images (required)
       let activeRefs = [];
-      
-      // NEW: Collect all enabled references for the CURRENT aspect ratio
-      // Each category can have a per-size image, so we gather all enabled ones for this ratio
-      referenceCategories.forEach(cat => {
-        const catRefs = references[cat.id];
-        if (catRefs && (catRefs[ratioToGenerate] || {}).url && (catRefs[ratioToGenerate] || {}).enabled) {
-          activeRefs.push(catRefs[ratioToGenerate].url);
-        }
-      });
-      
-      console.log(ratioToGenerate + ' MODE: Found ' + activeRefs.length + ' active references for this size');
-      
-      // If no references for this ratio, try to use a fallback
-      if (activeRefs.length === 0) {
-        // Try to find ANY enabled reference (prefer Face category first)
-        const priorityOrder = ['face', 'custom', 'pose', 'outfit', 'background', 'props', 'mood', 'logo'];
-        for (const catId of priorityOrder) {
-          const catRefs = references[catId];
-          if (catRefs) {
-            // First check if there's a reference for the current ratio
-            if ((catRefs[ratioToGenerate] || {}).url) {
-              activeRefs.push(catRefs[ratioToGenerate].url);
-              console.log('Using ' + catId + ' reference for ' + ratioToGenerate);
-              break;
-            }
-            // Then try any available ratio as fallback
-            for (const r of ['16:9', '9:16', '1:1']) {
-              if ((catRefs[r] || {}).url && (catRefs[r] || {}).enabled) {
-                activeRefs.push(catRefs[r].url);
-                console.log('FALLBACK: Using ' + catId + ' (' + r + ') reference for ' + ratioToGenerate + ' output');
+      if (!useFlux) {
+        // Collect all enabled references for the CURRENT aspect ratio
+        referenceCategories.forEach(cat => {
+          const catRefs = references[cat.id];
+          if (catRefs && (catRefs[ratioToGenerate] || {}).url && (catRefs[ratioToGenerate] || {}).enabled) {
+            activeRefs.push(catRefs[ratioToGenerate].url);
+          }
+        });
+        
+        console.log(ratioToGenerate + ' MODE: Found ' + activeRefs.length + ' active references for this size');
+        
+        // If no references for this ratio, try to use a fallback
+        if (activeRefs.length === 0) {
+          const priorityOrder = ['face', 'custom', 'pose', 'outfit', 'background', 'props', 'mood', 'logo'];
+          for (const catId of priorityOrder) {
+            const catRefs = references[catId];
+            if (catRefs) {
+              if ((catRefs[ratioToGenerate] || {}).url) {
+                activeRefs.push(catRefs[ratioToGenerate].url);
+                console.log('Using ' + catId + ' reference for ' + ratioToGenerate);
                 break;
               }
+              for (const r of ['16:9', '9:16', '1:1']) {
+                if ((catRefs[r] || {}).url && (catRefs[r] || {}).enabled) {
+                  activeRefs.push(catRefs[r].url);
+                  console.log('FALLBACK: Using ' + catId + ' (' + r + ') reference for ' + ratioToGenerate + ' output');
+                  break;
+                }
+              }
+              if (activeRefs.length > 0) break;
             }
-            if (activeRefs.length > 0) break;
           }
         }
+        
+        if (activeRefs.length === 0) {
+          alert('No reference images found for ' + ratioToGenerate + '. Please expand a category in the Reference Library and upload a reference image for this size.');
+          return;
+        }
+        
+        console.log('Active references for ' + ratioToGenerate + ':', activeRefs.length, activeRefs);
       }
-      
-      // If still no references, prompt user
-      if (activeRefs.length === 0) {
-        alert('No reference images found for ' + ratioToGenerate + '. Please expand a category in the Reference Library and upload a reference image for this size.');
-        return;
-      }
-      
-      console.log('Active references for ' + ratioToGenerate + ':', activeRefs.length, activeRefs);
 
       const btn = document.getElementById('generateBtn');
       const status = document.getElementById('generationStatus');
@@ -3916,62 +4015,105 @@ app.get('/', (c) => {
       const isTwoStep = addHeadlineText && shortHeadline;
       
       btn.disabled = true;
+      var modelLabel = useFlux ? 'Flux' : 'Nano Banana';
       btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generating ' + ratioToGenerate + '...';
       status.classList.remove('hidden');
       
       if (isTwoStep) {
-        document.getElementById('statusText').textContent = 'Step 1: Creating base image with Nano Banana...';
+        document.getElementById('statusText').textContent = 'Step 1: Creating base image with ' + modelLabel + '...';
       } else {
-        document.getElementById('statusText').textContent = 'Creating ' + ratioToGenerate + ' image...';
+        document.getElementById('statusText').textContent = 'Creating ' + ratioToGenerate + ' image with ' + modelLabel + '...';
       }
 
-      console.log('Generating image with aspect ratio:', ratioToGenerate);
+      console.log('Generating image with aspect ratio:', ratioToGenerate, 'model:', imageModel);
       console.log('Two-step mode (with headline):', isTwoStep);
 
       try {
-        const createRes = await fetch('/api/generate-image', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt, imageUrls: activeRefs, aspectRatio: ratioToGenerate })
-        });
-        const createData = await createRes.json();
+        if (useFlux) {
+          // ── FLUX path (fal.ai) ──────────────────────────────────────────
+          const createRes = await fetch('/api/generate-image-fal', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt, aspectRatio: ratioToGenerate })
+          });
+          const createData = await createRes.json();
+          console.log('fal.ai submit response:', createData);
 
-        console.log('Create response:', createData);
+          if (createData.error) throw new Error(createData.error);
 
-        if (createData.code !== 200) throw new Error(createData.msg || 'Failed to create task');
+          const requestId = createData.requestId;
+          document.getElementById('statusText').textContent = 'Processing with Flux...';
 
-        const taskId = createData.data.taskId;
-        if (isTwoStep) {
-          document.getElementById('statusText').textContent = 'Step 1: Processing base image...';
+          let attempts = 0;
+          while (attempts < 90) {
+            await new Promise(r => setTimeout(r, 2000));
+            const statusRes = await fetch('/api/fal-status/' + requestId);
+            const statusData = await statusRes.json();
+
+            if (statusData.status === 'COMPLETED') {
+              if (statusData.images && statusData.images.length > 0) {
+                const imageUrl = statusData.images[0].url;
+                await showGeneratedImage(imageUrl, ratioToGenerate);
+                addToHistory(lastGeneratedUrl, prompt);
+                await autoSaveImageToNocoDB(imageUrl);
+              } else {
+                throw new Error('Flux completed but returned no images');
+              }
+              break;
+            } else if (statusData.error) {
+              throw new Error(statusData.error);
+            }
+            attempts++;
+            var progressLabel = isTwoStep ? 'Step 1: Processing with Flux' : 'Processing with Flux';
+            document.getElementById('statusText').textContent = progressLabel + '... (' + (attempts * 2) + 's)';
+          }
+          if (attempts >= 90) throw new Error('Flux generation timed out');
+
         } else {
-          document.getElementById('statusText').textContent = 'Processing ' + ratioToGenerate + '...';
-        }
+          // ── NANO-BANANA path (KieAI) — existing flow unchanged ──────────
+          const createRes = await fetch('/api/generate-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt, imageUrls: activeRefs, aspectRatio: ratioToGenerate })
+          });
+          const createData = await createRes.json();
 
-        let attempts = 0;
-        while (attempts < 60) {
-          await new Promise(r => setTimeout(r, 2000));
-          const statusRes = await fetch('/api/task-status/' + taskId);
-          const statusData = await statusRes.json();
+          console.log('Create response:', createData);
 
-          if ((statusData.data || {}).state === 'success') {
-            const resultJson = JSON.parse(statusData.data.resultJson);
-            const imageUrl = resultJson.resultUrls[0];
-            await showGeneratedImage(imageUrl, ratioToGenerate);
-            addToHistory(lastGeneratedUrl, prompt); // Use lastGeneratedUrl which may have text overlay
-            // Auto-save to NocoDB (newest first, append to existing)
-            await autoSaveImageToNocoDB(imageUrl);
-            break;
-          } else if ((statusData.data || {}).state === 'failed') {
-            throw new Error(statusData.data.failMsg || 'Generation failed');
-          }
-          attempts++;
+          if (createData.code !== 200) throw new Error(createData.msg || 'Failed to create task');
+
+          const taskId = createData.data.taskId;
           if (isTwoStep) {
-            document.getElementById('statusText').textContent = \`Step 1: Processing base image... (\${attempts * 2}s)\`;
+            document.getElementById('statusText').textContent = 'Step 1: Processing base image...';
           } else {
-            document.getElementById('statusText').textContent = \`Processing \${ratioToGenerate}... (\${attempts * 2}s)\`;
+            document.getElementById('statusText').textContent = 'Processing ' + ratioToGenerate + '...';
           }
+
+          let attempts = 0;
+          while (attempts < 60) {
+            await new Promise(r => setTimeout(r, 2000));
+            const statusRes = await fetch('/api/task-status/' + taskId);
+            const statusData = await statusRes.json();
+
+            if ((statusData.data || {}).state === 'success') {
+              const resultJson = JSON.parse(statusData.data.resultJson);
+              const imageUrl = resultJson.resultUrls[0];
+              await showGeneratedImage(imageUrl, ratioToGenerate);
+              addToHistory(lastGeneratedUrl, prompt);
+              await autoSaveImageToNocoDB(imageUrl);
+              break;
+            } else if ((statusData.data || {}).state === 'failed') {
+              throw new Error(statusData.data.failMsg || 'Generation failed');
+            }
+            attempts++;
+            if (isTwoStep) {
+              document.getElementById('statusText').textContent = \`Step 1: Processing base image... (\${attempts * 2}s)\`;
+            } else {
+              document.getElementById('statusText').textContent = \`Processing \${ratioToGenerate}... (\${attempts * 2}s)\`;
+            }
+          }
+          if (attempts >= 60) throw new Error('Generation timed out');
         }
-        if (attempts >= 60) throw new Error('Generation timed out');
       } catch (err) {
         alert('Error: ' + err.message);
       } finally {
