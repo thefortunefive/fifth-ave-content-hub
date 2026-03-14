@@ -374,6 +374,70 @@ app.patch('/api/records/:id', async (c) => {
   return c.json(data)
 })
 
+// API: Generate image prompt with GPT-4o
+app.post('/api/generate-prompt', async (c) => {
+  const apiKey = c.env.OPENAI_API_KEY
+  if (!apiKey || apiKey === 'your-openai-api-key-here') {
+    return c.json({ error: 'OpenAI API key not configured. Add OPENAI_API_KEY to .dev.vars' }, 500)
+  }
+
+  const { headline, category, aspectRatio } = await c.req.json()
+  if (!headline) {
+    return c.json({ error: 'Headline is required' }, 400)
+  }
+
+  let compositionNote = ''
+  if (aspectRatio === '16:9') compositionNote = 'Wide horizontal landscape (16:9), suitable for YouTube thumbnails and Twitter.'
+  else if (aspectRatio === '9:16') compositionNote = 'Tall vertical portrait (9:16), suitable for Instagram Stories and TikTok.'
+  else if (aspectRatio === '1:1') compositionNote = 'Square format (1:1), suitable for Instagram feed posts.'
+
+  const systemPrompt = `You are an expert image prompt engineer for a news media brand called "5th Ave AI" (or "5th Ave Crypto" for crypto topics). 
+You generate detailed, cinematic image prompts for AI image generators (like Flux or Nano-Banana).
+
+Rules:
+- The image should visually represent the news headline's topic and mood
+- Use cinematic, editorial, photorealistic style
+- Include specific details: lighting, composition, color palette, mood
+- Do NOT include any text/words/letters in the image description
+- Keep the prompt under 500 characters
+- Make it vivid and specific, not generic
+- ${compositionNote ? 'Composition: ' + compositionNote : ''}`
+
+  const userMsg = `Generate an image prompt for this news headline:\n\n"${headline}"\n\nCategory: ${category || 'general news'}`
+
+  try {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userMsg }
+        ],
+        max_tokens: 300,
+        temperature: 0.8
+      })
+    })
+
+    if (!res.ok) {
+      const errText = await res.text()
+      console.error('OpenAI API error:', res.status, errText)
+      return c.json({ error: `OpenAI API error: ${res.status}` }, res.status)
+    }
+
+    const data: any = await res.json()
+    const prompt = data.choices?.[0]?.message?.content?.trim() || ''
+    return c.json({ prompt })
+  } catch (err: any) {
+    console.error('Generate prompt error:', err)
+    return c.json({ error: err.message || 'Failed to generate prompt' }, 500)
+  }
+})
+
 // API: Generate image with KieAI
 app.post('/api/generate-image', async (c) => {
   const { prompt, imageUrls, aspectRatio } = await c.req.json()
@@ -1715,7 +1779,13 @@ app.get('/', (c) => {
               <i class="fas fa-wand-magic-sparkles text-amber-500"></i>
               Image Prompt
             </h2>
-            <span id="charCount" class="text-xs text-gray-400">0 chars</span>
+            <div class="flex items-center gap-3">
+              <button id="generatePromptBtn" onclick="generateAIPrompt()" class="text-xs bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
+                <i class="fas fa-robot"></i>
+                <span>Generate Prompt</span>
+              </button>
+              <span id="charCount" class="text-xs text-gray-400">0 chars</span>
+            </div>
           </div>
           <textarea 
             id="promptInput" 
@@ -1761,6 +1831,9 @@ app.get('/', (c) => {
             <button class="aspect-btn flex-1 text-center" data-ratio="1:1" onclick="setAspectRatio('1:1')">
               <i class="fas fa-square mr-1"></i>1:1
             </button>
+          </div>
+          <div id="imageModelLabel" class="text-xs text-center text-gray-500 mb-2 hidden">
+            Model: <span id="imageModelName" class="text-amber-400 font-medium">—</span>
           </div>
           <button id="generateBtn" onclick="generateImage()" class="generate-btn w-full mt-auto">
             <i class="fas fa-sparkles mr-2"></i>Generate Image
@@ -2473,6 +2546,47 @@ app.get('/', (c) => {
         'Style: High-quality editorial photography, modern and polished. Angel should appear as a real person - relatable yet aspirational.' + logoInstruction + textInstructions;
 
       return prompt;
+    }
+
+    // Generate image prompt using GPT-4o API
+    async function generateAIPrompt() {
+      if (!currentRecord) {
+        alert('Select a record first');
+        return;
+      }
+      const f = currentRecord.fields || {};
+      const headline = f.Headline || f.sourceHeadline || f.Title || '';
+      const category = f.category || (currentTopic === 'ai' ? 'AI/technology' : 'crypto');
+      if (!headline) {
+        alert('No headline found on selected record');
+        return;
+      }
+
+      const btn = document.getElementById('generatePromptBtn');
+      const origHTML = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+
+      try {
+        const res = await fetch('/api/generate-prompt', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ headline, category, aspectRatio: currentAspectRatio })
+        });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+
+        const promptInput = document.getElementById('promptInput');
+        promptInput.value = data.prompt;
+        document.getElementById('charCount').textContent = data.prompt.length + ' characters';
+        promptInput.focus();
+      } catch (err) {
+        console.error('Generate prompt error:', err);
+        alert('Failed to generate prompt: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = origHTML;
+      }
     }
     
     // Toggle headline input visibility and regenerate prompt
@@ -3397,6 +3511,17 @@ app.get('/', (c) => {
         showTab('twitter');
 
         // ── IMAGE GENERATION PANEL (keep existing behaviour) ─────────
+        // Show Image Model label from record
+        var modelLabel = document.getElementById('imageModelLabel');
+        var modelName = document.getElementById('imageModelName');
+        var recordModel = f['Image Model'] || '';
+        if (recordModel) {
+          modelName.textContent = recordModel;
+          modelLabel.classList.remove('hidden');
+        } else {
+          modelLabel.classList.add('hidden');
+        }
+
         if (thumbUrl) {
           setContentImage('16:9', thumbUrl);
         } else if (f.imageURL) {
