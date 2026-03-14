@@ -1971,78 +1971,6 @@ app.get('/', (c) => {
     </div>
 
     <!-- ============================================ -->
-    <!-- CONTENT CALENDAR SECTION -->
-    <!-- ============================================ -->
-    <div class="glass rounded-2xl p-4 mb-4">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-semibold flex items-center gap-2">
-          <i class="fas fa-calendar-alt text-amber-500"></i>
-          Content Calendar
-        </h2>
-        <div class="flex items-center gap-2">
-          <button onclick="prevMonth()" class="p-2 hover:bg-white/10 rounded-lg transition-colors">
-            <i class="fas fa-chevron-left"></i>
-          </button>
-          <span id="calendarMonthYear" class="text-lg font-semibold min-w-[160px] text-center">January 2026</span>
-          <button onclick="nextMonth()" class="p-2 hover:bg-white/10 rounded-lg transition-colors">
-            <i class="fas fa-chevron-right"></i>
-          </button>
-          <button onclick="goToToday()" class="ml-2 px-3 py-1 text-sm bg-amber-500/20 text-amber-400 rounded-lg hover:bg-amber-500/30 transition-colors">
-            Today
-          </button>
-        </div>
-      </div>
-      
-      <!-- Calendar Grid -->
-      <div class="calendar-container">
-        <!-- Day Headers -->
-        <div class="grid grid-cols-7 gap-1 mb-2">
-          <div class="text-center text-xs text-gray-500 font-semibold py-2">SUN</div>
-          <div class="text-center text-xs text-gray-500 font-semibold py-2">MON</div>
-          <div class="text-center text-xs text-gray-500 font-semibold py-2">TUE</div>
-          <div class="text-center text-xs text-gray-500 font-semibold py-2">WED</div>
-          <div class="text-center text-xs text-gray-500 font-semibold py-2">THU</div>
-          <div class="text-center text-xs text-gray-500 font-semibold py-2">FRI</div>
-          <div class="text-center text-xs text-gray-500 font-semibold py-2">SAT</div>
-        </div>
-        <!-- Calendar Days -->
-        <div id="calendarGrid" class="grid grid-cols-7 gap-1">
-          <!-- Days will be rendered here -->
-        </div>
-      </div>
-      
-      <!-- Ready to Schedule Queue -->
-      <div class="mt-4 pt-4 border-t border-white/10">
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="text-sm font-semibold flex items-center gap-2">
-            <i class="fas fa-clock text-purple-400"></i>
-            Ready to Schedule
-            <span id="readyToScheduleCount" class="text-xs bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-full">0</span>
-          </h3>
-          <span class="text-xs text-gray-500">Drag to calendar to schedule</span>
-        </div>
-        <div id="readyToScheduleQueue" class="flex gap-3 overflow-x-auto pb-2" style="scrollbar-width: thin; scrollbar-color: #a855f7 rgba(255, 255, 255, 0.1);">
-          <p class="text-gray-500 text-sm p-4 text-center w-full">No posts ready to schedule</p>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Schedule Modal -->
-    <div id="scheduleModal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4">
-      <div class="glass rounded-2xl p-6 max-w-md w-full">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-semibold">Schedule Post</h3>
-          <button onclick="closeScheduleModal()" class="text-gray-400 hover:text-white">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-        <div id="scheduleModalContent">
-          <!-- Content will be rendered here -->
-        </div>
-      </div>
-    </div>
-    
-    <!-- ============================================ -->
     <!-- SECTION DIVIDER -->
     <!-- ============================================ -->
     <div class="section-divider mt-6"></div>
@@ -2274,6 +2202,79 @@ app.get('/', (c) => {
         </div>
       </div>
     </div>
+
+    <!-- ============================================ -->
+    <!-- CONTENT CALENDAR SECTION -->
+    <!-- ============================================ -->
+    <div class="glass rounded-2xl p-4 mb-4 mt-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold flex items-center gap-2">
+          <i class="fas fa-calendar-alt text-amber-500"></i>
+          Content Calendar
+        </h2>
+        <div class="flex items-center gap-2">
+          <button onclick="prevMonth()" class="p-2 hover:bg-white/10 rounded-lg transition-colors">
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          <span id="calendarMonthYear" class="text-lg font-semibold min-w-[160px] text-center">January 2026</span>
+          <button onclick="nextMonth()" class="p-2 hover:bg-white/10 rounded-lg transition-colors">
+            <i class="fas fa-chevron-right"></i>
+          </button>
+          <button onclick="goToToday()" class="ml-2 px-3 py-1 text-sm bg-amber-500/20 text-amber-400 rounded-lg hover:bg-amber-500/30 transition-colors">
+            Today
+          </button>
+        </div>
+      </div>
+      
+      <!-- Calendar Grid -->
+      <div class="calendar-container">
+        <!-- Day Headers -->
+        <div class="grid grid-cols-7 gap-1 mb-2">
+          <div class="text-center text-xs text-gray-500 font-semibold py-2">SUN</div>
+          <div class="text-center text-xs text-gray-500 font-semibold py-2">MON</div>
+          <div class="text-center text-xs text-gray-500 font-semibold py-2">TUE</div>
+          <div class="text-center text-xs text-gray-500 font-semibold py-2">WED</div>
+          <div class="text-center text-xs text-gray-500 font-semibold py-2">THU</div>
+          <div class="text-center text-xs text-gray-500 font-semibold py-2">FRI</div>
+          <div class="text-center text-xs text-gray-500 font-semibold py-2">SAT</div>
+        </div>
+        <!-- Calendar Days -->
+        <div id="calendarGrid" class="grid grid-cols-7 gap-1">
+          <!-- Days will be rendered here -->
+        </div>
+      </div>
+      
+      <!-- Ready to Schedule Queue -->
+      <div class="mt-4 pt-4 border-t border-white/10">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-semibold flex items-center gap-2">
+            <i class="fas fa-clock text-purple-400"></i>
+            Ready to Schedule
+            <span id="readyToScheduleCount" class="text-xs bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-full">0</span>
+          </h3>
+          <span class="text-xs text-gray-500">Drag to calendar to schedule</span>
+        </div>
+        <div id="readyToScheduleQueue" class="flex gap-3 overflow-x-auto pb-2" style="scrollbar-width: thin; scrollbar-color: #a855f7 rgba(255, 255, 255, 0.1);">
+          <p class="text-gray-500 text-sm p-4 text-center w-full">No posts ready to schedule</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Schedule Modal -->
+    <div id="scheduleModal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4">
+      <div class="glass rounded-2xl p-6 max-w-md w-full">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold">Schedule Post</h3>
+          <button onclick="closeScheduleModal()" class="text-gray-400 hover:text-white">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div id="scheduleModalContent">
+          <!-- Content will be rendered here -->
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="handleFileUpload(event)">
