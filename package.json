@@ -3,12 +3,14 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "node dist/server.js",
     "build": "vite build",
+    "start": "node dist/server.js",
     "preview": "vite preview"
   },
   "dependencies": {
-    "hono": "^4.0.0"
+    "hono": "^4.0.0",
+    "@hono/node-server": "^1.13.0"
   },
   "devDependencies": {
     "@hono/vite-cloudflare-pages": "^0.4.2",

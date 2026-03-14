@@ -12,6 +12,21 @@ export interface Env {
 
 const app = new Hono<{ Bindings: Env }>()
 
+// Bridge process.env → c.env for Node.js standalone mode.
+// On Cloudflare Workers, c.env is populated automatically; on Node.js it is not.
+// This must be the FIRST middleware so every route handler sees the env vars.
+if (typeof process !== 'undefined' && process.env) {
+  app.use('*', async (c, next) => {
+    const envKeys = ['NOCODB_TOKEN', 'NOCODB_BASE_URL', 'OPENAI_API_KEY', 'PERPLEXITY_API_KEY', 'FAL_API_KEY'] as const
+    for (const key of envKeys) {
+      if (process.env[key] && !(c.env as any)[key]) {
+        ;(c.env as any)[key] = process.env[key]
+      }
+    }
+    await next()
+  })
+}
+
 // Simple in-memory cache with TTL
 interface CacheEntry {
   data: any
