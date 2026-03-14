@@ -3062,7 +3062,7 @@ app.get('/', (c) => {
         const NOCODB_PROXY_BASE = '/api/nocodb-proxy/';
 
         // Helper to validate image URL - avoids regex with // which can be parsed as comment
-        const isValidImageUrl = (url) => typeof url === 'string' && (url.startsWith('https://') || url.startsWith('http://')) && url.length > 12;
+        const isValidImageUrl = (url) => typeof url === 'string' && (url.startsWith('https://') || url.startsWith('http://') || url.startsWith('/api/')) && url.length > 12;
 
         // Convert a NocoDB path to a proxied URL (relative, same origin)
         const toProxyUrl = (path) => {
@@ -5520,7 +5520,7 @@ app.get('/', (c) => {
           var pip = r.fields['Post Image Preview'];
           if (pip && Array.isArray(pip) && pip.length > 0) {
             var att = pip[0];
-            thumbnail = att.url || att.signedUrl || ((att.thumbnails || {}).large || {}).url || ((att.thumbnails || {}).small || {}).url || '';
+            thumbnail = att.url || att.signedUrl || ((att.thumbnails || {}).large || {}).url || ((att.thumbnails || {}).small || {}).url || (att.signedPath ? '/api/nocodb-proxy/' + att.signedPath : '') || (att.path ? '/api/nocodb-proxy/' + (att.path.startsWith('/') ? att.path.substring(1) : att.path) : '') || '';
           }
           if (!thumbnail && r.fields['Post Image'] && r.fields['Post Image'].startsWith('http')) {
             thumbnail = r.fields['Post Image'];
@@ -5530,7 +5530,7 @@ app.get('/', (c) => {
           }
           if (!thumbnail && imageField && r.fields[imageField] && Array.isArray(r.fields[imageField]) && r.fields[imageField].length > 0) {
             const img = r.fields[imageField][0];
-            thumbnail = ((img.thumbnails || {}).large || {}).url || ((img.thumbnails || {}).small || {}).url || img.url || '';
+            thumbnail = ((img.thumbnails || {}).large || {}).url || ((img.thumbnails || {}).small || {}).url || img.url || (img.signedPath ? '/api/nocodb-proxy/' + img.signedPath : '') || (img.path ? '/api/nocodb-proxy/' + (img.path.startsWith('/') ? img.path.substring(1) : img.path) : '') || '';
           }
           
           const postObj = {
