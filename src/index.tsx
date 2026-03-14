@@ -6,7 +6,7 @@ export interface Env {
   NOCODB_TOKEN: string
   PERPLEXITY_API_KEY?: string
   OPENAI_API_KEY?: string
-  nocodbBaseUrl: string
+  NOCODB_BASE_URL?: string
 }
 
 const app = new Hono<{ Bindings: Env }>()
@@ -199,6 +199,7 @@ app.get('/api/bases/:baseId/tables', async (c) => {
   console.log(`Fetching tables for base: ${baseId}, token present: ${token ? 'yes' : 'no'}, token prefix: ${token.substring(0, 10)}...`)
 
   try {
+    const nocodbBaseUrl = c.env.NOCODB_BASE_URL || DEFAULT_NOCODB_BASE_URL
     const res = await fetchWithRetry(nocodbBaseUrl + `/api/v2/meta/bases/${baseId}/tables`, {
       headers: { 'xc-token': token }
     })
@@ -276,7 +277,7 @@ app.get('/api/records', async (c) => {
   if (!tableId) return c.json({ error: 'Missing tableId' }, 400)
 
   // NocoDB API for listing records
-  const nocodbBaseUrl = c.env.nocodbBaseUrl || DEFAULT_nocodbBaseUrl
+  const nocodbBaseUrl = c.env.NOCODB_BASE_URL || DEFAULT_NOCODB_BASE_URL
   let url = nocodbBaseUrl + `/api/v2/tables/${tableId}/records`
   if (filter && filter !== 'all') {
     // NocoDB uses different filter syntax - for now, fetch all and filter client-side
@@ -315,6 +316,7 @@ app.get('/api/records/:id', async (c) => {
   if (!tableId) return c.json({ error: 'Missing tableId' }, 400)
 
   // NocoDB API for single record
+  const nocodbBaseUrl = c.env.NOCODB_BASE_URL || DEFAULT_NOCODB_BASE_URL
   const res = await fetch(nocodbBaseUrl + `/api/v2/tables/${tableId}/records/${id}`, {
     headers: { 'xc-token': token }
   })
@@ -349,7 +351,7 @@ app.patch('/api/records/:id', async (c) => {
     ...body
   }
 
-  const nocodbBaseUrl = c.env.nocodbBaseUrl || DEFAULT_nocodbBaseUrl
+  const nocodbBaseUrl = c.env.NOCODB_BASE_URL || DEFAULT_NOCODB_BASE_URL
   const res = await fetch(nocodbBaseUrl + `/api/v2/tables/${tableId}/records`, {
     method: 'PATCH',
     headers: {
@@ -515,6 +517,7 @@ app.post('/api/proxy-image', async (c) => {
 // This proxies to: http://31.220.49.162:8080/download/2026/03/12/.../file.jpg
 app.get('/api/nocodb-proxy/*', async (c) => {
   const token = c.req.header('xc-token') || c.env.NOCODB_TOKEN
+  const nocodbBaseUrl = c.env.NOCODB_BASE_URL || DEFAULT_NOCODB_BASE_URL
   
   // Get the path after /api/nocodb-proxy/
   const path = c.req.path.replace('/api/nocodb-proxy/', '')
@@ -568,9 +571,9 @@ const BRAND_CONFIG = {
   // Current active brand mode - can be switched between FifthAveAI and FifthAveCrypto
   currentMode: 'FifthAveAI',
   
-  // VPS NocoDB connection
+  // VPS NocoDB connection - use DEFAULT_NOCODB_BASE_URL or env var at runtime
   vpsNocoDB: {
-    baseUrl: nocodbBaseUrl,
+    get baseUrl() { return DEFAULT_NOCODB_BASE_URL },
     projectId: 'prs1ubx2662cbv6'
   },
   
@@ -705,8 +708,9 @@ app.post('/api/save', async (c) => {
       return c.json({ success: false, error: 'URL is required' }, 400)
     }
     
-    // Get NocoDB token from environment or use default
+    // Get NocoDB token and base URL from environment or use defaults
     const nocodbToken = c.env?.NOCODB_TOKEN || EXTENSION_NOCODB_TOKEN
+    const nocodbBaseUrl = c.env.NOCODB_BASE_URL || DEFAULT_NOCODB_BASE_URL
     
     // Determine routing based on topic (default to 'general')
     const selectedTopic = topic || 'general'
@@ -819,8 +823,9 @@ app.get('/api/process-status/:recordId', async (c) => {
       return c.json({ error: 'Invalid topic' }, 400)
     }
     
-    // Get NocoDB token from environment or use default
+    // Get NocoDB token and base URL from environment or use defaults
     const nocodbToken = c.env?.NOCODB_TOKEN || EXTENSION_NOCODB_TOKEN
+    const nocodbBaseUrl = c.env.NOCODB_BASE_URL || DEFAULT_NOCODB_BASE_URL
     
     // Fetch the record from NocoDB to check if it's been enriched
     // NocoDB uses tableId only, no baseId in record URLs
@@ -877,8 +882,9 @@ app.post('/api/process', async (c) => {
       return c.json({ error: 'Invalid topic' }, 400)
     }
     
-    // Get NocoDB token from environment or use default
+    // Get NocoDB token and base URL from environment or use defaults
     const nocodbToken = c.env?.NOCODB_TOKEN || EXTENSION_NOCODB_TOKEN
+    const nocodbBaseUrl = c.env.NOCODB_BASE_URL || DEFAULT_NOCODB_BASE_URL
     
     // Fetch the record from NocoDB to get current data
     // NocoDB uses tableId only, no baseId in record URLs
@@ -3753,7 +3759,6 @@ app.get('/', (c) => {
             }
             // Then try any available ratio as fallback
             for (const r of ['16:9', '9:16', '1:1']) {
-              if ((cat      for (const r of ['16:9', '9:16', '1:1']) {
               if ((catRefs[r] || {}).url && (catRefs[r] || {}).enabled) {
                 activeRefs.push(catRefs[r].url);
                 console.log('FALLBACK: Using ' + catId + ' (' + r + ') reference for ' + ratioToGenerate + ' output');
