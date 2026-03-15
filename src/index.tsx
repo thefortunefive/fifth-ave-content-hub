@@ -439,6 +439,159 @@ app.post('/api/generate-prompt', async (c) => {
   }
 })
 
+// API: Re-enrich a record from its source URL using GPT-4o
+// POST /api/re-enrich  body: { sourceUrl, recordId, tableId, baseId }
+app.post('/api/re-enrich', async (c) => {
+  const apiKey = c.env.OPENAI_API_KEY
+  if (!apiKey || apiKey === 'your-openai-api-key-here') {
+    return c.json({ error: 'OpenAI API key not configured. Add OPENAI_API_KEY to .dev.vars' }, 500)
+  }
+  const nocoToken = c.req.header('xc-token') || c.env.NOCODB_TOKEN
+  if (!nocoToken) return c.json({ error: 'Missing NocoDB token' }, 401)
+
+  const { sourceUrl, recordId, tableId } = await c.req.json()
+  if (!sourceUrl) return c.json({ error: 'sourceUrl is required' }, 400)
+  if (!recordId)  return c.json({ error: 'recordId is required' }, 400)
+  if (!tableId)   return c.json({ error: 'tableId is required' }, 400)
+
+  // ── STEP 1: fetch article HTML ──────────────────────────────────────
+  console.log('[re-enrich] fetching source URL:', sourceUrl)
+  let articleText = ''
+  try {
+    const articleRes = await fetch(sourceUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; FifthAveBot/1.0)' }
+    })
+    if (!articleRes.ok) {
+      return c.json({ error: `Failed to fetch source URL: HTTP ${articleRes.status}` }, 502)
+    }
+    const html = await articleRes.text()
+
+    // Extract main text — prefer <article>, fall back to <body>
+    // Strip all HTML tags and collapse whitespace
+    const extractText = (tag: string): string => {
+      const re = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\/${tag}>`, 'i')
+      const m = html.match(re)
+      return m ? m[1] : ''
+    }
+    let raw = extractText('article') || extractText('main') || extractText('body') || html
+    // Remove scripts, styles, and nav noise before stripping tags
+    raw = raw.replace(/<(script|style|nav|header|footer|aside)[^>]*>[\s\S]*?<\/\1>/gi, ' ')
+    // Strip all remaining HTML tags
+    raw = raw.replace(/<[^>]+>/g, ' ')
+    // Decode common HTML entities
+    raw = raw.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, ' ')
+    // Collapse whitespace
+    articleText = raw.replace(/\s+/g, ' ').trim().slice(0, 12000) // cap at 12k chars for GPT context
+    console.log('[re-enrich] extracted article text length:', articleText.length)
+  } catch (fetchErr: any) {
+    console.error('[re-enrich] fetch error:', fetchErr)
+    return c.json({ error: `Failed to fetch article: ${fetchErr.message}` }, 502)
+  }
+
+  if (articleText.length < 100) {
+    return c.json({ error: 'Could not extract meaningful article text from that URL (too short or paywalled)' }, 422)
+  }
+
+  // ── STEP 2: GPT-4o enrichment ───────────────────────────────────────
+  const systemPrompt = `You are a news editor for Fifth Ave AI, an AI news brand covering how AI is transforming jobs and industries. Given the full text of a news article, generate the following fields in JSON format:
+{
+  "sourceHeadline": "original article headline",
+  "rewrittenHeadline": "a punchy rewritten headline under 10 words",
+  "body": "a 150-word summary written for professionals worried about AI replacing their jobs",
+  "caption": "a 2-sentence social media caption with a hook and a question",
+  "whyItMatters": "a 2-sentence explanation of why this matters for the average worker",
+  "category": "one of [tech, ready, shift, adapt]"
+}
+Be specific — mention the company name, number of jobs affected, and the AI angle. No generic fluff. Respond with raw JSON only — no markdown, no code fences, no extra text.`
+
+  const userMsg = `Here is the article text to enrich:\n\n${articleText}`
+
+  console.log('[re-enrich] calling GPT-4o...')
+  let enriched: {
+    sourceHeadline?: string
+    rewrittenHeadline?: string
+    body?: string
+    caption?: string
+    whyItMatters?: string
+    category?: string
+  } = {}
+
+  try {
+    const gptRes = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user',   content: userMsg }
+        ],
+        max_tokens: 1200,
+        temperature: 0.7,
+        response_format: { type: 'json_object' }
+      })
+    })
+
+    if (!gptRes.ok) {
+      const errText = await gptRes.text()
+      console.error('[re-enrich] GPT error:', gptRes.status, errText)
+      return c.json({ error: `OpenAI error: ${gptRes.status}` }, 500)
+    }
+
+    const gptData: any = await gptRes.json()
+    const raw = gptData.choices?.[0]?.message?.content?.trim() || '{}'
+    console.log('[re-enrich] GPT raw response:', raw)
+    enriched = JSON.parse(raw)
+  } catch (gptErr: any) {
+    console.error('[re-enrich] GPT exception:', gptErr)
+    return c.json({ error: `GPT-4o failed: ${gptErr.message}` }, 500)
+  }
+
+  // ── STEP 3: PATCH NocoDB with the enriched fields ───────────────────
+  // Map camelCase GPT keys → exact NocoDB column names (with spaces)
+  const nocoFields: Record<string, string> = {
+    sourceHeadline:    'sourceHeadline',
+    rewrittenHeadline: 'Rewritten Headline',
+    body:              'Body',
+    caption:           'Caption',
+    whyItMatters:      'Why It Matters',
+    category:          'category'
+  }
+  const patchBody: Record<string, string> = { Id: String(recordId) }
+  for (const [gptKey, nocoKey] of Object.entries(nocoFields)) {
+    const val = (enriched as any)[gptKey]
+    if (val) patchBody[nocoKey] = String(val)
+  }
+
+  console.log('[re-enrich] PATCHing NocoDB record', recordId, 'with fields:', Object.keys(patchBody))
+  const nocodbBaseUrl = c.env.NOCODB_BASE_URL || DEFAULT_NOCODB_BASE_URL
+  const patchRes = await fetch(`${nocodbBaseUrl}/api/v2/tables/${tableId}/records`, {
+    method: 'PATCH',
+    headers: { 'xc-token': nocoToken, 'Content-Type': 'application/json' },
+    body: JSON.stringify(patchBody)
+  })
+
+  const patchData: any = await patchRes.json()
+  if (patchData?.error) {
+    console.error('[re-enrich] NocoDB PATCH error:', patchData.error)
+    return c.json({ error: `NocoDB update failed: ${patchData.error}` }, 500)
+  }
+
+  console.log('[re-enrich] success for record', recordId)
+  // Return the enriched fields using the same NocoDB names the frontend already understands
+  return c.json({
+    ok: true,
+    fields: {
+      Headline:           enriched.sourceHeadline || '',
+      'Rewritten Headline': enriched.rewrittenHeadline || '',
+      Body:               enriched.body || '',
+      Caption:            enriched.caption || '',
+      'Why It Matters':   enriched.whyItMatters || '',
+      category:           enriched.category || ''
+    }
+  })
+})
+
 // API: Generate image with KieAI
 app.post('/api/generate-image', async (c) => {
   const { prompt, imageUrls, aspectRatio } = await c.req.json()
@@ -2301,7 +2454,12 @@ app.get('/', (c) => {
                 <button onclick="declineRecord()" class="bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded font-medium text-sm whitespace-nowrap">
                   <i class="fas fa-times mr-1"></i>Decline
                 </button>
+                <button id="reEnrichBtn" onclick="reEnrichRecord()" class="bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded font-medium text-sm whitespace-nowrap">
+                  <i class="fas fa-sync-alt mr-1"></i>Re-Enrich
+                </button>
               </div>
+              <!-- Re-Enrich status message (shown below the button row) -->
+              <div id="reEnrichStatus" class="hidden w-full mt-2 text-xs px-1"></div>
             </div>
           </div>
 
@@ -5817,6 +5975,108 @@ app.get('/', (c) => {
       });
       loadRecords();
       selectRecord(currentRecordId);
+    }
+
+    // ========================================
+    // RE-ENRICH RECORD FROM SOURCE URL
+    // ========================================
+    async function reEnrichRecord() {
+      if (!currentRecordId || !currentBase || !currentTable) {
+        alert('Please select a record first.');
+        return;
+      }
+
+      // Extract the source URL from the record's Source field.
+      // The field may contain extra text like "TechCrunch - https://..." so we
+      // pull out the first http(s) URL we find.
+      const sourceRaw = (currentRecord && currentRecord.fields && currentRecord.fields.Source) || '';
+      const urlMatch = sourceRaw.match(/https?:\/\/[^\s]+/);
+      const sourceUrl = urlMatch ? urlMatch[0].replace(/[.,;)]+$/, '') : '';
+
+      if (!sourceUrl) {
+        alert('No source URL found for this record. Make sure the Source field contains a URL.');
+        return;
+      }
+
+      const btn = document.getElementById('reEnrichBtn');
+      const statusEl = document.getElementById('reEnrichStatus');
+      const originalBtnHtml = btn.innerHTML;
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Re-Enriching...';
+      statusEl.className = 'w-full mt-2 text-xs px-1 text-blue-400';
+      statusEl.textContent = 'Fetching article from ' + sourceUrl + '...';
+
+      try {
+        const res = await fetch('/api/re-enrich', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'xc-token': NOCODB_TOKEN
+          },
+          body: JSON.stringify({
+            sourceUrl: sourceUrl,
+            recordId:  currentRecordId,
+            tableId:   currentTable.id
+          })
+        });
+
+        const data = await res.json();
+
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        // Update the Content Review UI immediately with the returned fields
+        const f = data.fields || {};
+
+        // Headline
+        if (f.Headline) {
+          document.getElementById('detailTitle').textContent = f.Headline;
+          if (currentRecord && currentRecord.fields) currentRecord.fields.Headline = f.Headline;
+        }
+        // Rewritten Headline
+        var rwEl = document.getElementById('detailRewritten');
+        var rwWrap = document.getElementById('detailRewrittenWrap');
+        if (f['Rewritten Headline']) {
+          rwEl.textContent = f['Rewritten Headline'];
+          rwWrap.classList.remove('hidden');
+          if (currentRecord && currentRecord.fields) currentRecord.fields['Rewritten Headline'] = f['Rewritten Headline'];
+        }
+        // Caption
+        var capEl = document.getElementById('detailCaption');
+        var capWrap = document.getElementById('detailCaptionWrap');
+        if (f.Caption) {
+          capEl.textContent = f.Caption;
+          capWrap.classList.remove('hidden');
+          if (currentRecord && currentRecord.fields) currentRecord.fields.Caption = f.Caption;
+        }
+        // Why It Matters
+        var whyEl = document.getElementById('detailWhy');
+        var whyWrap = document.getElementById('detailWhyWrap');
+        if (f['Why It Matters']) {
+          whyEl.textContent = f['Why It Matters'];
+          whyWrap.classList.remove('hidden');
+          if (currentRecord && currentRecord.fields) currentRecord.fields['Why It Matters'] = f['Why It Matters'];
+        }
+
+        // Refresh the records list so the headline update shows in the sidebar
+        loadRecords();
+
+        statusEl.className = 'w-full mt-2 text-xs px-1 text-green-400';
+        statusEl.textContent = '\u2713 Re-enriched successfully from ' + sourceUrl;
+
+        // Auto-hide the status message after 5 seconds
+        setTimeout(() => { statusEl.className = 'hidden'; statusEl.textContent = ''; }, 5000);
+
+      } catch (err) {
+        console.error('[reEnrichRecord] error:', err);
+        statusEl.className = 'w-full mt-2 text-xs px-1 text-red-400';
+        statusEl.textContent = '\u2717 Re-enrich failed: ' + err.message;
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalBtnHtml;
+      }
     }
 
     // ========================================
