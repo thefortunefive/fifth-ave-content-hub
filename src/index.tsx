@@ -514,11 +514,13 @@ app.post('/api/generate-image-fal', async (c) => {
     }
 
     const submitData = await submitRes.json() as { request_id: string; status_url: string; response_url: string }
-    console.log('fal.ai submitted:', submitData.request_id)
+    console.log('[fal-submit] request_id:', submitData.request_id,
+      'status_url:', submitData.status_url,
+      'response_url:', submitData.response_url)
 
     return c.json({
-      requestId: submitData.request_id,
-      statusUrl: submitData.status_url,
+      requestId:   submitData.request_id,
+      statusUrl:   submitData.status_url,
       responseUrl: submitData.response_url
     })
   } catch (err: any) {
@@ -528,6 +530,8 @@ app.post('/api/generate-image-fal', async (c) => {
 })
 
 // API: Check fal.ai request status
+// Expects query params: ?statusUrl=...&responseUrl=...
+// (passed through from the submit response so we use the exact URLs fal.ai gave us)
 app.get('/api/fal-status/:requestId', async (c) => {
   const falKey = c.env.FAL_API_KEY
   if (!falKey) {
@@ -536,18 +540,24 @@ app.get('/api/fal-status/:requestId', async (c) => {
 
   const requestId = c.req.param('requestId')
 
-  try {
-    // Poll the queue status endpoint
-    const statusRes = await fetch(`https://queue.fal.run/fal-ai/flux/dev/requests/${requestId}/status`, {
-      headers: { 'Authorization': `Key ${falKey}` }
-    })
+  // Use the exact URLs returned by fal.ai at submit time.
+  // Fall back to the canonical queue URL pattern if not supplied.
+  const statusUrl = c.req.query('statusUrl') ||
+    `https://queue.fal.run/fal-ai/flux/dev/requests/${requestId}/status`
+  const responseUrl = c.req.query('responseUrl') ||
+    `https://queue.fal.run/fal-ai/flux/dev/requests/${requestId}/response`
 
+  const authHeader = { 'Authorization': `Key ${falKey}` }
+
+  try {
+    // ── STEP 1: poll status (must be GET) ─────────────────────────────
+    console.log('[fal-status] GET', statusUrl)
+    const statusRes = await fetch(statusUrl, { method: 'GET', headers: authHeader })
     const statusRaw = await statusRes.text()
-    console.log('[fal-status] raw status response:', statusRaw)
+    console.log('[fal-status] status HTTP', statusRes.status, '| body:', statusRaw)
 
     if (!statusRes.ok) {
-      console.error('[fal-status] status endpoint error:', statusRes.status, statusRaw)
-      return c.json({ error: `fal.ai status error: ${statusRes.status}` }, 500)
+      return c.json({ error: `fal.ai status error: ${statusRes.status}`, raw: statusRaw }, 500)
     }
 
     let statusData: { status?: string; state?: string } = {}
@@ -558,43 +568,42 @@ app.get('/api/fal-status/:requestId', async (c) => {
       return c.json({ error: 'Invalid JSON from fal.ai status endpoint', raw: statusRaw }, 500)
     }
 
-    // fal.ai queue returns status as "IN_QUEUE", "IN_PROGRESS", or "COMPLETED"
+    // fal.ai returns status as "IN_QUEUE", "IN_PROGRESS", or "COMPLETED"
     const status = statusData.status || statusData.state || 'IN_QUEUE'
+    console.log('[fal-status] normalised status:', status)
 
-    if (status === 'COMPLETED') {
-      // Fetch the actual result from the result endpoint (no /status suffix)
-      const resultRes = await fetch(`https://queue.fal.run/fal-ai/flux/dev/requests/${requestId}`, {
-        headers: { 'Authorization': `Key ${falKey}` }
-      })
-
-      const resultRaw = await resultRes.text()
-      console.log('[fal-status] raw result response:', resultRaw)
-
-      if (!resultRes.ok) {
-        console.error('[fal-status] result endpoint error:', resultRes.status, resultRaw)
-        return c.json({ error: `fal.ai result error: ${resultRes.status}` }, 500)
-      }
-
-      let resultData: { images?: Array<{ url: string; width: number; height: number }> } = {}
-      try {
-        resultData = JSON.parse(resultRaw)
-      } catch (parseErr) {
-        console.error('[fal-status] failed to parse result JSON:', parseErr)
-        return c.json({ error: 'Invalid JSON from fal.ai result endpoint', raw: resultRaw }, 500)
-      }
-
-      const images = resultData.images || []
-      if (images.length === 0) {
-        console.error('[fal-status] COMPLETED but no images in result:', resultRaw)
-        return c.json({ error: 'fal.ai completed but returned no images' }, 500)
-      }
-
-      console.log('[fal-status] COMPLETED, imageUrl:', images[0].url)
-      return c.json({ status: 'COMPLETED', imageUrl: images[0].url })
+    if (status !== 'COMPLETED') {
+      // Still queued or running — return clean status only
+      return c.json({ status })
     }
 
-    // Still in progress — return a clean normalised status object
-    return c.json({ status })
+    // ── STEP 2: fetch result from response_url (GET, /response suffix) ─
+    console.log('[fal-status] COMPLETED — GET', responseUrl)
+    const resultRes = await fetch(responseUrl, { method: 'GET', headers: authHeader })
+    const resultRaw = await resultRes.text()
+    console.log('[fal-status] result HTTP', resultRes.status, '| body:', resultRaw)
+
+    if (!resultRes.ok) {
+      return c.json({ error: `fal.ai result error: ${resultRes.status}`, raw: resultRaw }, 500)
+    }
+
+    let resultData: { images?: Array<{ url: string; width: number; height: number }> } = {}
+    try {
+      resultData = JSON.parse(resultRaw)
+    } catch (parseErr) {
+      console.error('[fal-status] failed to parse result JSON:', parseErr)
+      return c.json({ error: 'Invalid JSON from fal.ai result endpoint', raw: resultRaw }, 500)
+    }
+
+    const images = resultData.images || []
+    if (images.length === 0) {
+      console.error('[fal-status] COMPLETED but no images in result:', resultRaw)
+      return c.json({ error: 'fal.ai completed but returned no images' }, 500)
+    }
+
+    console.log('[fal-status] imageUrl:', images[0].url)
+    return c.json({ status: 'COMPLETED', imageUrl: images[0].url })
+
   } catch (err: any) {
     console.error('[fal-status] exception:', err)
     return c.json({ error: err.message || 'Failed to check fal.ai status' }, 500)
@@ -4202,15 +4211,28 @@ app.get('/', (c) => {
 
           if (createData.error) throw new Error(createData.error);
 
-          const requestId = createData.requestId;
+          const requestId   = createData.requestId;
+          const statusUrl   = createData.statusUrl   || '';
+          const responseUrl = createData.responseUrl || '';
           document.getElementById('statusText').textContent = 'Processing with Flux...';
+
+          // Build the poll URL — pass statusUrl and responseUrl so the server
+          // uses the exact URLs fal.ai returned, avoiding any URL reconstruction.
+          function buildPollUrl(rid, sUrl, rUrl) {
+            var u = '/api/fal-status/' + encodeURIComponent(rid);
+            var params = [];
+            if (sUrl) params.push('statusUrl='   + encodeURIComponent(sUrl));
+            if (rUrl) params.push('responseUrl=' + encodeURIComponent(rUrl));
+            return params.length ? u + '?' + params.join('&') : u;
+          }
 
           let attempts = 0;
           while (attempts < 90) {
             await new Promise(r => setTimeout(r, 2000));
-            const statusRes = await fetch('/api/fal-status/' + requestId);
+            const pollUrl = buildPollUrl(requestId, statusUrl, responseUrl);
+            const statusRes = await fetch(pollUrl);
             const statusData = await statusRes.json();
-            console.log('[fal poll] attempt', attempts + 1, 'response:', statusData);
+            console.log('[fal poll] attempt', attempts + 1, 'url:', pollUrl, 'response:', statusData);
 
             if (statusData.error) {
               throw new Error(statusData.error);
