@@ -1299,6 +1299,120 @@ app.get('/api/topics', (c) => {
   })
 })
 
+// API: Generate Platform Content (all 8 platforms) using Fifth Ave Angel voice
+// POST /api/generate-platform-content  body: { headline, body, source, category }
+app.post('/api/generate-platform-content', async (c) => {
+  const apiKey = c.env.OPENAI_API_KEY
+  if (!apiKey || apiKey === 'your-openai-api-key-here') {
+    return c.json({ error: 'OpenAI API key not configured. Add OPENAI_API_KEY to .dev.vars' }, 500)
+  }
+
+  const { headline, body: articleBody, source, category } = await c.req.json()
+  if (!headline) {
+    return c.json({ error: 'headline is required' }, 400)
+  }
+
+  const systemPrompt = `You are Fifth Ave Angel, the voice of 5th Ave AI. Your tone is direct, confrontational, and urgent — like a trusted advisor who doesn't sugarcoat anything. You speak TO the reader, not about the news. Every post must feel like you're grabbing someone by the collar and telling them what their boss won't.
+
+VOICE RULES:
+- Use "you" and "your" constantly. This is personal, never third-person reporting.
+- Open with a shocking stat, provocative question, or bold claim. Never a neutral headline.
+- Short punchy sentences mixed with longer explanations.
+- Core tension in every post: the world is changing, companies aren't preparing their workers, the reader needs to act NOW.
+- Always tie back to the 5th Ave AI CTA: free video (link in bio) and/or the $5 "50 Jobs Most Likely Gone by 2030" PDF.
+- End every post with: "5th Ave AI. Do It Different."
+- Cite sources naturally (e.g., "— McKinsey, Nov 2025") but never sound like a news wire.
+- Never use corporate jargon, never sound neutral, never sound like a press release.
+
+PLATFORM FORMATS:
+- Twitter/X (max 280 chars): One punchy stat or provocative line + CTA. End with "5th Ave AI. Do It Different."
+- Threads: 3-5 short paragraphs. Hook → stat → what it means for YOU → CTA → "5th Ave AI. Do It Different."
+- Bluesky: Same as Twitter/X format.
+- LinkedIn (150-200 words, professional but direct): Hook stat → 2-3 paragraphs explaining what this means for careers → CTA → "5th Ave AI. Do It Different." Use 2-3 relevant hashtags.
+- Facebook: Conversational, 2-3 paragraphs. Hook → personal angle → CTA.
+- Instagram: Caption style. Hook line → short explanation → "Save this." → CTA → "5th Ave AI. Do It Different."
+- Blog (300-500 words): Full editorial. Hook → data → analysis → what the reader should do → CTA.
+- Script: Video script format with Hook, Body (first half), Mid-video soft CTA ("I break this down in a free video — link in my bio"), Body (second half), End CTA ("Free video in bio. 50 Jobs Most Likely Gone by 2030 — five dollars. Same link."), Footer with source.
+
+Given the article headline, body, and source, generate content for ALL platforms in Fifth Ave Angel's voice.
+
+Return ONLY valid JSON with exactly these keys:
+{
+  "twitter": "...",
+  "threads": "...",
+  "bluesky": "...",
+  "linkedin": "...",
+  "facebook": "...",
+  "instagram": "...",
+  "blog": "...",
+  "script": "..."
+}`
+
+  const userMsg = [
+    `Headline: ${headline}`,
+    articleBody ? `Article body:\n${articleBody}` : '',
+    source ? `Source: ${source}` : '',
+    category ? `Category: ${category}` : ''
+  ].filter(Boolean).join('\n\n')
+
+  console.log('[generate-platform-content] calling GPT-4o for headline:', headline.slice(0, 80))
+
+  try {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user',   content: userMsg }
+        ],
+        max_tokens: 3000,
+        temperature: 0.8,
+        response_format: { type: 'json_object' }
+      })
+    })
+
+    if (!res.ok) {
+      const errText = await res.text()
+      console.error('[generate-platform-content] OpenAI error:', res.status, errText)
+      return c.json({ error: `OpenAI API error: ${res.status}` }, res.status as any)
+    }
+
+    const data: any = await res.json()
+    const raw = data.choices?.[0]?.message?.content?.trim() || '{}'
+    console.log('[generate-platform-content] raw response length:', raw.length)
+
+    let parsed: Record<string, string>
+    try {
+      parsed = JSON.parse(raw)
+    } catch (e) {
+      console.error('[generate-platform-content] JSON parse error:', e)
+      return c.json({ error: 'Failed to parse GPT-4o JSON response' }, 500)
+    }
+
+    return c.json({
+      ok: true,
+      content: {
+        twitter:   parsed.twitter   || '',
+        threads:   parsed.threads   || '',
+        bluesky:   parsed.bluesky   || '',
+        linkedin:  parsed.linkedin  || '',
+        facebook:  parsed.facebook  || '',
+        instagram: parsed.instagram || '',
+        blog:      parsed.blog      || '',
+        script:    parsed.script    || ''
+      }
+    })
+  } catch (err: any) {
+    console.error('[generate-platform-content] error:', err)
+    return c.json({ error: err.message || 'Server error' }, 500)
+  }
+})
+
 // API: Generate image prompt from headline/summary using GPT-4o
 app.post('/api/generate-image-prompt', async (c) => {
   try {
@@ -2584,6 +2698,11 @@ app.get('/', (c) => {
             </div>
             <div class="flex items-center gap-3">
               <span class="text-xs text-gray-500">Auto-saves on edit</span>
+              <button onclick="event.stopPropagation(); generatePlatformContent()" id="generatePlatformBtn"
+                title="Generate all platform copy with Fifth Ave Angel voice"
+                class="text-xs bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
+                <i class="fas fa-magic"></i> Generate
+              </button>
               <button onclick="event.stopPropagation(); expandSocialContent()" title="Expand to full screen" class="text-gray-400 hover:text-amber-500 transition-colors">
                 <i class="fas fa-expand"></i>
               </button>
@@ -6038,6 +6157,111 @@ app.get('/', (c) => {
       
       document.querySelector(\`[data-tab="\${tab}"]\`).classList.add('tab-active');
       document.getElementById('tab-' + tab).classList.remove('hidden');
+    }
+
+    // ========================================
+    // GENERATE PLATFORM CONTENT (Fifth Ave Angel)
+    // ========================================
+    async function generatePlatformContent() {
+      if (!currentRecord) {
+        alert('Please select a record first.');
+        return;
+      }
+
+      const f = currentRecord.fields || {};
+
+      // Gather article data from the current record
+      const headline = (document.getElementById('detailTitle') || {}).textContent
+        || f['Rewritten Headline'] || f['sourceHeadline'] || f['Headline'] || f['Title'] || f['Name'] || '';
+      const articleBody = f['Body'] || f['Lead'] || f['Caption'] || '';
+      const source = f['Source'] || '';
+      const category = f['category'] || f['Category'] || '';
+
+      if (!headline) {
+        alert('No headline found for this record. Cannot generate platform content.');
+        return;
+      }
+
+      const btn = document.getElementById('generatePlatformBtn');
+      const originalHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating…';
+
+      try {
+        console.log('[generatePlatformContent] Calling /api/generate-platform-content for:', headline.slice(0, 80));
+
+        const res = await fetch('/api/generate-platform-content', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'xc-token': NOCODB_TOKEN
+          },
+          body: JSON.stringify({ headline, body: articleBody, source, category })
+        });
+
+        const data = await res.json();
+
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        const c = data.content;
+        console.log('[generatePlatformContent] Received content for platforms:', Object.keys(c).join(', '));
+
+        // Populate all platform textareas
+        if (c.twitter)   document.getElementById('contentTwitter').value   = c.twitter;
+        if (c.threads)   document.getElementById('contentThreads').value   = c.threads;
+        if (c.bluesky)   document.getElementById('contentBluesky').value   = c.bluesky;
+        if (c.linkedin)  document.getElementById('contentLinkedin').value  = c.linkedin;
+        if (c.facebook)  document.getElementById('contentFacebook').value  = c.facebook;
+        if (c.instagram) document.getElementById('contentInstagram').value = c.instagram;
+        if (c.blog)      document.getElementById('contentBlog').value      = c.blog;
+        if (c.script)    document.getElementById('contentScript').value    = c.script;
+
+        // Update character counts
+        document.getElementById('twitterCount').textContent  = (c.twitter  || '').length;
+        document.getElementById('blueskyCount').textContent  = (c.bluesky  || '').length;
+
+        // Auto-save all populated fields to NocoDB
+        if (currentRecordId && currentBase && currentTable) {
+          const patchBody = { Id: String(currentRecordId) };
+          if (c.twitter)   patchBody['Twitter Copy']   = c.twitter;
+          if (c.threads)   patchBody['Threads Copy']   = c.threads;
+          if (c.bluesky)   patchBody['Bluesky Copy']   = c.bluesky;
+          if (c.linkedin)  patchBody['LinkedIn Copy']  = c.linkedin;
+          if (c.facebook)  patchBody['Facebook Copy']  = c.facebook;
+          if (c.instagram) patchBody['Instagram Copy'] = c.instagram;
+          if (c.blog)      patchBody['Blog Copy']      = c.blog;
+          if (c.script)    patchBody['Short Script']   = c.script;
+
+          console.log('[generatePlatformContent] Auto-saving to NocoDB fields:', Object.keys(patchBody).filter(k => k !== 'Id').join(', '));
+
+          const patchRes = await fetch(\`/api/records/\${currentRecordId}?baseId=\${currentBase.id}&tableId=\${currentTable.id}\`, {
+            method: 'PATCH',
+            headers: { 'xc-token': NOCODB_TOKEN, 'Content-Type': 'application/json' },
+            body: JSON.stringify(patchBody)
+          });
+          const patchData = await patchRes.json();
+          if (patchData.error) {
+            console.warn('[generatePlatformContent] NocoDB save warning:', patchData.error);
+          } else {
+            console.log('[generatePlatformContent] Saved to NocoDB successfully.');
+            showSaveIndicator();
+          }
+        }
+
+        btn.innerHTML = '<i class="fas fa-check"></i> Done!';
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.innerHTML = originalHtml;
+        }, 2000);
+
+      } catch (err) {
+        console.error('[generatePlatformContent] Error:', err);
+        alert('Error generating platform content: ' + err.message);
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+      }
     }
 
     function copyContent(type) {
