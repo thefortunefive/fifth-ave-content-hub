@@ -6226,14 +6226,33 @@ app.get('/', (c) => {
         const reviewPromptVal = (document.getElementById('reviewImagePrompt') || {}).value || '';
         const mainPromptVal = (document.getElementById('promptInput') || {}).value || '';
         const imagePromptToSave = reviewPromptVal || mainPromptVal;
+
+        // Build updates object — always include 16:9 (Post Image Preview), and
+        // add 9:16 and 1:1 attachment fields when those slots have images.
         const attachmentPayload = buildAttachmentPayload(imageUrl);
         const updates = { 'Post Image Preview': attachmentPayload };
+
+        const url916 = contentImages['9:16'];
+        const url1x1 = contentImages['1:1'];
+        if (url916) {
+          updates['Post Image 9:16'] = buildAttachmentPayload(url916);
+        }
+        if (url1x1) {
+          updates['Post Image 1:1'] = buildAttachmentPayload(url1x1);
+        }
+
         if (imagePromptToSave) {
           updates.ImagePrompt = imagePromptToSave;
         }
-        const savedCount = 1;
-        
-        console.log('[NocoDB save] PATCHing "Post Image Preview" with attachment payload:', JSON.stringify(attachmentPayload));
+
+        // Count how many image fields are being saved
+        const imageFieldsSaved = ['Post Image Preview', ...(url916 ? ['Post Image 9:16'] : []), ...(url1x1 ? ['Post Image 1:1'] : [])];
+        const savedCount = imageFieldsSaved.length;
+
+        console.log('[NocoDB save] PATCHing fields:', imageFieldsSaved.join(', '));
+        console.log('[NocoDB save] "Post Image Preview" payload:', JSON.stringify(attachmentPayload));
+        if (url916) console.log('[NocoDB save] "Post Image 9:16" payload:', JSON.stringify(updates['Post Image 9:16']));
+        if (url1x1) console.log('[NocoDB save] "Post Image 1:1" payload:', JSON.stringify(updates['Post Image 1:1']));
         
         // Save to NocoDB
         statusText.textContent = 'Uploading ' + savedCount + ' image(s) to NocoDB...';
@@ -6253,12 +6272,14 @@ app.get('/', (c) => {
           throw new Error(result.error.message || 'NocoDB error');
         }
 
-        // Update local record cache as an attachment array
+        // Update local record cache for all saved fields
         if (currentRecord && currentRecord.fields) {
           currentRecord.fields['Post Image Preview'] = attachmentPayload;
+          if (url916) currentRecord.fields['Post Image 9:16'] = updates['Post Image 9:16'];
+          if (url1x1) currentRecord.fields['Post Image 1:1'] = updates['Post Image 1:1'];
         }
         
-        statusText.textContent = '\\u2713 Saved ' + savedCount + ' image(s)' + (imagePromptToSave ? ' + prompt' : '') + ' to NocoDB!';
+        statusText.textContent = '\u2713 Saved ' + savedCount + ' image slot(s) [' + imageFieldsSaved.join(', ') + ']' + (imagePromptToSave ? ' + prompt' : '') + ' to NocoDB!';
         statusDiv.classList.remove('border-blue-500/30', 'bg-blue-900/30');
         statusDiv.classList.add('border-green-500/30', 'bg-green-900/30');
         statusText.classList.remove('text-blue-300');
