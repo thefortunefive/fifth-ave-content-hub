@@ -1997,8 +1997,9 @@ app.get('/', (c) => {
               <i class="fas fa-square mr-1"></i>1:1
             </button>
           </div>
-          <div id="imageModelLabel" class="text-xs text-center text-gray-500 mb-2 hidden">
-            Model: <span id="imageModelName" class="text-amber-400 font-medium">—</span>
+          <div id="imageModelLabel" class="text-sm text-center mb-2 py-1.5 px-3 rounded-lg bg-amber-500/10 border border-amber-500/20 hidden">
+            <i class="fas fa-microchip mr-1 text-amber-400"></i>
+            Model: <span id="imageModelName" class="text-amber-400 font-semibold">—</span>
           </div>
           <button id="generateBtn" onclick="generateImage()" class="generate-btn w-full mt-auto">
             <i class="fas fa-sparkles mr-2"></i>Generate Image
@@ -4319,6 +4320,11 @@ app.get('/', (c) => {
           if (attempts >= 60) throw new Error('Generation timed out');
         }
       } catch (err) {
+        console.error('Image generation error:', err);
+        document.getElementById('statusText').textContent = 'Error: ' + err.message;
+        status.classList.remove('hidden');
+        // Keep status visible for errors (don't hide in finally)
+        setTimeout(() => { status.classList.add('hidden'); }, 8000);
         alert('Error: ' + err.message);
       } finally {
         btn.disabled = false;
@@ -5775,7 +5781,14 @@ app.get('/', (c) => {
         }
         
         // Save image URL to text field 'imageURL' (NOT attachment field)
+        // Also save the current Image Prompt from the review textarea
+        const reviewPromptVal = (document.getElementById('reviewImagePrompt') || {}).value || '';
+        const mainPromptVal = (document.getElementById('promptInput') || {}).value || '';
+        const imagePromptToSave = reviewPromptVal || mainPromptVal;
         const updates = { imageURL: imageUrl };
+        if (imagePromptToSave) {
+          updates.ImagePrompt = imagePromptToSave;
+        }
         const savedCount = 1;
         
         console.log('Saving to NocoDB imageURL field:', imageUrl);
@@ -5797,7 +5810,7 @@ app.get('/', (c) => {
           throw new Error(result.error.message || 'NocoDB error');
         }
         
-        statusText.textContent = '✓ Saved ' + savedCount + ' image(s) to NocoDB!';
+        statusText.textContent = '\\u2713 Saved ' + savedCount + ' image(s)' + (imagePromptToSave ? ' + prompt' : '') + ' to NocoDB!';
         statusDiv.classList.remove('border-blue-500/30', 'bg-blue-900/30');
         statusDiv.classList.add('border-green-500/30', 'bg-green-900/30');
         statusText.classList.remove('text-blue-300');
