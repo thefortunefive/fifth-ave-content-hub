@@ -2271,8 +2271,8 @@ app.get('/', (c) => {
                 <button onclick="resizeToAllSizes('ai')" class="w-full text-left px-3 py-2 hover:bg-gray-700 rounded-lg flex items-center gap-2 text-sm">
                   <i class="fas fa-magic text-purple-400"></i>
                   <div>
-                    <div class="font-medium">AI Regenerate</div>
-                    <div class="text-xs text-gray-400">Best quality, uses Nano Banana (~$0.09/image)</div>
+                    <div class="font-medium">AI Regenerate (Flux Klein 9B)</div>
+                    <div class="text-xs text-gray-400">Best quality, uses Flux Klein 9B via fal.ai</div>
                   </div>
                 </button>
                 <button onclick="resizeToAllSizes('crop')" class="w-full text-left px-3 py-2 hover:bg-gray-700 rounded-lg flex items-center gap-2 text-sm">
@@ -4702,6 +4702,70 @@ app.get('/', (c) => {
       throw new Error('Generation timed out for ' + targetRatio);
     }
     
+    // Generate image for a specific ratio using fal.ai Flux Klein 9B
+    async function generateImageForRatioFal(targetRatio) {
+      // Read the current image prompt from the review textarea, fallback to main prompt
+      const reviewPromptEl = document.getElementById('reviewImagePrompt');
+      const mainPromptEl = document.getElementById('imagePrompt');
+      const prompt = (reviewPromptEl && reviewPromptEl.value.trim())
+        ? reviewPromptEl.value.trim()
+        : (mainPromptEl ? mainPromptEl.value.trim() : '');
+
+      if (!prompt) {
+        throw new Error('No image prompt found — generate a prompt first before resizing.');
+      }
+
+      console.log('[generateImageForRatioFal] Submitting to fal.ai for ratio:', targetRatio, 'prompt:', prompt.slice(0, 80) + '…');
+
+      // Submit to fal.ai via existing backend endpoint
+      const submitRes = await fetch('/api/generate-image-fal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, aspectRatio: targetRatio })
+      });
+      const submitData = await submitRes.json();
+
+      if (submitData.error) {
+        throw new Error(submitData.error);
+      }
+
+      const { requestId, statusUrl, responseUrl } = submitData;
+      console.log('[generateImageForRatioFal] requestId:', requestId, 'statusUrl:', statusUrl);
+
+      // Build poll URL with encoded statusUrl / responseUrl
+      const pollBase = '/api/fal-status/' + encodeURIComponent(requestId);
+      const params = new URLSearchParams();
+      if (statusUrl) params.set('statusUrl', statusUrl);
+      if (responseUrl) params.set('responseUrl', responseUrl);
+      const pollUrl = pollBase + '?' + params.toString();
+
+      // Poll until COMPLETED (up to 90 attempts × 2 s = 3 min)
+      let attempts = 0;
+      while (attempts < 90) {
+        await new Promise(r => setTimeout(r, 2000));
+        const statusRes = await fetch(pollUrl);
+        const statusData = await statusRes.json();
+
+        console.log('[generateImageForRatioFal] attempt', attempts + 1, 'status:', statusData.status);
+
+        if (statusData.error) {
+          throw new Error(statusData.error);
+        }
+
+        if (statusData.status === 'COMPLETED') {
+          if (!statusData.imageUrl) {
+            throw new Error('Generation completed but no imageUrl returned for ' + targetRatio);
+          }
+          console.log('[generateImageForRatioFal] COMPLETED imageUrl:', statusData.imageUrl);
+          return statusData.imageUrl;
+        }
+
+        attempts++;
+      }
+
+      throw new Error('fal.ai generation timed out for ' + targetRatio);
+    }
+
     // Load image from URL (uses server-side proxy to avoid CORS)
     async function loadImage(url) {
       // Use server-side proxy to fetch image and convert to base64
@@ -5879,9 +5943,8 @@ app.get('/', (c) => {
           let resultUrl;
           
           if (method === 'ai') {
-            // Use Nano Banana to regenerate
-            const prompt = 'Recreate this exact same scene, person, outfit, and lighting. Keep EVERYTHING identical - same composition, same pose, same expression, same clothing, same background, same mood. Do NOT change any details.';
-            resultUrl = await generateImageForRatio(sourceUrl, prompt, targetRatio);
+            // Use fal.ai Flux Klein 9B to regenerate
+            resultUrl = await generateImageForRatioFal(targetRatio);
           } else {
             // Use canvas to crop
             resultUrl = await cropImageToRatio(sourceUrl, targetRatio);
