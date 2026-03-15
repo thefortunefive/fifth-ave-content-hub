@@ -402,22 +402,7 @@ app.post('/api/generate-prompt', async (c) => {
     return c.json({ error: 'Headline is required' }, 400)
   }
 
-  let compositionNote = ''
-  if (aspectRatio === '16:9') compositionNote = 'Wide horizontal landscape (16:9), suitable for YouTube thumbnails and Twitter.'
-  else if (aspectRatio === '9:16') compositionNote = 'Tall vertical portrait (9:16), suitable for Instagram Stories and TikTok.'
-  else if (aspectRatio === '1:1') compositionNote = 'Square format (1:1), suitable for Instagram feed posts.'
-
-  const systemPrompt = `You are an expert image prompt engineer for a news media brand called "5th Ave AI" (or "5th Ave Crypto" for crypto topics). 
-You generate detailed, cinematic image prompts for AI image generators (like Flux or Nano-Banana).
-
-Rules:
-- The image should visually represent the news headline's topic and mood
-- Use cinematic, editorial, photorealistic style
-- Include specific details: lighting, composition, color palette, mood
-- Do NOT include any text/words/letters in the image description
-- Keep the prompt under 500 characters
-- Make it vivid and specific, not generic
-- ${compositionNote ? 'Composition: ' + compositionNote : ''}`
+  const systemPrompt = 'You create one high-quality image prompt for a Fifth Ave AI news visual. Create a scene that matches the article itself. Focus on the company, event, industry, and emotional tone of the specific story. ABSOLUTE PROHIBITIONS: no readable text, no company names, no logos or brand marks, no signage, no labels or numbers, no watermarks, no headline text, no Fifth Ave AI text rendered inside the image, no generic blonde-woman presenter, no default professional woman in her 30s framing unless the article is explicitly about a person, no brand avatar named Angel unless explicitly requested. Visual goals: article-specific not generic, cinematic editorial realism, strong focal point, clean composition, premium tech-news look, communicate the article\'s specific topic through environment props mood and action, use company or industry context through visual environment not logos or text, if monitors appear show abstract unreadable graphics only. Do NOT include emotions described in words, narrative, metaphors, or symbolism. Describe only what the camera would see: setting, subjects, objects, lighting, and composition. Keep the prompt under 100 words.'
 
   const userMsg = `Generate an image prompt for this news headline:\n\n"${headline}"\n\nCategory: ${category || 'general news'}`
 
@@ -1107,7 +1092,7 @@ app.post('/api/generate-image-prompt', async (c) => {
       return c.json({ error: 'sourceHeadline is required' }, 400)
     }
 
-    const systemPrompt = 'You are an image prompt generator for an AI news brand called Fifth Ave AI. The brand avatar is named Angel — a professional, confident Black woman. Given the following article headline, summary, category, and why-it-matters context, generate a detailed cinematic image prompt that visually represents the article\'s specific topic. Angel should be featured in the scene in a way that connects to the article subject. Include composition, lighting, mood, and setting details. The image must be photorealistic and cinematic. Do not include any text, words, letters, watermarks, signs, or captions in the image — text overlays will be added programmatically later. End the prompt with the aspect ratio format.'
+    const systemPrompt = 'You create one high-quality image prompt for a Fifth Ave AI news visual. Create a scene that matches the article itself. Focus on the company, event, industry, and emotional tone of the specific story. ABSOLUTE PROHIBITIONS: no readable text, no company names, no logos or brand marks, no signage, no labels or numbers, no watermarks, no headline text, no Fifth Ave AI text rendered inside the image, no generic blonde-woman presenter, no default professional woman in her 30s framing unless the article is explicitly about a person, no brand avatar named Angel unless explicitly requested. Visual goals: article-specific not generic, cinematic editorial realism, strong focal point, clean composition, premium tech-news look, communicate the article\'s specific topic through environment props mood and action, use company or industry context through visual environment not logos or text, if monitors appear show abstract unreadable graphics only. Do NOT include emotions described in words, narrative, metaphors, or symbolism. Describe only what the camera would see: setting, subjects, objects, lighting, and composition. Keep the prompt under 100 words.'
 
     let userMessage = `Headline: ${sourceHeadline}`
     if (sourceSummary) userMessage += `\nSummary: ${sourceSummary}`
@@ -2698,64 +2683,11 @@ app.get('/', (c) => {
     }
 
     // Generate image prompt based on headline and category
+    // Local fallback prompt — used only when no saved ImagePrompt exists
+    // and the GPT-4o API hasn't been called yet. Provides a basic placeholder
+    // based on the headline. Click "Generate Prompt" for a context-aware prompt.
     function generateImagePrompt(headline, category) {
-      const settings = getCategorySettings(category);
-      const ratio = currentAspectRatio;
-      
-      // Check if outfit reference is set for current ratio - but NEVER copy exact outfit
-      const outfitRefs = references['outfit'];
-      const hasOutfitRef = outfitRefs && outfitRefs[ratio] && outfitRefs[ratio].url && outfitRefs[ratio].enabled;
-      const outfitDescription = hasOutfitRef ? 
-        'wearing a DIFFERENT outfit in the same style/aesthetic as the reference (NOT the exact same clothes - similar vibe but different garments and colors)' : 
-        settings.outfit;
-      
-      // Check if custom reference is set for current ratio for additional context
-      const customRefs = references['custom'];
-      const hasCustomRef = customRefs && customRefs[ratio] && customRefs[ratio].url && customRefs[ratio].enabled;
-      const customContext = hasCustomRef ? ' incorporating elements from the custom reference image,' : '';
-      
-      // Extract key concepts from headline for visual context (not text)
-      const headlineContext = extractVisualContext(headline);
-      
-      // Check if headline text toggle is on
-      const addHeadlineText = document.getElementById('addHeadlineText') ? document.getElementById('addHeadlineText').checked : false;
-      const shortHeadlineEl = document.getElementById('shortHeadline');
-      const shortHeadline = shortHeadlineEl && shortHeadlineEl.value ? shortHeadlineEl.value.trim() : '';
-      
-      // Get current aspect ratio for composition guidance
-      const aspectRatio = currentAspectRatio;
-      let compositionGuide = '';
-      if (aspectRatio === '16:9') {
-        compositionGuide = 'COMPOSITION: Wide horizontal landscape format (16:9). Frame Angel with space on sides, suitable for YouTube thumbnails and Twitter posts. ';
-      } else if (aspectRatio === '9:16') {
-        compositionGuide = 'COMPOSITION: Tall vertical portrait format (9:16). Frame Angel centered with space above and below, suitable for Instagram Stories and TikTok. ';
-      } else if (aspectRatio === '1:1') {
-        compositionGuide = 'COMPOSITION: Square format (1:1). Frame Angel centered, suitable for Instagram feed posts. ';
-      }
-      
-      // Check if logo reference is enabled for current ratio
-      const logoRefs = references['logo'];
-      const hasLogoRef = logoRefs && logoRefs[ratio] && logoRefs[ratio].url && logoRefs[ratio].enabled;
-      
-      // Include logo watermark instruction if logo reference is enabled
-      const logoInstruction = hasLogoRef ? 
-        '\\n\\nLOGO WATERMARK: Place the 5th Ave Crypto logo from the logo reference image in the TOP-RIGHT corner as a small, subtle watermark. The logo should be semi-transparent and unobtrusive, about 5-8% of the image width.' : 
-        '';
-      
-      // Text will be added via canvas overlay - no text in base image
-      const textInstructions = '\\n\\nIMPORTANT: No text anywhere in the image except the logo watermark if specified. No words, no letters, no signs, no screens with text, no headlines, no captions. Clean visual only - text overlay will be added programmatically later.';
-      
-      const topicLabel = currentTopic === 'ai' ? 'AI and technology' : 'crypto';
-      const brandLabel = currentTopic === 'ai' ? '5th Ave AI' : '5th Ave Crypto';
-      const prompt = compositionGuide + 'Professional ' + topicLabel + ' news image featuring Angel, the ' + brandLabel + ' educator and mentor - an elegant, confident woman ' + settings.setting + '.\\n\\n' +
-        'OUTFIT: ' + outfitDescription + '. She is looking directly at the camera with an approachable yet authoritative expression.' + customContext + '\\n\\n' +
-        'IMPORTANT: Use the face reference for her face ONLY. Do NOT copy the exact clothing from any reference image - create a fresh, different outfit each time.\\n\\n' +
-        'Visual context: ' + headlineContext + '\\n\\n' +
-        'Mood: ' + settings.mood + '\\n' +
-        'Lighting: ' + settings.lighting + '\\n\\n' +
-        'Style: High-quality editorial photography, modern and polished. Angel should appear as a real person - relatable yet aspirational.' + logoInstruction + textInstructions;
-
-      return prompt;
+      return 'Click "Generate Prompt" for an AI-generated image prompt for: ' + headline;
     }
 
     // Generate image prompt using GPT-4o API
