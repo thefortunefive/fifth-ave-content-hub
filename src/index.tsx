@@ -4186,8 +4186,7 @@ app.get('/', (c) => {
         }
         
         if (activeRefs.length === 0) {
-          alert('No reference images found for ' + ratioToGenerate + '. Please expand a category in the Reference Library and upload a reference image for this size.');
-          return;
+          console.log('No reference images found for ' + ratioToGenerate + ' — proceeding with prompt only');
         }
         
         console.log('Active references for ' + ratioToGenerate + ':', activeRefs.length, activeRefs);
