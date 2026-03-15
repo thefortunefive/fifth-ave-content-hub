@@ -1101,15 +1101,18 @@ app.post('/api/generate-image-prompt', async (c) => {
     }
 
     const body = await c.req.json()
-    const { sourceHeadline, sourceSummary, category } = body
+    const { sourceHeadline, sourceSummary, category, whyItMatters } = body
 
     if (!sourceHeadline) {
       return c.json({ error: 'sourceHeadline is required' }, 400)
     }
 
-    const systemPrompt = 'Create a detailed image generation prompt for an AI image generator based on this news headline and summary. The prompt should describe a photorealistic, cinematic editorial photograph. No text or words in the image. Focus on visual metaphors, lighting, composition, and mood that capture the essence of the headline.'
+    const systemPrompt = 'You are an image prompt generator for an AI news brand called Fifth Ave AI. The brand avatar is named Angel — a professional, confident Black woman. Given the following article headline, summary, category, and why-it-matters context, generate a detailed cinematic image prompt that visually represents the article\'s specific topic. Angel should be featured in the scene in a way that connects to the article subject. Include composition, lighting, mood, and setting details. The image must be photorealistic and cinematic. Do not include any text, words, letters, watermarks, signs, or captions in the image — text overlays will be added programmatically later. End the prompt with the aspect ratio format.'
 
-    const userMessage = `Headline: ${sourceHeadline}${sourceSummary ? `\nSummary: ${sourceSummary}` : ''}${category ? `\nCategory: ${category}` : ''}`
+    let userMessage = `Headline: ${sourceHeadline}`
+    if (sourceSummary) userMessage += `\nSummary: ${sourceSummary}`
+    if (category) userMessage += `\nCategory: ${category}`
+    if (whyItMatters) userMessage += `\nWhy It Matters: ${whyItMatters}`
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -1997,9 +2000,15 @@ app.get('/', (c) => {
               <i class="fas fa-square mr-1"></i>1:1
             </button>
           </div>
-          <div id="imageModelLabel" class="text-sm text-center mb-2 py-1.5 px-3 rounded-lg bg-amber-500/10 border border-amber-500/20 hidden">
-            <i class="fas fa-microchip mr-1 text-amber-400"></i>
-            Model: <span id="imageModelName" class="text-amber-400 font-semibold">—</span>
+          <div id="imageModelLabel" class="text-sm text-center mb-2">
+            <label class="flex items-center justify-center gap-2">
+              <i class="fas fa-microchip text-amber-400"></i>
+              <span class="text-gray-400">Model:</span>
+              <select id="imageModelSelect" class="bg-gray-800 border border-amber-500/30 rounded-lg px-2 py-1 text-amber-400 font-semibold text-sm focus:outline-none focus:border-amber-500 cursor-pointer">
+                <option value="nano-banana">nano-banana (KieAI)</option>
+                <option value="flux">flux (fal.ai)</option>
+              </select>
+            </label>
           </div>
           <button id="generateBtn" onclick="generateImage()" class="generate-btn w-full mt-auto">
             <i class="fas fa-sparkles mr-2"></i>Generate Image
@@ -2751,43 +2760,9 @@ app.get('/', (c) => {
 
     // Generate image prompt using GPT-4o API
     async function generateAIPrompt() {
-      if (!currentRecord) {
-        alert('Select a record first');
-        return;
-      }
-      const f = currentRecord.fields || {};
-      const headline = f.Headline || f.sourceHeadline || f.Title || '';
-      const category = f.category || (currentTopic === 'ai' ? 'AI/technology' : 'crypto');
-      if (!headline) {
-        alert('No headline found on selected record');
-        return;
-      }
-
-      const btn = document.getElementById('generatePromptBtn');
-      const origHTML = btn.innerHTML;
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
-
-      try {
-        const res = await fetch('/api/generate-prompt', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ headline, category, aspectRatio: currentAspectRatio })
-        });
-        const data = await res.json();
-        if (data.error) throw new Error(data.error);
-
-        const promptInput = document.getElementById('promptInput');
-        promptInput.value = data.prompt;
-        document.getElementById('charCount').textContent = data.prompt.length + ' characters';
-        promptInput.focus();
-      } catch (err) {
-        console.error('Generate prompt error:', err);
-        alert('Failed to generate prompt: ' + err.message);
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = origHTML;
-      }
+      // Delegate to the unified context-aware prompt generator
+      // This ensures both buttons produce the same article-specific prompt
+      return generateAIImagePrompt();
     }
     
     // Generate image prompt via GPT-4o using /api/generate-image-prompt
@@ -2800,6 +2775,7 @@ app.get('/', (c) => {
       const sourceHeadline = f.Headline || f.sourceHeadline || f.Title || '';
       const sourceSummary = f.Lead || f.Body || f.Summary || '';
       const category = f.category || (currentTopic === 'ai' ? 'AI/technology' : 'crypto');
+      const whyItMatters = f['Why It Matters'] || f.whyItMatters || '';
 
       if (!sourceHeadline) {
         alert('No headline found on selected record');
@@ -2815,11 +2791,16 @@ app.get('/', (c) => {
       statusEl.textContent = 'Generating prompt...';
       statusEl.classList.remove('hidden');
 
+      // Also disable and show spinner on the top Generate Prompt button
+      const topBtn = document.getElementById('generatePromptBtn');
+      var topOrigHTML = topBtn ? topBtn.innerHTML : '';
+      if (topBtn) { topBtn.disabled = true; topBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...'; }
+
       try {
         const res = await fetch('/api/generate-image-prompt', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sourceHeadline, sourceSummary, category })
+          body: JSON.stringify({ sourceHeadline, sourceSummary, category, whyItMatters })
         });
         const data = await res.json();
         if (data.error) {
@@ -2827,9 +2808,9 @@ app.get('/', (c) => {
           statusEl.textContent = 'Error';
           return;
         }
+        // Update BOTH prompt areas with the same context-aware prompt
         textarea.value = data.prompt;
         statusEl.textContent = data.prompt.length + ' chars';
-        // Also populate the main image prompt input for convenience
         const mainPromptInput = document.getElementById('promptInput');
         if (mainPromptInput) {
           mainPromptInput.value = data.prompt;
@@ -2842,6 +2823,7 @@ app.get('/', (c) => {
       } finally {
         btn.disabled = false;
         btn.innerHTML = origHTML;
+        if (topBtn) { topBtn.disabled = false; topBtn.innerHTML = topOrigHTML; }
       }
     }
 
@@ -3810,15 +3792,12 @@ app.get('/', (c) => {
         showTab('twitter');
 
         // ── IMAGE GENERATION PANEL (keep existing behaviour) ─────────
-        // Show Image Model label from record
-        var modelLabel = document.getElementById('imageModelLabel');
-        var modelName = document.getElementById('imageModelName');
-        var recordModel = f['Image Model'] || '';
-        if (recordModel) {
-          modelName.textContent = recordModel;
-          modelLabel.classList.remove('hidden');
-        } else {
-          modelLabel.classList.add('hidden');
+        // Set Image Model dropdown from record
+        var modelSelect = document.getElementById('imageModelSelect');
+        var recordModel = f['Image Model'] || 'nano-banana';
+        if (modelSelect) {
+          // Normalize: if value contains 'flux', select flux; otherwise nano-banana
+          modelSelect.value = recordModel.toLowerCase().indexOf('flux') !== -1 ? 'flux' : 'nano-banana';
         }
 
         if (thumbUrl) {
@@ -3832,10 +3811,16 @@ app.get('/', (c) => {
         clearContentImage('1:1');
 
         // ── AUTO PROMPT ──────────────────────────────────────────────
+        // Use the record's saved ImagePrompt if available (context-aware),
+        // otherwise fall back to the template-based prompt
         const category = f.category || 'default';
         const shortHeadlineInput = document.getElementById('shortHeadline');
         if (shortHeadlineInput) shortHeadlineInput.value = createShortHeadline(headline);
-        if (headline && headline !== 'Untitled') {
+        const savedImagePrompt = f.ImagePrompt || f.imagePrompt || '';
+        if (savedImagePrompt) {
+          document.getElementById('promptInput').value = savedImagePrompt;
+          document.getElementById('charCount').textContent = savedImagePrompt.length + ' characters';
+        } else if (headline && headline !== 'Untitled') {
           const autoPrompt = generateImagePrompt(headline, category);
           document.getElementById('promptInput').value = autoPrompt;
           document.getElementById('charCount').textContent = autoPrompt.length + ' characters';
@@ -4157,9 +4142,9 @@ app.get('/', (c) => {
 
       const ratioToGenerate = currentAspectRatio;
 
-      // Detect image model from selected record
-      var modelNameEl = document.getElementById('imageModelName');
-      var imageModel = (modelNameEl && modelNameEl.textContent && modelNameEl.textContent !== '—') ? modelNameEl.textContent.trim().toLowerCase() : 'nano-banana';
+      // Detect image model from dropdown selector
+      var modelSelectEl = document.getElementById('imageModelSelect');
+      var imageModel = modelSelectEl ? modelSelectEl.value : 'nano-banana';
       console.log('Image model for generation:', imageModel);
 
       var useFlux = imageModel.indexOf('flux') !== -1;
