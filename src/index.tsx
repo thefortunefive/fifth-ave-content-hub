@@ -1092,6 +1092,62 @@ app.get('/api/topics', (c) => {
   })
 })
 
+// API: Generate image prompt from headline/summary using GPT-4o
+app.post('/api/generate-image-prompt', async (c) => {
+  try {
+    const apiKey = (c.env as any).OPENAI_API_KEY || process.env.OPENAI_API_KEY
+    if (!apiKey) {
+      return c.json({ error: 'OpenAI API key not configured. Add OPENAI_API_KEY to environment.' }, 500)
+    }
+
+    const body = await c.req.json()
+    const { sourceHeadline, sourceSummary, category } = body
+
+    if (!sourceHeadline) {
+      return c.json({ error: 'sourceHeadline is required' }, 400)
+    }
+
+    const systemPrompt = 'Create a detailed image generation prompt for an AI image generator based on this news headline and summary. The prompt should describe a photorealistic, cinematic editorial photograph. No text or words in the image. Focus on visual metaphors, lighting, composition, and mood that capture the essence of the headline.'
+
+    const userMessage = `Headline: ${sourceHeadline}${sourceSummary ? `\nSummary: ${sourceSummary}` : ''}${category ? `\nCategory: ${category}` : ''}`
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userMessage }
+        ],
+        max_tokens: 500,
+        temperature: 0.8
+      })
+    })
+
+    if (!response.ok) {
+      const errText = await response.text()
+      console.error('OpenAI API error:', response.status, errText)
+      return c.json({ error: `OpenAI API error: ${response.status}` }, response.status as any)
+    }
+
+    const data = await response.json() as any
+    const prompt = data.choices?.[0]?.message?.content?.trim()
+
+    if (!prompt) {
+      return c.json({ error: 'No prompt generated from OpenAI response' }, 500)
+    }
+
+    return c.json({ prompt })
+  } catch (err: any) {
+    console.error('generate-image-prompt error:', err)
+    return c.json({ error: err.message }, 500)
+  }
+})
+
 // ============================================
 // COMBINED DASHBOARD
 // ============================================
