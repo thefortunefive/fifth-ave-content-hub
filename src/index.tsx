@@ -4791,6 +4791,25 @@ app.get('/', (c) => {
     }
     
     // ========================================
+    // BUILD NOCODB ATTACHMENT OBJECT
+    // NocoDB Attachment columns require an array of objects, not a plain URL string.
+    // Sending a plain string causes ERR_INVALID_ATTACHMENT_JSON.
+    // ========================================
+    function buildAttachmentPayload(imageUrl) {
+      var lower = (imageUrl || '').toLowerCase().split('?')[0]; // strip query string for ext check
+      var isJpeg = lower.endsWith('.jpg') || lower.endsWith('.jpeg');
+      var mimetype = isJpeg ? 'image/jpeg' : 'image/png';
+      // Extract filename from URL path, fall back to a sensible default
+      var pathPart = imageUrl.split('?')[0];
+      var title = pathPart.substring(pathPart.lastIndexOf('/') + 1) || 'generated-image.png';
+      // Ensure the title has an extension
+      if (title.indexOf('.') === -1) {
+        title = title + (isJpeg ? '.jpg' : '.png');
+      }
+      return [{ url: imageUrl, title: title, mimetype: mimetype }];
+    }
+
+    // ========================================
     // REFRESH RECORD THUMBNAIL AFTER SAVE
     // Re-fetches the current record from NocoDB and updates the thumbnail
     // in the Content Review section so the new image displays immediately.
@@ -4813,7 +4832,7 @@ app.get('/', (c) => {
         console.log('[refreshRecordThumbnail] field keys from NocoDB:', Object.keys(f));
         console.log('[refreshRecordThumbnail] "Post Image Preview" value:', f['Post Image Preview']);
 
-        // Re-render thumbnail using the same logic as selectRecord
+        // Re-render thumbnail — Post Image Preview is an Attachment array
         var detailThumb = document.getElementById('detailThumb');
         var detailFallback = document.getElementById('detailThumbFallback');
         var toProxyUrl = function(path) {
@@ -4826,18 +4845,17 @@ app.get('/', (c) => {
         if (f['Post Image Preview'] && Array.isArray(f['Post Image Preview']) && f['Post Image Preview'].length > 0) {
           var att = f['Post Image Preview'][0];
           var thumbnails = att.thumbnails || {};
-          thumbUrl = att.url || att.signedUrl ||
+          // Prefer signedUrl if present (NocoDB may return signed URLs for private storage)
+          thumbUrl = att.signedUrl || att.url ||
             (att.signedPath ? toProxyUrl(att.signedPath) : '') ||
             (att.path ? toProxyUrl(att.path) : '') ||
+            (thumbnails.large || {}).signedUrl ||
             (thumbnails.large || {}).url ||
             ((thumbnails.large || {}).signedPath ? toProxyUrl((thumbnails.large || {}).signedPath) : '') ||
+            (thumbnails.full || {}).signedUrl ||
             (thumbnails.full || {}).url ||
             (thumbnails.card_cover || {}).url ||
             '';
-        }
-        // For plain-URL saves (non-attachment), the field value is a string
-        if (!thumbUrl && typeof f['Post Image Preview'] === 'string' && f['Post Image Preview'].startsWith('http')) {
-          thumbUrl = f['Post Image Preview'];
         }
         if (!thumbUrl && f['Post Image'] && f['Post Image'].startsWith('http')) {
           thumbUrl = f['Post Image'];
@@ -4869,8 +4887,9 @@ app.get('/', (c) => {
       }
       
       try {
-        // Save image URL to the correct NocoDB field: 'Post Image Preview'
-        console.log('[NocoDB save] PATCHing "Post Image Preview" field with URL:', imageUrl);
+        // Post Image Preview is an Attachment column — must send an array of objects
+        const attachmentPayload = buildAttachmentPayload(imageUrl);
+        console.log('[NocoDB save] PATCHing "Post Image Preview" with attachment payload:', JSON.stringify(attachmentPayload));
         
         // Save to NocoDB
         const res = await fetch('/api/records/' + currentRecordId + '?baseId=' + currentBase.id + '&tableId=' + currentTable.id, {
@@ -4879,7 +4898,7 @@ app.get('/', (c) => {
             'xc-token': NOCODB_TOKEN,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ 'Post Image Preview': imageUrl })
+          body: JSON.stringify({ 'Post Image Preview': attachmentPayload })
         });
         
         const result = await res.json();
@@ -4890,9 +4909,9 @@ app.get('/', (c) => {
           return;
         }
         
-        // Update local record cache with the correct field name
+        // Update local record cache as an attachment array
         if (currentRecord && currentRecord.fields) {
-          currentRecord.fields['Post Image Preview'] = imageUrl;
+          currentRecord.fields['Post Image Preview'] = attachmentPayload;
         }
         
         console.log('✓ Image URL saved to NocoDB "Post Image Preview" field');
@@ -4976,7 +4995,9 @@ app.get('/', (c) => {
               continue;
             }
             
-            console.log('[NocoDB save] PATCHing "Post Image Preview" for article:', record.articleTitle, '- URL:', imageUrl);
+            // Post Image Preview is an Attachment column — must send an array of objects
+            const attachmentPayload = buildAttachmentPayload(imageUrl);
+            console.log('[NocoDB save] PATCHing "Post Image Preview" for article:', record.articleTitle, '- payload:', JSON.stringify(attachmentPayload));
             // Save to NocoDB
             const res = await fetch('/api/records/' + record.recordId + '?baseId=' + record.baseId + '&tableId=' + record.tableId, {
               method: 'PATCH',
@@ -4984,7 +5005,7 @@ app.get('/', (c) => {
                 'xc-token': NOCODB_TOKEN,
                 'Content-Type': 'application/json'
               },
-              body: JSON.stringify({ 'Post Image Preview': imageUrl })
+              body: JSON.stringify({ 'Post Image Preview': attachmentPayload })
             });
             
             const result = await res.json();
@@ -5770,18 +5791,19 @@ app.get('/', (c) => {
           throw new Error('No images to save. Add images to Content Images first.');
         }
         
-        // Save image URL to the correct NocoDB field: 'Post Image Preview'
+        // Post Image Preview is an Attachment column — must send an array of objects
         // Also save the current Image Prompt from the review textarea
         const reviewPromptVal = (document.getElementById('reviewImagePrompt') || {}).value || '';
         const mainPromptVal = (document.getElementById('promptInput') || {}).value || '';
         const imagePromptToSave = reviewPromptVal || mainPromptVal;
-        const updates = { 'Post Image Preview': imageUrl };
+        const attachmentPayload = buildAttachmentPayload(imageUrl);
+        const updates = { 'Post Image Preview': attachmentPayload };
         if (imagePromptToSave) {
           updates.ImagePrompt = imagePromptToSave;
         }
         const savedCount = 1;
         
-        console.log('[NocoDB save] PATCHing "Post Image Preview" field:', imageUrl);
+        console.log('[NocoDB save] PATCHing "Post Image Preview" with attachment payload:', JSON.stringify(attachmentPayload));
         
         // Save to NocoDB
         statusText.textContent = 'Uploading ' + savedCount + ' image(s) to NocoDB...';
@@ -5801,9 +5823,9 @@ app.get('/', (c) => {
           throw new Error(result.error.message || 'NocoDB error');
         }
 
-        // Update local record cache with the correct field name
+        // Update local record cache as an attachment array
         if (currentRecord && currentRecord.fields) {
-          currentRecord.fields['Post Image Preview'] = imageUrl;
+          currentRecord.fields['Post Image Preview'] = attachmentPayload;
         }
         
         statusText.textContent = '\\u2713 Saved ' + savedCount + ' image(s)' + (imagePromptToSave ? ' + prompt' : '') + ' to NocoDB!';
