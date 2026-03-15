@@ -4791,6 +4791,74 @@ app.get('/', (c) => {
     }
     
     // ========================================
+    // REFRESH RECORD THUMBNAIL AFTER SAVE
+    // Re-fetches the current record from NocoDB and updates the thumbnail
+    // in the Content Review section so the new image displays immediately.
+    // ========================================
+    async function refreshRecordThumbnail() {
+      if (!currentRecordId || !currentBase || !currentTable) return;
+      try {
+        const res = await fetch(
+          \`/api/records/\${currentRecordId}?baseId=\${currentBase.id}&tableId=\${currentTable.id}\`,
+          { headers: { 'xc-token': NOCODB_TOKEN } }
+        );
+        const freshRecord = await res.json();
+        if (!freshRecord || !freshRecord.fields) return;
+
+        // Update the global record cache so subsequent reads are fresh
+        currentRecord = freshRecord;
+        const f = freshRecord.fields;
+
+        // Log exact field names so we can verify the column name in production
+        console.log('[refreshRecordThumbnail] field keys from NocoDB:', Object.keys(f));
+        console.log('[refreshRecordThumbnail] "Post Image Preview" value:', f['Post Image Preview']);
+
+        // Re-render thumbnail using the same logic as selectRecord
+        var detailThumb = document.getElementById('detailThumb');
+        var detailFallback = document.getElementById('detailThumbFallback');
+        var toProxyUrl = function(path) {
+          if (!path) return '';
+          var cleanPath = path.startsWith('/') ? path.substring(1) : path;
+          return '/api/nocodb-proxy/' + cleanPath;
+        };
+
+        var thumbUrl = '';
+        if (f['Post Image Preview'] && Array.isArray(f['Post Image Preview']) && f['Post Image Preview'].length > 0) {
+          var att = f['Post Image Preview'][0];
+          var thumbnails = att.thumbnails || {};
+          thumbUrl = att.url || att.signedUrl ||
+            (att.signedPath ? toProxyUrl(att.signedPath) : '') ||
+            (att.path ? toProxyUrl(att.path) : '') ||
+            (thumbnails.large || {}).url ||
+            ((thumbnails.large || {}).signedPath ? toProxyUrl((thumbnails.large || {}).signedPath) : '') ||
+            (thumbnails.full || {}).url ||
+            (thumbnails.card_cover || {}).url ||
+            '';
+        }
+        // For plain-URL saves (non-attachment), the field value is a string
+        if (!thumbUrl && typeof f['Post Image Preview'] === 'string' && f['Post Image Preview'].startsWith('http')) {
+          thumbUrl = f['Post Image Preview'];
+        }
+        if (!thumbUrl && f['Post Image'] && f['Post Image'].startsWith('http')) {
+          thumbUrl = f['Post Image'];
+        }
+
+        if (thumbUrl) {
+          detailThumb.src = thumbUrl;
+          detailThumb.classList.remove('hidden');
+          detailFallback.classList.add('hidden');
+          // Also refresh the 16:9 content image slot so it shows the saved image
+          setContentImage('16:9', thumbUrl);
+          console.log('[refreshRecordThumbnail] thumbnail updated to:', thumbUrl);
+        } else {
+          console.log('[refreshRecordThumbnail] no image URL found after re-fetch; fields present:', Object.keys(f));
+        }
+      } catch (err) {
+        console.error('[refreshRecordThumbnail] failed to re-fetch record:', err);
+      }
+    }
+
+    // ========================================
     // AUTO-SAVE IMAGE TO NOCODB
     // ========================================
     async function autoSaveImageToNocoDB(imageUrl) {
@@ -4801,8 +4869,8 @@ app.get('/', (c) => {
       }
       
       try {
-        // Save image URL to text field 'imageURL' (NOT attachment field)
-        console.log('Auto-saving image URL to NocoDB imageURL field:', imageUrl);
+        // Save image URL to the correct NocoDB field: 'Post Image Preview'
+        console.log('[NocoDB save] PATCHing "Post Image Preview" field with URL:', imageUrl);
         
         // Save to NocoDB
         const res = await fetch('/api/records/' + currentRecordId + '?baseId=' + currentBase.id + '&tableId=' + currentTable.id, {
@@ -4811,23 +4879,28 @@ app.get('/', (c) => {
             'xc-token': NOCODB_TOKEN,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ imageURL: imageUrl })
+          body: JSON.stringify({ 'Post Image Preview': imageUrl })
         });
         
         const result = await res.json();
+        console.log('[NocoDB save] PATCH response:', result);
         
         if (result.error) {
-          console.error('NocoDB save error:', result.error);
+          console.error('[NocoDB save] error:', result.error);
           return;
         }
         
-        // Update local record cache with imageURL
+        // Update local record cache with the correct field name
         if (currentRecord && currentRecord.fields) {
-          currentRecord.fields.imageURL = imageUrl;
+          currentRecord.fields['Post Image Preview'] = imageUrl;
         }
         
-        console.log('✓ Image URL auto-saved to NocoDB');
+        console.log('✓ Image URL saved to NocoDB "Post Image Preview" field');
         showSaveIndicator();
+
+        // Re-fetch the current record from NocoDB and re-render the thumbnail
+        // so the new image appears immediately in the Content Review section.
+        await refreshRecordThumbnail();
         
       } catch (err) {
         console.error('Auto-save to NocoDB failed:', err);
@@ -4896,14 +4969,14 @@ app.get('/', (c) => {
           const record = imagesByRecord[key];
           
           try {
-            // Save only the first image URL to the imageURL text field (NOT attachment field)
-            // Multiple images per record not supported with text field - use first image only
+            // Save only the first image URL to the correct NocoDB field: 'Post Image Preview'
             const imageUrl = (record.images[0] || {}).url || '';
             if (!imageUrl) {
               console.log('No image URL for record: ' + record.articleTitle);
               continue;
             }
             
+            console.log('[NocoDB save] PATCHing "Post Image Preview" for article:', record.articleTitle, '- URL:', imageUrl);
             // Save to NocoDB
             const res = await fetch('/api/records/' + record.recordId + '?baseId=' + record.baseId + '&tableId=' + record.tableId, {
               method: 'PATCH',
@@ -4911,16 +4984,17 @@ app.get('/', (c) => {
                 'xc-token': NOCODB_TOKEN,
                 'Content-Type': 'application/json'
               },
-              body: JSON.stringify({ imageURL: imageUrl })
+              body: JSON.stringify({ 'Post Image Preview': imageUrl })
             });
             
             const result = await res.json();
+            console.log('[NocoDB save] PATCH response for', record.articleTitle, ':', result);
             
             if (result.error) {
               console.error('Error saving to ' + record.articleTitle + ':', result.error);
               errorCount++;
             } else {
-              console.log('✓ Saved image URL to: ' + record.articleTitle);
+              console.log('✓ Saved to "Post Image Preview" for: ' + record.articleTitle);
               savedCount++;
             }
           } catch (err) {
@@ -5696,18 +5770,18 @@ app.get('/', (c) => {
           throw new Error('No images to save. Add images to Content Images first.');
         }
         
-        // Save image URL to text field 'imageURL' (NOT attachment field)
+        // Save image URL to the correct NocoDB field: 'Post Image Preview'
         // Also save the current Image Prompt from the review textarea
         const reviewPromptVal = (document.getElementById('reviewImagePrompt') || {}).value || '';
         const mainPromptVal = (document.getElementById('promptInput') || {}).value || '';
         const imagePromptToSave = reviewPromptVal || mainPromptVal;
-        const updates = { imageURL: imageUrl };
+        const updates = { 'Post Image Preview': imageUrl };
         if (imagePromptToSave) {
           updates.ImagePrompt = imagePromptToSave;
         }
         const savedCount = 1;
         
-        console.log('Saving to NocoDB imageURL field:', imageUrl);
+        console.log('[NocoDB save] PATCHing "Post Image Preview" field:', imageUrl);
         
         // Save to NocoDB
         statusText.textContent = 'Uploading ' + savedCount + ' image(s) to NocoDB...';
@@ -5721,9 +5795,15 @@ app.get('/', (c) => {
         });
         
         const result = await res.json();
+        console.log('[NocoDB save] PATCH response:', result);
         
         if (result.error) {
           throw new Error(result.error.message || 'NocoDB error');
+        }
+
+        // Update local record cache with the correct field name
+        if (currentRecord && currentRecord.fields) {
+          currentRecord.fields['Post Image Preview'] = imageUrl;
         }
         
         statusText.textContent = '\\u2713 Saved ' + savedCount + ' image(s)' + (imagePromptToSave ? ' + prompt' : '') + ' to NocoDB!';
@@ -5733,6 +5813,10 @@ app.get('/', (c) => {
         statusText.classList.add('text-green-300');
         
         showSaveIndicator();
+
+        // Re-fetch the current record from NocoDB and re-render the thumbnail
+        // so the new image appears immediately in the Content Review section.
+        await refreshRecordThumbnail();
         
         // Hide status after a moment
         setTimeout(() => {
