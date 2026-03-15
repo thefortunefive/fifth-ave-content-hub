@@ -402,7 +402,27 @@ app.post('/api/generate-prompt', async (c) => {
     return c.json({ error: 'Headline is required' }, 400)
   }
 
-  const systemPrompt = 'You create one high-quality image prompt for a Fifth Ave AI news visual. Create a scene that matches the article itself. Focus on the company, event, industry, and emotional tone of the specific story. ABSOLUTE PROHIBITIONS: no readable text, no company names, no logos or brand marks, no signage, no labels or numbers, no watermarks, no headline text, no Fifth Ave AI text rendered inside the image, no generic blonde-woman presenter, no default professional woman in her 30s framing unless the article is explicitly about a person, no brand avatar named Angel unless explicitly requested. Visual goals: article-specific not generic, cinematic editorial realism, strong focal point, clean composition, premium tech-news look, communicate the article\'s specific topic through environment props mood and action, use company or industry context through visual environment not logos or text, if monitors appear show abstract unreadable graphics only. Do NOT include emotions described in words, narrative, metaphors, or symbolism. Describe only what the camera would see: setting, subjects, objects, lighting, and composition. Keep the prompt under 100 words.'
+  const systemPrompt = `You create one high-quality image prompt for a Fifth Ave AI news visual. Each image must look like a frame from a different documentary or news film — never repeat the same composition, camera angle, or scene type across articles.
+
+FOR EACH PROMPT, YOU MUST SPECIFY ALL 6 OF THESE ELEMENTS:
+
+1. SUBJECT — What the camera sees. Pick ONE and NEVER default to office workers at desks: a single symbolic object in extreme close-up (cracked employee badge, robotic hand holding a pen, empty revolving door, server rack with one blinking light), OR an environmental wide shot with NO people (abandoned trading floor, fully automated warehouse, empty corporate campus parking lot at dawn, robot-staffed assembly line), OR one human figure in a decisive moment (security guard watching a drone replace patrol, engineer unplugging a server, worker carrying a box past a robot arm), OR a dramatic contrast scene (vintage typewriter next to holographic display, human hand reaching toward a robot hand, half-demolished office with AI screens glowing), OR aerial bird's eye perspective (drone view of an automated port, overhead shot of one occupied desk in an empty floor of cubicles).
+
+2. CAMERA — Specify lens and angle. Rotate between: 24mm wide establishing shot, 50mm eye-level documentary, 85mm shallow depth portrait, 200mm telephoto compression, overhead drone shot, extreme macro close-up.
+
+3. LIGHTING — Specify direction and quality. Rotate between: cold fluorescent from above, warm golden hour side light, single harsh spotlight in darkness, blue-tinted monitor glow, overcast flat documentary light, dramatic rim light with dark background.
+
+4. COLOR PALETTE — Specify 2-3 dominant colors. Examples: steel blue and amber, clinical white and red accent, dark teal and warm orange, monochrome silver, deep purple and neon green.
+
+5. TEXTURE DETAIL — One micro-detail that grounds the image in reality: condensation on glass, dust particles in a light beam, scratches on a metal surface, fingerprints on a screen, frayed cable.
+
+6. COMPOSITION — Specify framing: rule of thirds with subject at left intersection, centered symmetry, diagonal leading lines, foreground blur with sharp background, frame-within-a-frame.
+
+ABSOLUTE PROHIBITIONS: no readable text, no company names, no logos, no signage, no labels, no numbers, no watermarks, no headline text, no Fifth Ave AI text, no generic blonde-woman presenter, no default professional woman, no Angel avatar unless requested, no busy office scenes with multiple people at computers, no people packing boxes, no groups of employees at desks.
+
+Deliver the final prompt as a single paragraph under 120 words. Cinematic, photorealistic, editorial quality. 16:9.
+
+Return ONLY valid JSON: {"image_prompt":"<final prompt>"}`
 
   const userMsg = `Generate an image prompt for this news headline:\n\n"${headline}"\n\nCategory: ${category || 'general news'}`
 
@@ -1294,7 +1314,27 @@ app.post('/api/generate-image-prompt', async (c) => {
       return c.json({ error: 'sourceHeadline is required' }, 400)
     }
 
-    const systemPrompt = 'You create one high-quality image prompt for a Fifth Ave AI news visual. Create a scene that matches the article itself. Focus on the company, event, industry, and emotional tone of the specific story. ABSOLUTE PROHIBITIONS: no readable text, no company names, no logos or brand marks, no signage, no labels or numbers, no watermarks, no headline text, no Fifth Ave AI text rendered inside the image, no generic blonde-woman presenter, no default professional woman in her 30s framing unless the article is explicitly about a person, no brand avatar named Angel unless explicitly requested. Visual goals: article-specific not generic, cinematic editorial realism, strong focal point, clean composition, premium tech-news look, communicate the article\'s specific topic through environment props mood and action, use company or industry context through visual environment not logos or text, if monitors appear show abstract unreadable graphics only. Do NOT include emotions described in words, narrative, metaphors, or symbolism. Describe only what the camera would see: setting, subjects, objects, lighting, and composition. Keep the prompt under 100 words.'
+    const systemPrompt = `You create one high-quality image prompt for a Fifth Ave AI news visual. Each image must look like a frame from a different documentary or news film — never repeat the same composition, camera angle, or scene type across articles.
+
+FOR EACH PROMPT, YOU MUST SPECIFY ALL 6 OF THESE ELEMENTS:
+
+1. SUBJECT — What the camera sees. Pick ONE and NEVER default to office workers at desks: a single symbolic object in extreme close-up (cracked employee badge, robotic hand holding a pen, empty revolving door, server rack with one blinking light), OR an environmental wide shot with NO people (abandoned trading floor, fully automated warehouse, empty corporate campus parking lot at dawn, robot-staffed assembly line), OR one human figure in a decisive moment (security guard watching a drone replace patrol, engineer unplugging a server, worker carrying a box past a robot arm), OR a dramatic contrast scene (vintage typewriter next to holographic display, human hand reaching toward a robot hand, half-demolished office with AI screens glowing), OR aerial bird's eye perspective (drone view of an automated port, overhead shot of one occupied desk in an empty floor of cubicles).
+
+2. CAMERA — Specify lens and angle. Rotate between: 24mm wide establishing shot, 50mm eye-level documentary, 85mm shallow depth portrait, 200mm telephoto compression, overhead drone shot, extreme macro close-up.
+
+3. LIGHTING — Specify direction and quality. Rotate between: cold fluorescent from above, warm golden hour side light, single harsh spotlight in darkness, blue-tinted monitor glow, overcast flat documentary light, dramatic rim light with dark background.
+
+4. COLOR PALETTE — Specify 2-3 dominant colors. Examples: steel blue and amber, clinical white and red accent, dark teal and warm orange, monochrome silver, deep purple and neon green.
+
+5. TEXTURE DETAIL — One micro-detail that grounds the image in reality: condensation on glass, dust particles in a light beam, scratches on a metal surface, fingerprints on a screen, frayed cable.
+
+6. COMPOSITION — Specify framing: rule of thirds with subject at left intersection, centered symmetry, diagonal leading lines, foreground blur with sharp background, frame-within-a-frame.
+
+ABSOLUTE PROHIBITIONS: no readable text, no company names, no logos, no signage, no labels, no numbers, no watermarks, no headline text, no Fifth Ave AI text, no generic blonde-woman presenter, no default professional woman, no Angel avatar unless requested, no busy office scenes with multiple people at computers, no people packing boxes, no groups of employees at desks.
+
+Deliver the final prompt as a single paragraph under 120 words. Cinematic, photorealistic, editorial quality. 16:9.
+
+Return ONLY valid JSON: {"image_prompt":"<final prompt>"}`
 
     let userMessage = `Headline: ${sourceHeadline}`
     if (sourceSummary) userMessage += `\nSummary: ${sourceSummary}`
