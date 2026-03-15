@@ -537,26 +537,66 @@ app.get('/api/fal-status/:requestId', async (c) => {
   const requestId = c.req.param('requestId')
 
   try {
-    const statusRes = await fetch(`https://queue.fal.run/fal-ai/flux/dev/requests/${requestId}/status?logs=1`, {
+    // Poll the queue status endpoint
+    const statusRes = await fetch(`https://queue.fal.run/fal-ai/flux/dev/requests/${requestId}/status`, {
       headers: { 'Authorization': `Key ${falKey}` }
     })
-    const statusData = await statusRes.json() as { status: string }
 
-    if (statusData.status === 'COMPLETED') {
-      // Fetch the actual result
+    const statusRaw = await statusRes.text()
+    console.log('[fal-status] raw status response:', statusRaw)
+
+    if (!statusRes.ok) {
+      console.error('[fal-status] status endpoint error:', statusRes.status, statusRaw)
+      return c.json({ error: `fal.ai status error: ${statusRes.status}` }, 500)
+    }
+
+    let statusData: { status?: string; state?: string } = {}
+    try {
+      statusData = JSON.parse(statusRaw)
+    } catch (parseErr) {
+      console.error('[fal-status] failed to parse status JSON:', parseErr)
+      return c.json({ error: 'Invalid JSON from fal.ai status endpoint', raw: statusRaw }, 500)
+    }
+
+    // fal.ai queue returns status as "IN_QUEUE", "IN_PROGRESS", or "COMPLETED"
+    const status = statusData.status || statusData.state || 'IN_QUEUE'
+
+    if (status === 'COMPLETED') {
+      // Fetch the actual result from the result endpoint (no /status suffix)
       const resultRes = await fetch(`https://queue.fal.run/fal-ai/flux/dev/requests/${requestId}`, {
         headers: { 'Authorization': `Key ${falKey}` }
       })
-      const resultData = await resultRes.json() as { images?: Array<{ url: string; width: number; height: number }> }
-      return c.json({
-        status: 'COMPLETED',
-        images: resultData.images || []
-      })
+
+      const resultRaw = await resultRes.text()
+      console.log('[fal-status] raw result response:', resultRaw)
+
+      if (!resultRes.ok) {
+        console.error('[fal-status] result endpoint error:', resultRes.status, resultRaw)
+        return c.json({ error: `fal.ai result error: ${resultRes.status}` }, 500)
+      }
+
+      let resultData: { images?: Array<{ url: string; width: number; height: number }> } = {}
+      try {
+        resultData = JSON.parse(resultRaw)
+      } catch (parseErr) {
+        console.error('[fal-status] failed to parse result JSON:', parseErr)
+        return c.json({ error: 'Invalid JSON from fal.ai result endpoint', raw: resultRaw }, 500)
+      }
+
+      const images = resultData.images || []
+      if (images.length === 0) {
+        console.error('[fal-status] COMPLETED but no images in result:', resultRaw)
+        return c.json({ error: 'fal.ai completed but returned no images' }, 500)
+      }
+
+      console.log('[fal-status] COMPLETED, imageUrl:', images[0].url)
+      return c.json({ status: 'COMPLETED', imageUrl: images[0].url })
     }
 
-    return c.json(statusData)
+    // Still in progress — return a clean normalised status object
+    return c.json({ status })
   } catch (err: any) {
-    console.error('fal.ai status error:', err)
+    console.error('[fal-status] exception:', err)
     return c.json({ error: err.message || 'Failed to check fal.ai status' }, 500)
   }
 })
@@ -4170,23 +4210,28 @@ app.get('/', (c) => {
             await new Promise(r => setTimeout(r, 2000));
             const statusRes = await fetch('/api/fal-status/' + requestId);
             const statusData = await statusRes.json();
+            console.log('[fal poll] attempt', attempts + 1, 'response:', statusData);
+
+            if (statusData.error) {
+              throw new Error(statusData.error);
+            }
 
             if (statusData.status === 'COMPLETED') {
-              if (statusData.images && statusData.images.length > 0) {
-                const imageUrl = statusData.images[0].url;
+              if (statusData.imageUrl) {
+                const imageUrl = statusData.imageUrl;
                 await showGeneratedImage(imageUrl, ratioToGenerate);
                 addToHistory(lastGeneratedUrl, prompt);
                 await autoSaveImageToNocoDB(imageUrl);
               } else {
-                throw new Error('Flux completed but returned no images');
+                throw new Error('Flux completed but returned no image URL');
               }
               break;
-            } else if (statusData.error) {
-              throw new Error(statusData.error);
             }
+
             attempts++;
             var progressLabel = isTwoStep ? 'Step 1: Processing with Flux' : 'Processing with Flux';
-            document.getElementById('statusText').textContent = progressLabel + '... (' + (attempts * 2) + 's)';
+            var statusNote = statusData.status === 'IN_QUEUE' ? ' (queued)' : statusData.status === 'IN_PROGRESS' ? ' (in progress)' : '';
+            document.getElementById('statusText').textContent = progressLabel + statusNote + '... (' + (attempts * 2) + 's)';
           }
           if (attempts >= 90) throw new Error('Flux generation timed out');
 
