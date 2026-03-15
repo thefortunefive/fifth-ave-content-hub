@@ -2233,9 +2233,19 @@ app.get('/', (c) => {
             <i class="fas fa-exclamation-triangle text-orange-400"></i>
             <span>⚠️ Data mismatch detected: some fields in this record (Caption, Rewritten Headline, or platform copy) appear to belong to a different article. This is a data integrity issue in the database — the AI pipeline may have written fields from the wrong source article. The display is correct; the underlying data needs to be regenerated.</span>
           </div>
-          <!-- Header bar: title + status + approve/decline -->
+          <!-- Header bar: nav arrows + title + status + approve/decline -->
           <div class="p-4 border-b border-white/10">
             <div class="flex items-start justify-between gap-3">
+              <!-- Prev/Next navigation -->
+              <div class="flex items-center gap-2 flex-shrink-0">
+                <button onclick="navigateRecord(-1)" title="Previous record" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hover:border-amber-500 flex items-center justify-center transition-all text-gray-400 hover:text-amber-400">
+                  <i class="fas fa-chevron-left text-sm"></i>
+                </button>
+                <span id="recordPosition" class="text-xs text-gray-500 font-mono min-w-[3rem] text-center">– / –</span>
+                <button onclick="navigateRecord(1)" title="Next record" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hover:border-amber-500 flex items-center justify-center transition-all text-gray-400 hover:text-amber-400">
+                  <i class="fas fa-chevron-right text-sm"></i>
+                </button>
+              </div>
               <div class="flex-1 min-w-0">
                 <h2 id="detailTitle" class="text-xl font-bold leading-snug mb-1">Headline</h2>
                 <span id="detailStatus" class="status-badge status-needs-approval hidden">Status</span>
@@ -2295,6 +2305,31 @@ app.get('/', (c) => {
           <span id="detailSubtitle" class="hidden"></span>
           <div id="dynamicFieldsContainer" class="hidden"></div>
           <div id="recordDetailsContent"></div>
+        </div>
+
+        <!-- IMAGE PROMPT SECTION in Content Review -->
+        <div class="glass rounded-2xl mb-4 overflow-hidden">
+          <div class="p-4">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-semibold flex items-center gap-2">
+                <i class="fas fa-wand-magic-sparkles text-purple-400"></i>
+                Image Prompt
+              </h3>
+              <div class="flex items-center gap-3">
+                <button id="reviewGeneratePromptBtn" onclick="generateAIImagePrompt()" class="text-xs bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
+                  <i class="fas fa-robot"></i>
+                  <span>Generate Prompt</span>
+                </button>
+                <span id="reviewPromptStatus" class="text-xs text-gray-500 hidden"></span>
+              </div>
+            </div>
+            <textarea
+              id="reviewImagePrompt"
+              rows="4"
+              placeholder="Click Generate Prompt to create an image prompt from this headline..."
+              class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white placeholder-gray-500 resize-y focus:outline-none focus:border-purple-500 transition-colors"
+            ></textarea>
+          </div>
         </div>
 
         <!-- SOCIAL CONTENT SECTION - always shown for Articles -->
@@ -2754,6 +2789,81 @@ app.get('/', (c) => {
       }
     }
     
+    // Generate image prompt via GPT-4o using /api/generate-image-prompt
+    async function generateAIImagePrompt() {
+      if (!currentRecord) {
+        alert('Select a record first');
+        return;
+      }
+      const f = currentRecord.fields || {};
+      const sourceHeadline = f.Headline || f.sourceHeadline || f.Title || '';
+      const sourceSummary = f.Lead || f.Body || f.Summary || '';
+      const category = f.category || (currentTopic === 'ai' ? 'AI/technology' : 'crypto');
+
+      if (!sourceHeadline) {
+        alert('No headline found on selected record');
+        return;
+      }
+
+      const btn = document.getElementById('reviewGeneratePromptBtn');
+      const textarea = document.getElementById('reviewImagePrompt');
+      const statusEl = document.getElementById('reviewPromptStatus');
+      const origHTML = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+      statusEl.textContent = 'Generating prompt...';
+      statusEl.classList.remove('hidden');
+
+      try {
+        const res = await fetch('/api/generate-image-prompt', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sourceHeadline, sourceSummary, category })
+        });
+        const data = await res.json();
+        if (data.error) {
+          textarea.value = 'Error: ' + data.error;
+          statusEl.textContent = 'Error';
+          return;
+        }
+        textarea.value = data.prompt;
+        statusEl.textContent = data.prompt.length + ' chars';
+        // Also populate the main image prompt input for convenience
+        const mainPromptInput = document.getElementById('promptInput');
+        if (mainPromptInput) {
+          mainPromptInput.value = data.prompt;
+          document.getElementById('charCount').textContent = data.prompt.length + ' characters';
+        }
+      } catch (err) {
+        console.error('Generate image prompt error:', err);
+        textarea.value = 'Error: ' + err.message;
+        statusEl.textContent = 'Failed';
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = origHTML;
+      }
+    }
+
+    // Navigate to previous/next record
+    function navigateRecord(direction) {
+      if (!allRecords.length || !currentRecordId) return;
+      const currentIndex = allRecords.indexOf(currentRecordId);
+      if (currentIndex === -1) return;
+      const newIndex = currentIndex + direction;
+      if (newIndex < 0 || newIndex >= allRecords.length) return;
+      const newId = allRecords[newIndex];
+      // Find and click the corresponding card to trigger selectRecord with proper highlighting
+      const cards = document.querySelectorAll('.record-card');
+      if (cards[newIndex]) {
+        cards[newIndex].click();
+        // Scroll the card into view
+        cards[newIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      } else {
+        // Fallback: call selectRecord directly
+        selectRecord(newId);
+      }
+    }
+
     // Toggle headline input visibility and regenerate prompt
     function onHeadlineToggleChange() {
       const isChecked = document.getElementById('addHeadlineText').checked;
@@ -2923,6 +3033,7 @@ app.get('/', (c) => {
     let lastGeneratedRatio = '16:9';
     let currentRecordId = null;
     let currentRecord = null;
+    let allRecords = [];  // Tracks all loaded record IDs for prev/next navigation
     let saveTimeout = null;
     let contentImages = { '16:9': null, '9:16': null, '1:1': null };
     let expandedCategories = {}; // Track which categories are expanded
@@ -3286,6 +3397,7 @@ app.get('/', (c) => {
         }
         
         const records = data.records || [];
+        allRecords = records.map(r => r.id || (r.fields || {}).Id);
         console.log('Processing', records.length, 'records for rendering');
         
         // Detect available fields from first record (if available)
@@ -3500,6 +3612,9 @@ app.get('/', (c) => {
       document.getElementById('contentInstagram').value= '';
       document.getElementById('contentBlog').value     = '';
       document.getElementById('contentScript').value   = '';
+      document.getElementById('reviewImagePrompt').value = '';
+      var reviewStatusClear = document.getElementById('reviewPromptStatus');
+      if (reviewStatusClear) { reviewStatusClear.classList.add('hidden'); reviewStatusClear.textContent = ''; }
       document.getElementById('twitterCount').textContent  = '0';
       document.getElementById('blueskyCount').textContent  = '0';
       
@@ -3512,6 +3627,24 @@ app.get('/', (c) => {
 
         document.getElementById('noSelection').classList.add('hidden');
         document.getElementById('recordDetail').classList.remove('hidden');
+
+        // ── NAVIGATION POSITION ───────────────────────────────────
+        const posIdx = allRecords.indexOf(currentRecordId);
+        const posEl = document.getElementById('recordPosition');
+        if (posEl && posIdx !== -1) {
+          posEl.textContent = (posIdx + 1) + ' / ' + allRecords.length;
+        }
+
+        // ── REVIEW IMAGE PROMPT ───────────────────────────────────
+        const reviewPromptEl = document.getElementById('reviewImagePrompt');
+        const reviewStatusEl = document.getElementById('reviewPromptStatus');
+        if (reviewPromptEl) {
+          reviewPromptEl.value = f.ImagePrompt || f.imagePrompt || '';
+          if (reviewStatusEl) {
+            reviewStatusEl.textContent = (f.ImagePrompt || f.imagePrompt) ? (f.ImagePrompt || f.imagePrompt).length + ' chars' : '';
+            reviewStatusEl.classList.toggle('hidden', !(f.ImagePrompt || f.imagePrompt));
+          }
+        }
 
         // ── STATUS ──────────────────────────────────────────────────
         const status = f.Status || '';
