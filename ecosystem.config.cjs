@@ -7,7 +7,7 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 3000,
-        NOCODB_BASE_URL: 'http://localhost:8080',
+        NOCODB_BASE_URL: 'http://31.220.49.162:8080',
         NOCODB_TOKEN: 'htjKEaVOkCm8QoJgzxYQ4iA1SL8SX_ZRQbVSSi_7',
         PERPLEXITY_API_KEY: '',
         OPENAI_API_KEY: '',

@@ -65,6 +65,7 @@ const INITIAL_RETRY_DELAY = 1000 // 1 second
 
 async function fetchWithRetry(url: string, options: RequestInit, retries = MAX_RETRIES): Promise<Response> {
   try {
+    // Use TCP-based fetch for NocoDB calls (bypasses Cloudflare IP block)
     const res = await fetch(url, options)
     
     // If rate limited, retry with exponential backoff
@@ -89,8 +90,9 @@ async function fetchWithRetry(url: string, options: RequestInit, retries = MAX_R
 
 app.use('/api/*', cors())
 
-// Environment configuration - use env vars with fallbacks for local dev
-const DEFAULT_NOCODB_BASE_URL = 'http://31.220.49.162:8080'
+// Environment configuration
+// Cloudflare Workers use the proxy Worker (HTTPS); local Node.js uses direct IP
+const DEFAULT_NOCODB_BASE_URL = 'https://nocodb-proxy.fifthaveai.workers.dev'
 const KIEAI_API_KEY = (typeof process !== 'undefined' && process.env && process.env.KIEAI_API_KEY) ||
                       'cf2a50987a92a698e89d5efeb80cde82'
 
@@ -2919,6 +2921,7 @@ app.get('/', (c) => {
     // CONFIGURATION
     // ========================================
     const NOCODB_TOKEN = '${(c.env || {}).NOCODB_TOKEN || EXTENSION_NOCODB_TOKEN}';
+    const NOCODB_BASE_URL = '${(c.env || {}).NOCODB_BASE_URL || DEFAULT_NOCODB_BASE_URL}';
 
     // Card image error handler - called from onerror attribute
     // Replaces broken img with a clean placeholder while preserving container height
@@ -5340,7 +5343,7 @@ app.get('/', (c) => {
         console.log('[NocoDB save] PATCHing "Post Image Preview" with attachment payload:', JSON.stringify(attachmentPayload));
         
         // Save to NocoDB
-        const res = await fetch('/api/records/' + currentRecordId + '?baseId=' + currentBase.id + '&tableId=' + currentTable.id, {
+        const res = await fetch(\`/api/records/\${currentRecordId}?baseId=\${currentBase.id}&tableId=\${currentTable.id}\`, {
           method: 'PATCH',
           headers: {
             'xc-token': NOCODB_TOKEN,
@@ -6317,8 +6320,10 @@ app.get('/', (c) => {
       // The field may contain extra text like "TechCrunch - https://..." so we
       // pull out the first http(s) URL we find.
       const sourceRaw = (currentRecord && currentRecord.fields && currentRecord.fields.Source) || '';
-      const urlMatch = sourceRaw.match(/https?:\/\/[^\s]+/);
-      const sourceUrl = urlMatch ? urlMatch[0].replace(/[.,;)]+$/, '') : '';
+      var urlStart = sourceRaw.indexOf('http');
+      var urlEnd = urlStart >= 0 ? sourceRaw.indexOf(' ', urlStart) : -1;
+      if (urlEnd === -1 && urlStart >= 0) urlEnd = sourceRaw.length;
+      const sourceUrl = urlStart >= 0 ? sourceRaw.substring(urlStart, urlEnd).replace(/[.,;)]+$/, '') : '';
 
       if (!sourceUrl) {
         alert('No source URL found for this record. Make sure the Source field contains a URL.');
@@ -6892,7 +6897,7 @@ app.get('/', (c) => {
         const dateField = (tableFields.find(f => f.type === 'date') || {}).name || 'Start date';
         
         // Update NocoDB record
-        const res = await fetch('/api/records/' + postId + '?baseId=' + currentBase.id + '&tableId=' + currentTable.id, {
+        const res = await fetch(\`/api/records/\${postId}?baseId=\${currentBase.id}&tableId=\${currentTable.id}\`, {
           method: 'PATCH',
           headers: {
             'xc-token': NOCODB_TOKEN,
