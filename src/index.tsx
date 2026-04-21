@@ -295,12 +295,9 @@ app.get('/api/records', async (c) => {
   if (!tableId) return c.json({ error: 'Missing tableId' }, 400)
 
   // NocoDB API for listing records
+  // Always fetch all records (limit=200, newest first) — client-side does status filtering
   const nocodbBaseUrl = c.env.NOCODB_BASE_URL || DEFAULT_NOCODB_BASE_URL
-  let url = nocodbBaseUrl + `/api/v2/tables/${tableId}/records`
-  if (filter && filter !== 'all') {
-    // NocoDB uses different filter syntax - for now, fetch all and filter client-side
-    // or use NocoDB's where parameter: url += `?where=(Status,eq,${filter})`
-  }
+  let url = nocodbBaseUrl + `/api/v2/tables/${tableId}/records?limit=200&sort=-CreatedAt`
 
   const res = await fetch(url, {
     headers: { 'xc-token': token }
@@ -1867,7 +1864,7 @@ app.get('/', (c) => {
     .status-declined { background: #EF4444; color: #fff; }
     .status-posted { background: #3B82F6; color: #fff; }
     .status-ready { background: #8B5CF6; color: #fff; }
-    .status-draft { background: #6B7280; color: #fff; }
+    .status-draft { background: #3B82F6; color: #fff; }
     .status-done { background: #10B981; color: #fff; }
     .status-pending { background: #F59E0B; color: #000; }
     
@@ -3795,8 +3792,14 @@ app.get('/', (c) => {
     function updateUIForTable() {
       if (!currentTable) return;
       
-      // Check if table has Status field
-      const hasStatus = tableFields.some(f => f.name === 'Status');
+      // Check if table has Status field — check schema first, then fallback
+      // to known table names (tableFields may be empty when NocoDB meta API
+      // doesn't return column details)
+      const hasStatusFromSchema = tableFields.some(f => f.name === 'Status');
+      const tblNameLc = ((currentTable || {}).name || '').toLowerCase();
+      const isKnownStatusTable = tblNameLc === 'articles';
+      const hasStatus = hasStatusFromSchema || isKnownStatusTable;
+
       const statusContainer = document.getElementById('statusFilterContainer');
       const actionButtons = document.getElementById('actionButtons');
       
@@ -3814,12 +3817,11 @@ app.get('/', (c) => {
             options += \`<option value="\${choice.name}" class="bg-black text-white">\${choice.name}</option>\`;
           });
         } else {
-          // Default options
+          // Fallback: known Status options for Articles table (ready/draft/published)
           options += \`
-            <option value="Needs Approval" class="bg-black text-white">Needs Approval</option>
-            <option value="Approved" class="bg-black text-white">Approved</option>
-            <option value="Declined" class="bg-black text-white">Declined</option>
-            <option value="Posted" class="bg-black text-white">Posted</option>
+            <option value="draft" class="bg-black text-white">draft</option>
+            <option value="ready" class="bg-black text-white">ready</option>
+            <option value="published" class="bg-black text-white">published</option>
           \`;
         }
         statusSelect.innerHTML = options;
@@ -3867,7 +3869,9 @@ app.get('/', (c) => {
       const recordsList = document.getElementById('recordsList');
       recordsList.innerHTML = '<div class="p-4 text-center"><div class="loading-spinner mx-auto"></div></div>';
       
-      const hasStatus = tableFields.some(f => f.name === 'Status');
+      const hasStatusFromSchema = tableFields.some(f => f.name === 'Status');
+      const tblName = ((currentTable || {}).name || '').toLowerCase();
+      const hasStatus = hasStatusFromSchema || tblName === 'articles';
       const filter = hasStatus ? document.getElementById('statusFilter').value : 'all';
       
       try {
@@ -3886,9 +3890,13 @@ app.get('/', (c) => {
           return;
         }
         
-        const records = data.records || [];
+        const allFetched = data.records || [];
+        // Client-side status filtering — server returns all records
+        const records = (filter && filter !== 'all')
+          ? allFetched.filter(r => (r.fields || {}).Status === filter)
+          : allFetched;
         allRecords = records.map(r => r.id || (r.fields || {}).Id);
-        console.log('Processing', records.length, 'records for rendering');
+        console.log('Processing', records.length, 'of', allFetched.length, 'records (filter:', filter, ')');
         
         // Detect available fields from first record (if available)
         const sampleFields = records.length > 0 ? Object.keys(records[0].fields || {}) : [];
@@ -4031,8 +4039,14 @@ app.get('/', (c) => {
                 </div>
                </div>\`;
 
+          const isDraft = (status || '').toLowerCase() === 'draft';
+          // Draft cards get a dashed blue border + lower opacity; ready/other get normal styling
+          const selectedClass = currentRecordId === r.id ? 'border-amber-500 bg-amber-500/10' : (isDraft ? 'bg-white/5 border-dashed border-blue-400/50' : 'bg-white/5');
+
           return \`
-            <div class="record-card flex-shrink-0 w-64 p-3 rounded-xl cursor-pointer border border-white/10 hover:border-amber-500 transition-all \${currentRecordId === r.id ? 'border-amber-500 bg-amber-500/10' : 'bg-white/5'}" 
+            <div class="record-card flex-shrink-0 w-64 p-3 rounded-xl cursor-pointer border border-white/10 hover:border-amber-500 transition-all \${selectedClass}" 
+                 style="\${isDraft ? 'opacity:0.7' : ''}"
+                 data-record-id="\${r.id}"
                  onclick="selectRecord('\${r.id}', event)">
               <div class="flex flex-col gap-2">
                 \${imgBlock}
