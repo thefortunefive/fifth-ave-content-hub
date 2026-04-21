@@ -3051,12 +3051,11 @@ app.get('/', (c) => {
       return CATEGORY_SETTINGS[category] || CATEGORY_SETTINGS['default'];
     }
 
-    // Generate image prompt based on headline and category
-    // Local fallback prompt — used only when no saved ImagePrompt exists
-    // and the GPT-4o API hasn't been called yet. Provides a basic placeholder
-    // based on the headline. Click "Generate Prompt" for a context-aware prompt.
-    function generateImagePrompt(headline, category) {
-      return 'Click "Generate Prompt" for an AI-generated image prompt for: ' + headline;
+    // generateImagePrompt returns the record's saved ImagePrompt when available,
+    // otherwise returns an empty string. No static placeholders — the textarea
+    // stays blank until the user clicks "Generate Prompt" (GPT-4o API call).
+    function generateImagePrompt(headline, category, savedPrompt) {
+      return savedPrompt || '';
     }
 
     // Generate image prompt using GPT-4o API
@@ -3170,8 +3169,9 @@ app.get('/', (c) => {
         const f = currentRecord.fields || {};
         const headline = f.sourceHeadline || f.Title || f.Headline || '';
         const category = f.category || 'default';
+        const savedPrompt = f.ImagePrompt || f.imagePrompt || '';
         if (headline) {
-          const autoPrompt = generateImagePrompt(headline, category);
+          const autoPrompt = generateImagePrompt(headline, category, savedPrompt);
           document.getElementById('promptInput').value = autoPrompt;
           document.getElementById('charCount').textContent = autoPrompt.length + ' characters';
         }
@@ -3184,8 +3184,9 @@ app.get('/', (c) => {
         const f = currentRecord.fields || {};
         const headline = f.sourceHeadline || f.Title || f.Headline || '';
         const category = f.category || 'default';
+        const savedPrompt = f.ImagePrompt || f.imagePrompt || '';
         if (headline) {
-          const autoPrompt = generateImagePrompt(headline, category);
+          const autoPrompt = generateImagePrompt(headline, category, savedPrompt);
           document.getElementById('promptInput').value = autoPrompt;
           document.getElementById('charCount').textContent = autoPrompt.length + ' characters';
         }
@@ -4118,13 +4119,14 @@ app.get('/', (c) => {
         const shortHeadlineInput = document.getElementById('shortHeadline');
         if (shortHeadlineInput) shortHeadlineInput.value = createShortHeadline(headline);
         const savedImagePrompt = f.ImagePrompt || f.imagePrompt || '';
+        // Use the saved ImagePrompt directly. If none, leave blank and prompt
+        // the user to click "Generate Prompt" for a context-aware GPT-4o prompt.
         if (savedImagePrompt) {
           document.getElementById('promptInput').value = savedImagePrompt;
           document.getElementById('charCount').textContent = savedImagePrompt.length + ' characters';
-        } else if (headline && headline !== 'Untitled') {
-          const autoPrompt = generateImagePrompt(headline, category);
-          document.getElementById('promptInput').value = autoPrompt;
-          document.getElementById('charCount').textContent = autoPrompt.length + ' characters';
+        } else {
+          document.getElementById('promptInput').value = '';
+          document.getElementById('charCount').textContent = '0 characters — click Generate Prompt';
         }
 
         setupAutoSave();
