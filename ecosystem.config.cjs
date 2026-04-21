@@ -11,7 +11,8 @@ module.exports = {
         NOCODB_TOKEN: 'htjKEaVOkCm8QoJgzxYQ4iA1SL8SX_ZRQbVSSi_7',
         PERPLEXITY_API_KEY: '',
         OPENAI_API_KEY: '',
-        FAL_API_KEY: ''
+        FAL_API_KEY: '',
+        BLOTATO_API_KEY: 'blt_nf7ggzb6K1BzK0mc2j+UfvqNrBOon2O7s2UpSPTBqD0='
       },
       watch: false,
       instances: 1,

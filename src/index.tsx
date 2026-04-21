@@ -8,6 +8,7 @@ export interface Env {
   OPENAI_API_KEY?: string
   FAL_API_KEY?: string
   NOCODB_BASE_URL?: string
+  BLOTATO_API_KEY?: string
 }
 
 const app = new Hono<{ Bindings: Env }>()
@@ -17,7 +18,7 @@ const app = new Hono<{ Bindings: Env }>()
 // This must be the FIRST middleware so every route handler sees the env vars.
 if (typeof process !== 'undefined' && process.env) {
   app.use('*', async (c, next) => {
-    const envKeys = ['NOCODB_TOKEN', 'NOCODB_BASE_URL', 'OPENAI_API_KEY', 'PERPLEXITY_API_KEY', 'FAL_API_KEY'] as const
+    const envKeys = ['NOCODB_TOKEN', 'NOCODB_BASE_URL', 'OPENAI_API_KEY', 'PERPLEXITY_API_KEY', 'FAL_API_KEY', 'BLOTATO_API_KEY'] as const
     for (const key of envKeys) {
       if (process.env[key] && !(c.env as any)[key]) {
         ;(c.env as any)[key] = process.env[key]
@@ -1463,6 +1464,112 @@ app.post('/api/trigger-discovery', async (c) => {
   }
 })
 
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/publish-to-blotato
+// Reads a NocoDB record and sends social copy + image to Blotato for each
+// connected platform.  Called by the dashboard Approve button after the
+// record status is set to 'approved'.
+// Body: { recordId }
+// ─────────────────────────────────────────────────────────────────────────────
+const BLOTATO_ACCOUNTS = {
+  twitter:   { accountId: '1821',  field: 'Twitter Copy' },
+  threads:   { accountId: '2910',  field: 'Threads Copy' },
+  bluesky:   { accountId: '26387', field: 'Bluesky Copy' },
+  linkedin:  { accountId: '17921', field: 'LinkedIn Copy', pageId: '104444530' },
+  instagram: { accountId: '2765',  field: 'Instagram Copy' },
+}
+
+app.post('/api/publish-to-blotato', async (c) => {
+  try {
+    const blotatoKey = c.env.BLOTATO_API_KEY
+    if (!blotatoKey) return c.json({ error: 'BLOTATO_API_KEY not configured' }, 500)
+
+    const { recordId } = await c.req.json()
+    if (!recordId) return c.json({ error: 'recordId is required' }, 400)
+
+    const nocodbToken = c.env?.NOCODB_TOKEN || EXTENSION_NOCODB_TOKEN
+    const nocodbBaseUrl = c.env.NOCODB_BASE_URL || DEFAULT_NOCODB_BASE_URL
+    const TABLE_ID = 'm5fb56hy2px2fuv'
+
+    // 1. Fetch the full record
+    console.log(`[blotato] Fetching record ${recordId}`)
+    const recRes = await fetch(`${nocodbBaseUrl}/api/v2/tables/${TABLE_ID}/records/${recordId}`, {
+      headers: { 'xc-token': nocodbToken }
+    })
+    if (!recRes.ok) return c.json({ error: `NocoDB ${recRes.status} for record ${recordId}` }, 404)
+    const rec: any = await recRes.json()
+
+    // 2. Resolve the image URL — must be publicly accessible for Blotato
+    //    NocoDB stores Post Image as a URL on the VPS like http://31.220.49.162:8080/download/...
+    const imageUrl = rec['Post Image'] || ''
+
+    // 3. Fire one Blotato POST per platform
+    const results: any[] = []
+    for (const [platform, cfg] of Object.entries(BLOTATO_ACCOUNTS)) {
+      const text = rec[(cfg as any).field] || ''
+      if (!text) {
+        results.push({ platform, skipped: true, reason: 'empty copy' })
+        continue
+      }
+
+      const payload: any = {
+        post: {
+          accountId: (cfg as any).accountId,
+          content: {
+            text,
+            mediaUrls: imageUrl ? [imageUrl] : [],
+            platform,
+          },
+          target: { targetType: platform } as any,
+        },
+        useNextFreeSlot: true, // queue to next calendar slot
+      }
+
+      // Platform-specific target fields
+      if (platform === 'linkedin' && (cfg as any).pageId) {
+        payload.post.target.pageId = (cfg as any).pageId
+      }
+
+      console.log(`[blotato] Posting to ${platform} (account ${(cfg as any).accountId})`)
+      try {
+        const bRes = await fetch('https://backend.blotato.com/v2/posts', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'blotato-api-key': blotatoKey,
+          },
+          body: JSON.stringify(payload),
+        })
+        const bData = await bRes.json()
+        results.push({
+          platform,
+          status: bRes.status,
+          postSubmissionId: (bData as any).postSubmissionId || null,
+          error: bRes.ok ? null : bData,
+        })
+      } catch (err: any) {
+        results.push({ platform, status: 0, error: err.message })
+      }
+    }
+
+    // 4. If at least one post succeeded, update status to 'published'
+    const anySuccess = results.some(r => r.status === 201)
+    if (anySuccess) {
+      await fetch(`${nocodbBaseUrl}/api/v2/tables/${TABLE_ID}/records`, {
+        method: 'PATCH',
+        headers: { 'xc-token': nocodbToken, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ Id: recordId, Status: 'published' }),
+      })
+      console.log(`[blotato] Record ${recordId} → published`)
+    }
+
+    return c.json({ recordId, published: anySuccess, results })
+  } catch (err: any) {
+    console.error('[blotato] Error:', err.message)
+    return c.json({ error: err.message }, 500)
+  }
+})
+
 // API: Generate Platform Content (all 8 platforms) using Fifth Ave Angel voice
 // POST /api/generate-platform-content  body: { headline, body, source, category }
 app.post('/api/generate-platform-content', async (c) => {
@@ -1863,6 +1970,7 @@ app.get('/', (c) => {
     .status-approved { background: #10B981; color: #fff; }
     .status-declined { background: #EF4444; color: #fff; }
     .status-posted { background: #3B82F6; color: #fff; }
+    .status-published { background: #6366F1; color: #fff; }
     .status-ready { background: #8B5CF6; color: #fff; }
     .status-draft { background: #3B82F6; color: #fff; }
     .status-done { background: #10B981; color: #fff; }
@@ -3817,10 +3925,12 @@ app.get('/', (c) => {
             options += \`<option value="\${choice.name}" class="bg-black text-white">\${choice.name}</option>\`;
           });
         } else {
-          // Fallback: known Status options for Articles table (ready/draft/published)
+          // Fallback: known Status options for Articles table
           options += \`
             <option value="draft" class="bg-black text-white">draft</option>
             <option value="ready" class="bg-black text-white">ready</option>
+            <option value="approved" class="bg-black text-white">approved</option>
+            <option value="declined" class="bg-black text-white">declined</option>
             <option value="published" class="bg-black text-white">published</option>
           \`;
         }
@@ -6523,13 +6633,47 @@ app.get('/', (c) => {
     // ========================================
     async function approveRecord() {
       if (!currentRecordId || !currentBase || !currentTable) return;
-      await fetch(\`/api/records/\${currentRecordId}?baseId=\${currentBase.id}&tableId=\${currentTable.id}\`, {
-        method: 'PATCH',
-        headers: { 'xc-token': NOCODB_TOKEN, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ Status: 'Approved' })
-      });
-      loadRecords();
-      selectRecord(currentRecordId);
+
+      // Find the Approve button and show publishing state
+      var approveBtn = document.querySelector('[onclick="approveRecord()"]');
+      if (approveBtn) {
+        approveBtn.setAttribute('disabled', 'true');
+        approveBtn.classList.add('opacity-60');
+        approveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Publishing…';
+      }
+
+      try {
+        // 1. Set status to 'approved' in NocoDB
+        await fetch(\`/api/records/\${currentRecordId}?baseId=\${currentBase.id}&tableId=\${currentTable.id}\`, {
+          method: 'PATCH',
+          headers: { 'xc-token': NOCODB_TOKEN, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ Status: 'approved' })
+        });
+
+        // 2. Publish to Blotato (server handles all 5 platforms + sets status to 'published')
+        var pubRes = await fetch('/api/publish-to-blotato', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ recordId: currentRecordId })
+        });
+        var pubData = await pubRes.json();
+
+        if (pubData.published) {
+          console.log('[approve] Published to Blotato:', pubData.results);
+        } else {
+          console.warn('[approve] Blotato publish partial/failed:', pubData);
+        }
+      } catch (err) {
+        console.error('[approve] Error:', err);
+      } finally {
+        if (approveBtn) {
+          approveBtn.removeAttribute('disabled');
+          approveBtn.classList.remove('opacity-60');
+          approveBtn.innerHTML = '<i class="fas fa-check mr-1"></i>Approve';
+        }
+        loadRecords();
+        selectRecord(currentRecordId);
+      }
     }
 
     async function declineRecord() {
@@ -6537,7 +6681,7 @@ app.get('/', (c) => {
       await fetch(\`/api/records/\${currentRecordId}?baseId=\${currentBase.id}&tableId=\${currentTable.id}\`, {
         method: 'PATCH',
         headers: { 'xc-token': NOCODB_TOKEN, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ Status: 'Declined' })
+        body: JSON.stringify({ Status: 'declined' })
       });
       loadRecords();
       selectRecord(currentRecordId);
