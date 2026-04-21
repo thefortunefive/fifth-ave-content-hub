@@ -1044,8 +1044,8 @@ const EXTENSION_NOCODB_TOKEN = 'htjKEaVOkCm8QoJgzxYQ4iA1SL8SX_ZRQbVSSi_7'
 
 // n8n webhook URLs for instant pickup processing
 const N8N_WEBHOOKS: Record<string, string> = {
-  crypto: 'https://fifthaveai.app.n8n.cloud/webhook/crypto-pickup',
-  ai: 'https://fifthaveai.app.n8n.cloud/webhook/ai-pickup'
+  crypto: 'http://31.220.49.162:5678/webhook/crypto-pickup',
+  ai: 'http://31.220.49.162:5678/webhook/ai-pickup'
 }
 
 // Trigger the n8n pickup workflow immediately via webhook
@@ -1299,6 +1299,139 @@ app.get('/api/topics', (c) => {
       { id: 'general', label: '📋 General Pipeline', description: 'Save to Content Pipeline' }
     ]
   })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// API: Trigger _opus pipeline for a specific draft record (Task C – Process Now)
+// POST /api/process-draft  body: { recordId }
+// ─────────────────────────────────────────────────────────────────────────────
+app.post('/api/process-draft', async (c) => {
+  try {
+    const body = await c.req.json()
+    const recordId = String(body.recordId || '').trim()
+    if (!recordId) {
+      return c.json({ error: 'recordId is required' }, 400)
+    }
+
+    const nocodbToken = c.env?.NOCODB_TOKEN || EXTENSION_NOCODB_TOKEN
+    const nocodbBaseUrl = c.env?.NOCODB_BASE_URL || DEFAULT_NOCODB_BASE_URL
+    const TABLE_ID = 'm5fb56hy2px2fuv'
+
+    // 1. Fetch the record to confirm it is a draft
+    const recRes = await fetch(`${nocodbBaseUrl}/api/v2/tables/${TABLE_ID}/records/${recordId}`, {
+      headers: { 'xc-token': nocodbToken }
+    })
+    if (!recRes.ok) {
+      return c.json({ error: `NocoDB returned ${recRes.status} for record ${recordId}` }, 404)
+    }
+    const rec: any = await recRes.json()
+
+    const status = (rec.Status || '').toLowerCase()
+    if (!status || status === 'ready') {
+      return c.json({
+        error: `Record ${recordId} has status "${rec.Status}" — only draft records can be processed`,
+        status: rec.Status
+      }, 409)
+    }
+
+    // 2. Stamp 'createdAt' if the record has never been processed yet
+    //    (CreatedAt is managed by NocoDB; we just read it back for the response)
+
+    // 3. POST the recordId to the _opus webhook
+    const webhookUrl = 'http://31.220.49.162:5678/webhook/ai-pickup'
+    console.log(`[process-draft] Triggering _opus for record ${recordId} (status: ${rec.Status})`)
+
+    let webhookOk = false
+    let webhookMsg = ''
+    try {
+      const wRes = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recordId, triggeredBy: 'dashboard', triggeredAt: new Date().toISOString() })
+      })
+      webhookMsg = await wRes.text()
+      webhookOk = wRes.ok || wRes.status === 200
+      console.log(`[process-draft] Webhook response ${wRes.status}: ${webhookMsg}`)
+    } catch (wErr: any) {
+      console.error('[process-draft] Webhook call failed:', wErr.message)
+      return c.json({ error: `Could not reach n8n webhook: ${wErr.message}` }, 502)
+    }
+
+    return c.json({
+      success: webhookOk,
+      recordId,
+      headline: rec.Headline || rec.Title || '',
+      previousStatus: rec.Status,
+      message: webhookOk
+        ? `Processing started for record ${recordId}. Check back in ~90 seconds.`
+        : `Webhook responded with unexpected status: ${webhookMsg}`,
+      webhookResponse: webhookMsg
+    })
+  } catch (err: any) {
+    console.error('[process-draft] Error:', err.message)
+    return c.json({ error: err.message }, 500)
+  }
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// API: Poll processing status for a draft record (used by Process Now button)
+// GET /api/draft-status/:recordId
+// ─────────────────────────────────────────────────────────────────────────────
+app.get('/api/draft-status/:recordId', async (c) => {
+  try {
+    const recordId = c.req.param('recordId')
+    const nocodbToken = c.env?.NOCODB_TOKEN || EXTENSION_NOCODB_TOKEN
+    const nocodbBaseUrl = c.env?.NOCODB_BASE_URL || DEFAULT_NOCODB_BASE_URL
+    const TABLE_ID = 'm5fb56hy2px2fuv'
+
+    const recRes = await fetch(`${nocodbBaseUrl}/api/v2/tables/${TABLE_ID}/records/${recordId}`, {
+      headers: { 'xc-token': nocodbToken }
+    })
+    if (!recRes.ok) return c.json({ error: `NocoDB ${recRes.status}` }, 404)
+    const rec: any = await recRes.json()
+
+    return c.json({
+      recordId,
+      status: rec.Status || null,
+      headline: rec.Headline || rec.Title || '',
+      processedAt: rec['Processed At'] || null,
+      hasBody: !!(rec.Body && rec.Body.length > 20),
+      hasImage: !!(rec['Post Image'] && rec['Post Image'].startsWith('http')),
+      hasSocialCopy: !!(rec['Twitter Copy'] && rec['Twitter Copy'].length > 5)
+    })
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500)
+  }
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// API: Relay-to-opus — called by Source Discovery (Task A)
+// POST /api/relay-to-opus  body: { recordId }
+// Source Discovery's "Log Created Record" code node can POST here after writing drafts.
+// This immediately fires the _opus webhook so new drafts are enriched within seconds.
+// ─────────────────────────────────────────────────────────────────────────────
+app.post('/api/relay-to-opus', async (c) => {
+  try {
+    const body = await c.req.json()
+    const recordId = String(body.recordId || '').trim()
+    if (!recordId) return c.json({ error: 'recordId required' }, 400)
+
+    const webhookUrl = 'http://31.220.49.162:5678/webhook/ai-pickup'
+    console.log(`[relay-to-opus] Auto-triggering _opus for new draft ${recordId}`)
+
+    const wRes = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ recordId, triggeredBy: 'source-discovery', triggeredAt: new Date().toISOString() })
+    })
+    const msg = await wRes.text()
+    console.log(`[relay-to-opus] Webhook ${wRes.status}: ${msg}`)
+
+    return c.json({ success: wRes.ok, recordId, webhookStatus: wRes.status, webhookResponse: msg })
+  } catch (err: any) {
+    console.error('[relay-to-opus] Error:', err.message)
+    return c.json({ error: err.message }, 500)
+  }
 })
 
 // API: Generate Platform Content (all 8 platforms) using Fifth Ave Angel voice
@@ -2604,6 +2737,10 @@ app.get('/', (c) => {
                 <span id="detailStatus" class="status-badge status-needs-approval hidden">Status</span>
               </div>
               <div id="actionButtons" class="flex gap-2 flex-shrink-0">
+                <!-- Process Now (draft only) -->
+                <button id="processNowBtn" onclick="processDraftNow()" class="hidden bg-amber-500 hover:bg-amber-400 text-black px-3 py-1.5 rounded font-semibold text-sm whitespace-nowrap transition-all">
+                  <i class="fas fa-bolt mr-1"></i>Process Now
+                </button>
                 <button onclick="approveRecord()" class="bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded font-medium text-sm whitespace-nowrap">
                   <i class="fas fa-check mr-1"></i>Approve
                 </button>
@@ -2616,6 +2753,30 @@ app.get('/', (c) => {
               </div>
               <!-- Re-Enrich status message (shown below the button row) -->
               <div id="reEnrichStatus" class="hidden w-full mt-2 text-xs px-1"></div>
+              <!-- Process Now status panel (shown while _opus is running) -->
+              <div id="processNowPanel" class="hidden w-full mt-2 px-1">
+                <div class="flex items-center gap-3 p-3 rounded-lg bg-amber-900/30 border border-amber-500/40">
+                  <i id="processNowIcon" class="fas fa-spinner fa-spin text-amber-400"></i>
+                  <div class="flex-1 min-w-0">
+                    <p id="processNowMsg" class="text-xs text-amber-300 font-medium">Starting pipeline…</p>
+                    <div id="processNowProgress" class="hidden mt-1.5 space-y-1">
+                      <div class="flex items-center gap-2 text-xs text-gray-400">
+                        <i id="stepResearch" class="fas fa-circle-notch fa-spin text-amber-500 w-4"></i>
+                        <span>Researching article</span>
+                      </div>
+                      <div class="flex items-center gap-2 text-xs text-gray-400">
+                        <i id="stepContent" class="fas fa-circle text-gray-600 w-4"></i>
+                        <span>Generating social copy</span>
+                      </div>
+                      <div class="flex items-center gap-2 text-xs text-gray-400">
+                        <i id="stepImage" class="fas fa-circle text-gray-600 w-4"></i>
+                        <span>Creating post image</span>
+                      </div>
+                    </div>
+                  </div>
+                  <span id="processNowTimer" class="text-xs text-gray-500 font-mono flex-shrink-0">0s</span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -4068,6 +4229,21 @@ app.get('/', (c) => {
           actionButtons.classList.remove('hidden');
         } else {
           actionButtons.classList.add('hidden');
+        }
+
+        // ── PROCESS NOW BUTTON (draft only) ──────────────────────────
+        var processNowBtn = document.getElementById('processNowBtn');
+        var processNowPanel = document.getElementById('processNowPanel');
+        if (processNowBtn) {
+          if ((status || '').toLowerCase() === 'draft') {
+            processNowBtn.classList.remove('hidden');
+          } else {
+            processNowBtn.classList.add('hidden');
+          }
+        }
+        // Reset panel whenever a new record is selected
+        if (processNowPanel) {
+          processNowPanel.classList.add('hidden');
         }
 
         // ── PLATFORM CONTENT (real NocoDB field names) ───────────────
@@ -6410,6 +6586,127 @@ app.get('/', (c) => {
       } finally {
         btn.disabled = false;
         btn.innerHTML = originalBtnHtml;
+      }
+    }
+
+    // ========================================
+    // PROCESS DRAFT NOW (Task C – instant _opus trigger)
+    // ========================================
+    var _processNowInterval = null;
+    var _processNowStart = 0;
+
+    async function processDraftNow() {
+      if (!currentRecordId) return;
+
+      const btn      = document.getElementById('processNowBtn');
+      const panel    = document.getElementById('processNowPanel');
+      const msgEl    = document.getElementById('processNowMsg');
+      const iconEl   = document.getElementById('processNowIcon');
+      const timerEl  = document.getElementById('processNowTimer');
+      const progress = document.getElementById('processNowProgress');
+
+      // Lock button
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Processing…';
+
+      // Show panel
+      panel.classList.remove('hidden');
+      msgEl.textContent = 'Sending to _opus pipeline…';
+      progress.classList.remove('hidden');
+      _processNowStart = Date.now();
+
+      // Start wall-clock timer
+      clearInterval(_processNowInterval);
+      _processNowInterval = setInterval(function() {
+        var elapsed = Math.round((Date.now() - _processNowStart) / 1000);
+        timerEl.textContent = elapsed + 's';
+      }, 1000);
+
+      try {
+        // Fire the /api/process-draft endpoint
+        const triggerRes = await fetch('/api/process-draft', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ recordId: currentRecordId })
+        });
+        const triggerData = await triggerRes.json();
+
+        if (!triggerRes.ok || !triggerData.success) {
+          throw new Error(triggerData.error || 'Failed to start pipeline');
+        }
+
+        msgEl.textContent = 'Pipeline running — polling for completion…';
+
+        // Mark step 1 (research) as pending
+        document.getElementById('stepResearch').className = 'fas fa-circle-notch fa-spin text-amber-500 w-4';
+        document.getElementById('stepContent').className  = 'fas fa-circle text-gray-600 w-4';
+        document.getElementById('stepImage').className    = 'fas fa-circle text-gray-600 w-4';
+
+        // Poll /api/draft-status/:id every 8 seconds, up to 120 s
+        var pollCount = 0;
+        var maxPolls  = 15; // 15 × 8s = 120s
+        var pollTimer = setInterval(async function() {
+          pollCount++;
+          try {
+            const statusRes  = await fetch('/api/draft-status/' + currentRecordId);
+            const statusData = await statusRes.json();
+
+            // Update step indicators
+            if (statusData.hasBody) {
+              document.getElementById('stepResearch').className = 'fas fa-check-circle text-green-400 w-4';
+              document.getElementById('stepContent').className  = 'fas fa-circle-notch fa-spin text-amber-500 w-4';
+            }
+            if (statusData.hasSocialCopy) {
+              document.getElementById('stepContent').className  = 'fas fa-check-circle text-green-400 w-4';
+              document.getElementById('stepImage').className    = 'fas fa-circle-notch fa-spin text-amber-500 w-4';
+            }
+            if (statusData.hasImage) {
+              document.getElementById('stepImage').className    = 'fas fa-check-circle text-green-400 w-4';
+            }
+
+            // Done when status flips to 'ready'
+            if ((statusData.status || '').toLowerCase() === 'ready') {
+              clearInterval(pollTimer);
+              clearInterval(_processNowInterval);
+              var elapsed = Math.round((Date.now() - _processNowStart) / 1000);
+              iconEl.className = 'fas fa-check-circle text-green-400';
+              msgEl.textContent = 'Done! Article ready in ' + elapsed + 's — reloading…';
+              btn.disabled = false;
+              btn.innerHTML = '<i class="fas fa-bolt mr-1"></i>Process Now';
+
+              // Reload records + re-select to show the enriched article
+              setTimeout(function() {
+                panel.classList.add('hidden');
+                progress.classList.add('hidden');
+                loadRecords();
+                selectRecord(currentRecordId);
+              }, 1500);
+              return;
+            }
+
+            msgEl.textContent = 'Pipeline running (' + (pollCount * 8) + 's elapsed)…';
+
+            // Timeout
+            if (pollCount >= maxPolls) {
+              clearInterval(pollTimer);
+              clearInterval(_processNowInterval);
+              iconEl.className = 'fas fa-exclamation-triangle text-yellow-400';
+              msgEl.textContent = 'Still processing — refresh the record in a moment.';
+              btn.disabled = false;
+              btn.innerHTML = '<i class="fas fa-bolt mr-1"></i>Process Now';
+            }
+          } catch (pollErr) {
+            console.warn('[processDraftNow] poll error:', pollErr.message);
+          }
+        }, 8000);
+
+      } catch (err) {
+        clearInterval(_processNowInterval);
+        iconEl.className = 'fas fa-times-circle text-red-400';
+        msgEl.textContent = '\u2717 ' + err.message;
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-bolt mr-1"></i>Process Now';
+        console.error('[processDraftNow] error:', err);
       }
     }
 
