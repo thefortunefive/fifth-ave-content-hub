@@ -6804,8 +6804,8 @@ app.get('/', (c) => {
 
             // Count new record IDs not in the snapshot
             const newIds = records
-              .map((rec: any) => String(rec.Id || rec.id || ''))
-              .filter((id: string) => id && !existingIds.has(id));
+              .map((rec) => String(rec.Id || rec.id || ''))
+              .filter((id) => id && !existingIds.has(id));
 
             if (newIds.length > 0) {
               clearInterval(pollInterval);
@@ -6830,7 +6830,7 @@ app.get('/', (c) => {
           }
         }, 8000);
 
-      } catch (err: any) {
+      } catch (err) {
         msg.textContent = '✗ Error: ' + err.message;
         msg.classList.replace('text-gray-400', 'text-red-400');
       } finally {
