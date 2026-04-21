@@ -1434,6 +1434,38 @@ app.post('/api/relay-to-opus', async (c) => {
   }
 })
 
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/trigger-discovery
+// Fires the Source Discovery n8n webhook so the workflow runs immediately
+// without waiting for the hourly schedule.
+// ─────────────────────────────────────────────────────────────────────────────
+app.post('/api/trigger-discovery', async (c) => {
+  try {
+    const discoveryWebhookUrl = 'http://31.220.49.162:5678/webhook/source-discovery'
+    console.log('[trigger-discovery] Firing Source Discovery webhook')
+
+    const wRes = await fetch(discoveryWebhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ triggeredBy: 'dashboard', triggeredAt: new Date().toISOString() })
+    })
+    const msg = await wRes.text()
+    console.log(`[trigger-discovery] Webhook ${wRes.status}: ${msg}`)
+
+    return c.json({
+      started: wRes.ok,
+      webhookStatus: wRes.status,
+      webhookResponse: msg,
+      message: wRes.ok
+        ? 'Source Discovery pipeline started — new articles will appear shortly.'
+        : `Webhook returned ${wRes.status}: ${msg}`
+    })
+  } catch (err: any) {
+    console.error('[trigger-discovery] Error:', err.message)
+    return c.json({ error: err.message }, 500)
+  }
+})
+
 // API: Generate Platform Content (all 8 platforms) using Fifth Ave Angel voice
 // POST /api/generate-platform-content  body: { headline, body, source, category }
 app.post('/api/generate-platform-content', async (c) => {
@@ -2637,10 +2669,22 @@ app.get('/', (c) => {
 
     <!-- 6. NocoDB Records (Full Width) -->
     <div class="glass rounded-2xl p-4 mb-4">
-      <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
-        <i class="fas fa-database text-amber-500"></i>
-        NocoDB Records
-      </h2>
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold flex items-center gap-2">
+          <i class="fas fa-database text-amber-500"></i>
+          NocoDB Records
+        </h2>
+        <div class="flex items-center gap-3">
+          <!-- Discovery status message -->
+          <span id="discoveryMsg" class="hidden text-xs text-gray-400 italic"></span>
+          <!-- Find New Articles button -->
+          <button id="findArticlesBtn" onclick="triggerDiscovery()"
+            class="bg-green-600 hover:bg-green-500 text-white px-3 py-1.5 rounded font-semibold text-sm flex items-center gap-1.5 transition-all">
+            <i class="fas fa-search-plus"></i>
+            Find New Articles
+          </button>
+        </div>
+      </div>
       
       <!-- Selectors Row -->
       <div class="grid grid-cols-3 gap-4 mb-4">
@@ -6707,6 +6751,95 @@ app.get('/', (c) => {
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-bolt mr-1"></i>Process Now';
         console.error('[processDraftNow] error:', err);
+      }
+    }
+
+    // ========================================
+    // FIND NEW ARTICLES — manually trigger Source Discovery
+    // ========================================
+    async function triggerDiscovery() {
+      const btn = document.getElementById('findArticlesBtn');
+      const msg = document.getElementById('discoveryMsg');
+      if (!btn || !msg) return;
+
+      // Snapshot current record IDs so we can detect new ones after polling
+      const existingIds = new Set(
+        Array.from(document.querySelectorAll('#recordsList [data-record-id]'))
+          .map(el => el.getAttribute('data-record-id'))
+      );
+
+      // Disable button, show spinner
+      btn.setAttribute('disabled', 'true');
+      btn.classList.add('opacity-60', 'cursor-not-allowed');
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching…';
+      msg.textContent = 'Searching for new articles…';
+      msg.classList.remove('hidden', 'text-green-400', 'text-yellow-400', 'text-red-400');
+      msg.classList.add('text-gray-400');
+
+      try {
+        // 1. Fire the Source Discovery webhook
+        const triggerRes = await fetch('/api/trigger-discovery', { method: 'POST' });
+        const triggerData = await triggerRes.json();
+        if (!triggerData.started) {
+          msg.textContent = '⚠ ' + (triggerData.message || 'Failed to start Source Discovery.');
+          msg.classList.replace('text-gray-400', 'text-yellow-400');
+          return;
+        }
+
+        msg.textContent = 'Pipeline running — watching for new drafts…';
+
+        // 2. Poll /api/records every 8 s for up to 90 s (≈11 polls)
+        // Source Discovery takes ~30–60 s (Perplexity + NocoDB writes + _opus kicks)
+        let pollCount = 0;
+        const maxPolls = 11;
+        const pollInterval = setInterval(async () => {
+          pollCount++;
+          try {
+            if (!currentBase || !currentTable) return;
+            const r = await fetch(
+              \`/api/records?baseId=\${currentBase.id}&tableId=\${currentTable.id}&pageSize=100\`
+            );
+            const data = await r.json();
+            const records = data.records || data.list || [];
+
+            // Count new record IDs not in the snapshot
+            const newIds = records
+              .map((rec: any) => String(rec.Id || rec.id || ''))
+              .filter((id: string) => id && !existingIds.has(id));
+
+            if (newIds.length > 0) {
+              clearInterval(pollInterval);
+              msg.textContent = \`✓ Found \${newIds.length} new article\${newIds.length > 1 ? 's' : ''}! Refreshing…\`;
+              msg.classList.replace('text-gray-400', 'text-green-400');
+              setTimeout(() => loadRecords(), 1000);
+              setTimeout(() => {
+                msg.classList.add('hidden');
+                msg.textContent = '';
+              }, 6000);
+              return;
+            }
+
+            if (pollCount >= maxPolls) {
+              clearInterval(pollInterval);
+              msg.textContent = 'No new articles found this time. Try again shortly.';
+              msg.classList.replace('text-gray-400', 'text-yellow-400');
+              setTimeout(() => msg.classList.add('hidden'), 8000);
+            }
+          } catch (pollErr) {
+            // swallow poll errors silently; keep trying
+          }
+        }, 8000);
+
+      } catch (err: any) {
+        msg.textContent = '✗ Error: ' + err.message;
+        msg.classList.replace('text-gray-400', 'text-red-400');
+      } finally {
+        // Re-enable button after 90 s max (matches polling window)
+        setTimeout(() => {
+          btn.removeAttribute('disabled');
+          btn.classList.remove('opacity-60', 'cursor-not-allowed');
+          btn.innerHTML = '<i class="fas fa-search-plus"></i> Find New Articles';
+        }, 90000);
       }
     }
 
