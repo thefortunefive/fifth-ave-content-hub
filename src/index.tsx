@@ -7,6 +7,7 @@ export interface Env {
   PERPLEXITY_API_KEY?: string
   OPENAI_API_KEY?: string
   FAL_API_KEY?: string
+  KIEAI_API_KEY?: string
   NOCODB_BASE_URL?: string
   BLOTATO_API_KEY?: string
 }
@@ -18,7 +19,7 @@ const app = new Hono<{ Bindings: Env }>()
 // This must be the FIRST middleware so every route handler sees the env vars.
 if (typeof process !== 'undefined' && process.env) {
   app.use('*', async (c, next) => {
-    const envKeys = ['NOCODB_TOKEN', 'NOCODB_BASE_URL', 'OPENAI_API_KEY', 'PERPLEXITY_API_KEY', 'FAL_API_KEY', 'BLOTATO_API_KEY'] as const
+    const envKeys = ['NOCODB_TOKEN', 'NOCODB_BASE_URL', 'OPENAI_API_KEY', 'PERPLEXITY_API_KEY', 'FAL_API_KEY', 'KIEAI_API_KEY', 'BLOTATO_API_KEY'] as const
     for (const key of envKeys) {
       if (process.env[key] && !(c.env as any)[key]) {
         ;(c.env as any)[key] = process.env[key]
@@ -89,13 +90,37 @@ async function fetchWithRetry(url: string, options: RequestInit, retries = MAX_R
   }
 }
 
-app.use('/api/*', cors())
+// CORS: allow Avatar Creator and localhost dev origins
+app.use('/api/*', cors({
+  origin: (origin) => {
+    if (!origin) return '*'
+    const allowed = [
+      'https://fifth-ave-ai-avatar.pages.dev',
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:3001'
+    ]
+    // Also allow any *.pages.dev subdomain for preview deploys
+    if (allowed.includes(origin) || origin.endsWith('.pages.dev')) {
+      return origin
+    }
+    return '*'
+  },
+  allowMethods: ['GET', 'POST', 'PATCH', 'OPTIONS'],
+  allowHeaders: ['Content-Type', 'xc-token', 'Authorization'],
+  maxAge: 3600
+}))
 
 // Environment configuration
 // Cloudflare Workers use the proxy Worker (HTTPS); local Node.js uses direct IP
 const DEFAULT_NOCODB_BASE_URL = 'https://nocodb-proxy.fifthaveai.workers.dev'
-const KIEAI_API_KEY = (typeof process !== 'undefined' && process.env && process.env.KIEAI_API_KEY) ||
-                      'cf2a50987a92a698e89d5efeb80cde82'
+// KIEAI_API_KEY: read from environment variable (set via .dev.vars locally or wrangler secret in production)
+// Falls back to c.env.KIEAI_API_KEY in route handlers; no hardcoded fallback.
+function getKieAiKey(c: any): string {
+  return (c.env as any)?.KIEAI_API_KEY ||
+    (typeof process !== 'undefined' && process.env && process.env.KIEAI_API_KEY) || ''
+}
 
 // Reference images for 5th Ave Angel
 const REFERENCE_IMAGES = {
@@ -630,10 +655,15 @@ app.post('/api/generate-image', async (c) => {
   
   console.log('KieAI Nano Banana Request:', JSON.stringify(requestBody, null, 2))
   
+  const kieKey = getKieAiKey(c)
+  if (!kieKey) {
+    return c.json({ error: 'KIEAI_API_KEY not configured. Add KIEAI_API_KEY to environment variables.' }, 500)
+  }
+
   const res = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${KIEAI_API_KEY}`,
+      'Authorization': `Bearer ${kieKey}`,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify(requestBody)
@@ -812,10 +842,15 @@ app.post('/api/generate-image-ideogram', async (c) => {
   
   console.log('Ideogram character-edit Request (text overlay):', JSON.stringify(requestBody, null, 2))
   
+  const kieKey = getKieAiKey(c)
+  if (!kieKey) {
+    return c.json({ error: 'KIEAI_API_KEY not configured. Add KIEAI_API_KEY to environment variables.' }, 500)
+  }
+
   const res = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${KIEAI_API_KEY}`,
+      'Authorization': `Bearer ${kieKey}`,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify(requestBody)
@@ -827,10 +862,247 @@ app.post('/api/generate-image-ideogram', async (c) => {
 app.get('/api/task-status/:taskId', async (c) => {
   const taskId = c.req.param('taskId')
   
+  const kieKey = getKieAiKey(c)
+  if (!kieKey) {
+    return c.json({ error: 'KIEAI_API_KEY not configured' }, 500)
+  }
+
   const res = await fetch(`https://api.kie.ai/api/v1/jobs/recordInfo?taskId=${taskId}`, {
-    headers: { 'Authorization': `Bearer ${KIEAI_API_KEY}` }
+    headers: { 'Authorization': `Bearer ${kieKey}` }
   })
   return c.json(await res.json())
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AVATAR GENERATION API
+// Called by the 5th Ave AI Avatar Creator app (Option A architecture).
+// Avatar Creator frontend → Avatar Creator backend → THIS route → KIE/FAL → image URL
+// ─────────────────────────────────────────────────────────────────────────────
+
+// POST /api/generate-avatar
+// Accepts: { prompt, formData }
+// Returns: { success, mode: "async", jobId, status } or { success, mode: "sync", imageUrl }
+app.post('/api/generate-avatar', async (c) => {
+  try {
+    const body = await c.req.json()
+    const { prompt, formData } = body
+
+    if (!prompt) {
+      return c.json({ success: false, error: 'Prompt is required' }, 400)
+    }
+
+    // Build an enhanced avatar-specific prompt from form data if available
+    let finalPrompt = prompt
+
+    // Try KIE first (Nano Banana — fast, high quality for portraits)
+    const kieKey = getKieAiKey(c)
+    if (kieKey) {
+      console.log('[generate-avatar] Using KIE (Nano Banana) for avatar generation')
+
+      const requestBody = {
+        model: 'google/nano-banana',
+        input: {
+          prompt: finalPrompt,
+          image_size: '4:3',    // Portrait aspect ratio for avatars
+          output_format: 'png'
+        }
+      }
+
+      console.log('[generate-avatar] KIE request:', JSON.stringify(requestBody, null, 2))
+
+      const res = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${kieKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      })
+
+      const data: any = await res.json()
+      console.log('[generate-avatar] KIE response:', JSON.stringify(data))
+
+      if (data.data?.taskId) {
+        return c.json({
+          success: true,
+          mode: 'async',
+          jobId: data.data.taskId,
+          provider: 'kie',
+          status: 'IN_QUEUE'
+        })
+      }
+
+      // If KIE returned an immediate result with image
+      if (data.data?.output?.image_url) {
+        return c.json({
+          success: true,
+          mode: 'sync',
+          imageUrl: data.data.output.image_url,
+          provider: 'kie'
+        })
+      }
+
+      console.error('[generate-avatar] KIE unexpected response:', JSON.stringify(data))
+      // Fall through to FAL if KIE fails
+    }
+
+    // Fallback to FAL (Flux dev — queue-based)
+    const falKey = c.env.FAL_API_KEY
+    if (falKey) {
+      console.log('[generate-avatar] Falling back to FAL (Flux dev)')
+
+      const submitRes = await fetch('https://queue.fal.run/fal-ai/flux/dev', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Key ${falKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          prompt: finalPrompt,
+          image_size: 'portrait_4_3',
+          num_inference_steps: 28,
+          guidance_scale: 3.5,
+          num_images: 1,
+          enable_safety_checker: true,
+          output_format: 'png'
+        })
+      })
+
+      if (!submitRes.ok) {
+        const errText = await submitRes.text()
+        console.error('[generate-avatar] FAL submit error:', submitRes.status, errText)
+        return c.json({ success: false, error: `Image provider error: ${submitRes.status}` }, 500)
+      }
+
+      const submitData: any = await submitRes.json()
+      console.log('[generate-avatar] FAL submit response:', JSON.stringify(submitData))
+
+      return c.json({
+        success: true,
+        mode: 'async',
+        jobId: submitData.request_id,
+        provider: 'fal',
+        status: 'IN_QUEUE',
+        _statusUrl: submitData.status_url,
+        _responseUrl: submitData.response_url
+      })
+    }
+
+    // No provider keys configured
+    return c.json({
+      success: false,
+      error: 'No image generation provider configured. Set KIEAI_API_KEY or FAL_API_KEY in environment.'
+    }, 500)
+
+  } catch (err: any) {
+    console.error('[generate-avatar] error:', err)
+    return c.json({ success: false, error: err.message || 'Server error' }, 500)
+  }
+})
+
+// GET /api/avatar-generate/status/:jobId
+// Polls the status of an async avatar generation job.
+// Query params: ?provider=kie|fal&statusUrl=...&responseUrl=...
+app.get('/api/avatar-generate/status/:jobId', async (c) => {
+  try {
+    const jobId = c.req.param('jobId')
+    const provider = c.req.query('provider') || 'kie'
+
+    if (provider === 'fal') {
+      // FAL status polling
+      const falKey = c.env.FAL_API_KEY
+      if (!falKey) {
+        return c.json({ error: 'FAL_API_KEY not configured' }, 500)
+      }
+
+      const statusUrl = c.req.query('statusUrl') ||
+        `https://queue.fal.run/fal-ai/flux/dev/requests/${jobId}/status`
+      const responseUrl = c.req.query('responseUrl') ||
+        `https://queue.fal.run/fal-ai/flux/dev/requests/${jobId}/response`
+
+      const authHeader = { 'Authorization': `Key ${falKey}` }
+
+      // Check status
+      const statusRes = await fetch(statusUrl, { method: 'GET', headers: authHeader })
+      if (!statusRes.ok) {
+        return c.json({ status: 'FAILED', error: `FAL status error: ${statusRes.status}` })
+      }
+
+      const statusData: any = await statusRes.json()
+      const status = statusData.status || statusData.state || 'IN_QUEUE'
+
+      if (status !== 'COMPLETED') {
+        return c.json({ status })
+      }
+
+      // Fetch result
+      const resultRes = await fetch(responseUrl, { method: 'GET', headers: authHeader })
+      if (!resultRes.ok) {
+        return c.json({ status: 'FAILED', error: `FAL result error: ${resultRes.status}` })
+      }
+
+      const resultData: any = await resultRes.json()
+      const images = resultData.images || []
+      if (images.length === 0) {
+        return c.json({ status: 'FAILED', error: 'No images returned' })
+      }
+
+      return c.json({ status: 'COMPLETED', imageUrl: images[0].url })
+
+    } else {
+      // KIE status polling
+      const kieKey = getKieAiKey(c)
+      if (!kieKey) {
+        return c.json({ error: 'KIEAI_API_KEY not configured' }, 500)
+      }
+
+      const res = await fetch(`https://api.kie.ai/api/v1/jobs/recordInfo?taskId=${jobId}`, {
+        headers: { 'Authorization': `Bearer ${kieKey}` }
+      })
+
+      const data: any = await res.json()
+      console.log('[avatar-status] KIE response:', JSON.stringify(data))
+
+      // KIE status values: PENDING, PROCESSING, SUCCESS, FAILED
+      const kieStatus = data.data?.status || data.data?.state || 'PENDING'
+
+      if (kieStatus === 'SUCCESS' || kieStatus === 'COMPLETED') {
+        // Extract image URL from KIE response
+        const output = data.data?.output
+        let imageUrl = ''
+
+        if (typeof output === 'string') {
+          imageUrl = output
+        } else if (Array.isArray(output) && output.length > 0) {
+          imageUrl = typeof output[0] === 'string' ? output[0] : (output[0].url || output[0].image_url || '')
+        } else if (output?.image_url) {
+          imageUrl = output.image_url
+        } else if (output?.images && output.images.length > 0) {
+          imageUrl = output.images[0].url || output.images[0]
+        } else if (output?.url) {
+          imageUrl = output.url
+        }
+
+        if (!imageUrl) {
+          console.error('[avatar-status] KIE completed but no image URL found:', JSON.stringify(data))
+          return c.json({ status: 'FAILED', error: 'KIE completed but no image URL found in response' })
+        }
+
+        return c.json({ status: 'COMPLETED', imageUrl })
+      }
+
+      if (kieStatus === 'FAILED' || kieStatus === 'ERROR') {
+        return c.json({ status: 'FAILED', error: data.data?.error || 'Image generation failed' })
+      }
+
+      // Map KIE statuses to standard statuses
+      const mappedStatus = (kieStatus === 'PROCESSING') ? 'IN_PROGRESS' : 'IN_QUEUE'
+      return c.json({ status: mappedStatus })
+    }
+  } catch (err: any) {
+    console.error('[avatar-status] error:', err)
+    return c.json({ status: 'FAILED', error: err.message || 'Status check failed' })
+  }
 })
 
 // API: Upload image to freeimage.host
@@ -1033,8 +1305,8 @@ const EXTENSION_ROUTES = {
 // Valid socialChannels options for the 5th Ave tables
 const VALID_SOCIAL_CHANNELS = ['Twitter', 'LinkedIn', 'Blog', 'Instagram', 'Facebook', 'Avatar']
 
-// NocoDB token for extension saves
-const EXTENSION_NOCODB_TOKEN = 'htjKEaVOkCm8QoJgzxYQ4iA1SL8SX_ZRQbVSSi_7'
+// NocoDB token for extension saves — read from environment, no hardcoded fallback
+const EXTENSION_NOCODB_TOKEN = (typeof process !== 'undefined' && process.env?.NOCODB_TOKEN) || ''
 
 // ============================================
 // INSTANT PROCESSING: n8n Webhook Triggers
