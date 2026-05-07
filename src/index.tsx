@@ -746,9 +746,9 @@ app.get('/api/fal-status/:requestId', async (c) => {
   // Use the exact URLs returned by fal.ai at submit time.
   // Fall back to the canonical queue URL pattern if not supplied.
   const statusUrl = c.req.query('statusUrl') ||
-    `https://queue.fal.run/fal-ai/flux/dev/requests/${requestId}/status`
+    `https://queue.fal.run/fal-ai/flux/requests/${requestId}/status`
   const responseUrl = c.req.query('responseUrl') ||
-    `https://queue.fal.run/fal-ai/flux/dev/requests/${requestId}/response`
+    `https://queue.fal.run/fal-ai/flux/requests/${requestId}`
 
   const authHeader = { 'Authorization': `Key ${falKey}` }
 
@@ -1016,9 +1016,9 @@ app.get('/api/avatar-generate/status/:jobId', async (c) => {
       }
 
       const statusUrl = c.req.query('statusUrl') ||
-        `https://queue.fal.run/fal-ai/flux/dev/requests/${jobId}/status`
+        `https://queue.fal.run/fal-ai/flux/requests/${jobId}/status`
       const responseUrl = c.req.query('responseUrl') ||
-        `https://queue.fal.run/fal-ai/flux/dev/requests/${jobId}/response`
+        `https://queue.fal.run/fal-ai/flux/requests/${jobId}`
 
       const authHeader = { 'Authorization': `Key ${falKey}` }
 
