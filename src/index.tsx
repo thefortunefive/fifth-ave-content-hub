@@ -880,35 +880,36 @@ app.get('/api/task-status/:taskId', async (c) => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 // POST /api/generate-avatar
-// Accepts: { prompt, formData }
-// Returns: { success, mode: "async", jobId, status } or { success, mode: "sync", imageUrl }
+// Accepts: { prompt, formData, model? }
+//   model: "kie-nano-banana" (default) | "fal-flux-2-klein"
+// Returns: { success, mode: "async", jobId, provider, status } or { success, mode: "sync", imageUrl, provider }
 app.post('/api/generate-avatar', async (c) => {
   try {
     const body = await c.req.json()
-    const { prompt, formData } = body
+    const { prompt, formData, model } = body
 
     if (!prompt) {
       return c.json({ success: false, error: 'Prompt is required' }, 400)
     }
 
-    // Build an enhanced avatar-specific prompt from form data if available
-    let finalPrompt = prompt
+    const finalPrompt = prompt
+    const requestedModel = model || 'kie-nano-banana'
 
-    // Try KIE first (Nano Banana — fast, high quality for portraits)
-    const kieKey = getKieAiKey(c)
-    if (kieKey) {
-      console.log('[generate-avatar] Using KIE (Nano Banana) for avatar generation')
+    // ── Route: KIE Nano Banana ──────────────────────────────────────────
+    if (requestedModel === 'kie-nano-banana') {
+      const kieKey = getKieAiKey(c)
+      if (!kieKey) {
+        return c.json({ success: false, error: 'KIEAI_API_KEY not configured. Set it in environment.' }, 500)
+      }
 
       const requestBody = {
         model: 'google/nano-banana',
         input: {
           prompt: finalPrompt,
-          image_size: '4:3',    // Portrait aspect ratio for avatars
+          image_size: '4:3',
           output_format: 'png'
         }
       }
-
-      console.log('[generate-avatar] KIE request:', JSON.stringify(requestBody, null, 2))
 
       const res = await fetch('https://api.kie.ai/api/v1/jobs/createTask', {
         method: 'POST',
@@ -920,7 +921,6 @@ app.post('/api/generate-avatar', async (c) => {
       })
 
       const data: any = await res.json()
-      console.log('[generate-avatar] KIE response:', JSON.stringify(data))
 
       if (data.data?.taskId) {
         return c.json({
@@ -932,7 +932,6 @@ app.post('/api/generate-avatar', async (c) => {
         })
       }
 
-      // If KIE returned an immediate result with image
       if (data.data?.output?.image_url) {
         return c.json({
           success: true,
@@ -943,15 +942,18 @@ app.post('/api/generate-avatar', async (c) => {
       }
 
       console.error('[generate-avatar] KIE unexpected response:', JSON.stringify(data))
-      // Fall through to FAL if KIE fails
+      return c.json({ success: false, error: 'KIE returned an unexpected response' }, 500)
     }
 
-    // Fallback to FAL (Flux dev — queue-based)
-    const falKey = c.env.FAL_API_KEY
-    if (falKey) {
-      console.log('[generate-avatar] Falling back to FAL (Flux dev)')
+    // ── Route: FAL Flux 2 Klein 9B Base ─────────────────────────────────
+    if (requestedModel === 'fal-flux-2-klein') {
+      const falKey = c.env.FAL_API_KEY
+      if (!falKey) {
+        return c.json({ success: false, error: 'FAL_API_KEY not configured. Set it in environment.' }, 500)
+      }
 
-      const submitRes = await fetch('https://queue.fal.run/fal-ai/flux/dev', {
+      const falModel = 'fal-ai/flux-2/klein/9b/base'
+      const submitRes = await fetch(`https://queue.fal.run/${falModel}`, {
         method: 'POST',
         headers: {
           'Authorization': `Key ${falKey}`,
@@ -961,7 +963,7 @@ app.post('/api/generate-avatar', async (c) => {
           prompt: finalPrompt,
           image_size: 'portrait_4_3',
           num_inference_steps: 28,
-          guidance_scale: 3.5,
+          guidance_scale: 5,
           num_images: 1,
           enable_safety_checker: true,
           output_format: 'png'
@@ -970,29 +972,26 @@ app.post('/api/generate-avatar', async (c) => {
 
       if (!submitRes.ok) {
         const errText = await submitRes.text()
-        console.error('[generate-avatar] FAL submit error:', submitRes.status, errText)
-        return c.json({ success: false, error: `Image provider error: ${submitRes.status}` }, 500)
+        console.error('[generate-avatar] FAL Klein submit error:', submitRes.status, errText)
+        return c.json({ success: false, error: `FAL error: ${submitRes.status}` }, 500)
       }
 
       const submitData: any = await submitRes.json()
-      console.log('[generate-avatar] FAL submit response:', JSON.stringify(submitData))
 
       return c.json({
         success: true,
         mode: 'async',
         jobId: submitData.request_id,
         provider: 'fal',
+        falModel,
         status: 'IN_QUEUE',
         _statusUrl: submitData.status_url,
         _responseUrl: submitData.response_url
       })
     }
 
-    // No provider keys configured
-    return c.json({
-      success: false,
-      error: 'No image generation provider configured. Set KIEAI_API_KEY or FAL_API_KEY in environment.'
-    }, 500)
+    // Unknown model
+    return c.json({ success: false, error: `Unknown model: ${requestedModel}` }, 400)
 
   } catch (err: any) {
     console.error('[generate-avatar] error:', err)
@@ -1003,6 +1002,8 @@ app.post('/api/generate-avatar', async (c) => {
 // GET /api/avatar-generate/status/:jobId
 // Polls the status of an async avatar generation job.
 // Query params: ?provider=kie|fal&statusUrl=...&responseUrl=...
+// IMPORTANT: FAL uses a shared queue domain (e.g. fal-ai/flux-2/requests/...)
+// regardless of sub-model, so we MUST use the actual URLs FAL returned at submit time.
 app.get('/api/avatar-generate/status/:jobId', async (c) => {
   try {
     const jobId = c.req.param('jobId')
@@ -1015,10 +1016,12 @@ app.get('/api/avatar-generate/status/:jobId', async (c) => {
         return c.json({ error: 'FAL_API_KEY not configured' }, 500)
       }
 
+      // Use the actual URLs FAL returned at submit time (passed via query params).
+      // Fallback uses the generic fal-ai/flux-2 queue path (NOT the full sub-model path).
       const statusUrl = c.req.query('statusUrl') ||
-        `https://queue.fal.run/fal-ai/flux/requests/${jobId}/status`
+        `https://queue.fal.run/fal-ai/flux-2/requests/${jobId}/status`
       const responseUrl = c.req.query('responseUrl') ||
-        `https://queue.fal.run/fal-ai/flux/requests/${jobId}`
+        `https://queue.fal.run/fal-ai/flux-2/requests/${jobId}`
 
       const authHeader = { 'Authorization': `Key ${falKey}` }
 
@@ -1063,24 +1066,45 @@ app.get('/api/avatar-generate/status/:jobId', async (c) => {
       const data: any = await res.json()
       console.log('[avatar-status] KIE response:', JSON.stringify(data))
 
-      // KIE status values: PENDING, PROCESSING, SUCCESS, FAILED
-      const kieStatus = data.data?.status || data.data?.state || 'PENDING'
+      // KIE status values (case-insensitive): pending, processing, success, failed
+      const kieStatusRaw = data.data?.status || data.data?.state || 'PENDING'
+      const kieStatus = kieStatusRaw.toUpperCase()
 
       if (kieStatus === 'SUCCESS' || kieStatus === 'COMPLETED') {
-        // Extract image URL from KIE response
-        const output = data.data?.output
+        // Extract image URL from KIE response — check multiple possible locations:
+        // 1. resultJson string containing { resultUrls: [...] }
+        // 2. output field (string, array, or object)
         let imageUrl = ''
 
-        if (typeof output === 'string') {
-          imageUrl = output
-        } else if (Array.isArray(output) && output.length > 0) {
-          imageUrl = typeof output[0] === 'string' ? output[0] : (output[0].url || output[0].image_url || '')
-        } else if (output?.image_url) {
-          imageUrl = output.image_url
-        } else if (output?.images && output.images.length > 0) {
-          imageUrl = output.images[0].url || output.images[0]
-        } else if (output?.url) {
-          imageUrl = output.url
+        // Try resultJson first (KIE's primary response format)
+        const resultJsonStr = data.data?.resultJson
+        if (resultJsonStr) {
+          try {
+            const parsed = typeof resultJsonStr === 'string' ? JSON.parse(resultJsonStr) : resultJsonStr
+            if (parsed.resultUrls && parsed.resultUrls.length > 0) {
+              imageUrl = parsed.resultUrls[0]
+            } else if (parsed.url) {
+              imageUrl = parsed.url
+            } else if (parsed.image_url) {
+              imageUrl = parsed.image_url
+            }
+          } catch (_) { /* not valid JSON, skip */ }
+        }
+
+        // Fallback: try output field
+        if (!imageUrl) {
+          const output = data.data?.output
+          if (typeof output === 'string') {
+            imageUrl = output
+          } else if (Array.isArray(output) && output.length > 0) {
+            imageUrl = typeof output[0] === 'string' ? output[0] : (output[0].url || output[0].image_url || '')
+          } else if (output?.image_url) {
+            imageUrl = output.image_url
+          } else if (output?.images && output.images.length > 0) {
+            imageUrl = output.images[0].url || output.images[0]
+          } else if (output?.url) {
+            imageUrl = output.url
+          }
         }
 
         if (!imageUrl) {
