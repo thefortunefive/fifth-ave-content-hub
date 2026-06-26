@@ -945,48 +945,87 @@ app.post('/api/generate-avatar', async (c) => {
       return c.json({ success: false, error: 'KIE returned an unexpected response' }, 500)
     }
 
-    // ── Route: FAL Flux 2 Klein 9B Base ─────────────────────────────────
+    // ── Route: FAL Flux 2 Klein 9B Edit (reference image support, 4 shots) ──
     if (requestedModel === 'fal-flux-2-klein') {
       const falKey = c.env.FAL_API_KEY
       if (!falKey) {
         return c.json({ success: false, error: 'FAL_API_KEY not configured. Set it in environment.' }, 500)
       }
 
-      const falModel = 'fal-ai/flux-2/klein/9b/base'
-      const submitRes = await fetch(`https://queue.fal.run/${falModel}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Key ${falKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          prompt: finalPrompt,
+      // Use the edit endpoint when image URLs are provided, base endpoint otherwise
+      const imageUrls: string[] = body.image_urls || []
+      const hasImages = imageUrls.length > 0
+      const falModel = hasImages
+        ? 'fal-ai/flux-2/klein/9b/base/edit'
+        : 'fal-ai/flux-2/klein/9b/base'
+
+      // Build 4 prompt variations for multi-shot output
+      // If reference images are provided, inject #1/#2 markers per FAL edit syntax
+      const agentRef  = hasImages && imageUrls.length >= 1 ? ' #1' : ''
+      const propRef   = hasImages && imageUrls.length >= 2 ? ' #2' : (hasImages && imageUrls.length >= 1 ? ' #1' : '')
+
+      const promptVariations = [
+        // Shot 1: Agent standing at front entrance, full facade
+        `${finalPrompt} Shot composition: real estate agent${agentRef} standing confidently at the front entrance of the property${propRef}, full facade clearly visible behind them, wide establishing shot, professional real estate marketing photography.`,
+        // Shot 2: Agent at front door welcoming pose
+        `${finalPrompt} Shot composition: real estate agent${agentRef} at the front door in a warm welcoming pose, hand gesturing toward the open door, property exterior${propRef} visible in background, inviting lifestyle photography.`,
+        // Shot 3: Wide exterior with agent in foreground
+        `${finalPrompt} Shot composition: wide architectural exterior shot of the property${propRef} with the real estate agent${agentRef} positioned in the foreground left third, property commanding the frame, dramatic sky, premium real estate photography.`,
+        // Shot 4: Agent portrait with property softly blurred
+        `${finalPrompt} Shot composition: professional portrait of real estate agent${agentRef} in sharp focus, property${propRef} softly blurred in the background as bokeh, headshot-style marketing photo, clean and polished.`
+      ]
+
+      // Submit all 4 prompts to FAL queue in parallel
+      const submitPromises = promptVariations.map(async (variantPrompt, idx) => {
+        const reqBody: Record<string, any> = {
+          prompt: variantPrompt,
           image_size: 'portrait_4_3',
           num_inference_steps: 28,
           guidance_scale: 5,
           num_images: 1,
           enable_safety_checker: true,
           output_format: 'png'
+        }
+        // Pass image URLs only for edit endpoint
+        if (hasImages) {
+          reqBody.image_urls = imageUrls
+        }
+
+        const submitRes = await fetch(`https://queue.fal.run/${falModel}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Key ${falKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(reqBody)
         })
+
+        if (!submitRes.ok) {
+          const errText = await submitRes.text()
+          console.error(`[generate-avatar] FAL Klein shot ${idx + 1} submit error:`, submitRes.status, errText)
+          throw new Error(`FAL shot ${idx + 1} error: ${submitRes.status}`)
+        }
+
+        const submitData: any = await submitRes.json()
+        return {
+          jobId:        submitData.request_id,
+          provider:     'fal' as const,
+          falModel,
+          status:       'IN_QUEUE',
+          _statusUrl:   submitData.status_url,
+          _responseUrl: submitData.response_url,
+          shotLabel:    [`Front Entrance`, `Front Door Welcome`, `Wide Exterior`, `Agent Portrait`][idx]
+        }
       })
 
-      if (!submitRes.ok) {
-        const errText = await submitRes.text()
-        console.error('[generate-avatar] FAL Klein submit error:', submitRes.status, errText)
-        return c.json({ success: false, error: `FAL error: ${submitRes.status}` }, 500)
-      }
-
-      const submitData: any = await submitRes.json()
+      // Wait for all submissions (fail fast if any submit fails)
+      const jobs = await Promise.all(submitPromises)
 
       return c.json({
         success: true,
-        mode: 'async',
-        jobId: submitData.request_id,
-        provider: 'fal',
-        falModel,
-        status: 'IN_QUEUE',
-        _statusUrl: submitData.status_url,
-        _responseUrl: submitData.response_url
+        mode: 'multi-async',
+        jobs,
+        provider: 'fal'
       })
     }
 
@@ -1050,7 +1089,7 @@ app.get('/api/avatar-generate/status/:jobId', async (c) => {
         return c.json({ status: 'FAILED', error: 'No images returned' })
       }
 
-      return c.json({ status: 'COMPLETED', imageUrl: images[0].url })
+      return c.json({ status: 'COMPLETED', imageUrl: images[0].url, imageUrls: images.map((img: any) => img.url) })
 
     } else {
       // KIE status polling
