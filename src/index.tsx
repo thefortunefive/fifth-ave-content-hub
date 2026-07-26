@@ -979,6 +979,70 @@ app.post('/api/generate-avatar', async (c) => {
       })
     }
 
+    // ── Route: FAL Nano Banana Lite (ultra-low latency, 4 shots) ──
+    if (requestedModel === 'nano-banana-lite') {
+      const falKey = c.env.FAL_API_KEY
+      if (!falKey) {
+        return c.json({ success: false, error: 'FAL_API_KEY not configured. Set it in environment.' }, 500)
+      }
+
+      const imageUrls: string[] = body.image_urls || []
+      const hasImages = imageUrls.length > 0
+      const falModel = hasImages
+        ? 'google/nano-banana-lite/edit'
+        : 'google/nano-banana-lite'
+
+      const promptVariations = [
+        `Professional real estate marketing photo. The person in the first image is a real estate agent standing confidently in front of the property shown in the second image. Wide establishing shot showing the full facade of the property. The agent is wearing professional business attire, standing at center-left with arms relaxed. Natural golden hour lighting. The agent's face, hair, and body proportions must exactly match the first reference image. The property architecture must exactly match the second reference image. Photorealistic, high-end real estate photography, sharp focus.`,
+        `Professional real estate marketing photo. The person in the first image is a real estate agent standing at the front door of the property shown in the second image, making a welcoming gesture with one hand toward the entrance. Medium shot framing the agent and the doorway. The agent is smiling warmly, wearing professional business attire. The agent's face and appearance must exactly match the first reference image. The property entrance and architectural details must exactly match the second reference image. Warm inviting lighting, photorealistic, luxury real estate photography.`,
+        `Professional real estate marketing photo. Dramatic wide shot of the property shown in the second image with the person from the first image standing in the foreground, positioned at the left third of the frame. The property dominates the background. The agent is wearing professional business attire with a confident posture. The agent's face and appearance must exactly match the first reference image. The property must exactly match the second reference image. Blue sky, manicured landscaping visible, photorealistic, architectural photography style.`,
+        `Professional real estate headshot portrait. The person from the first image is shown in a sharp, well-lit portrait with the property from the second image softly blurred in the background with bokeh effect. Tight framing on the agent from chest up. The agent is smiling professionally, wearing business attire. The agent's face, hair, skin tone, and features must be an exact match to the first reference image. The property in the soft background must match the second reference image. Studio-quality lighting on the face, shallow depth of field, luxury real estate branding photo.`
+      ]
+
+      const submitPromises = promptVariations.map(async (variantPrompt, idx) => {
+        const reqBody: Record<string, any> = {
+          prompt: variantPrompt,
+          aspect_ratio: '3:4',
+          num_images: 1,
+          output_format: 'png',
+          safety_tolerance: '4',
+          limit_generations: true
+        }
+        if (hasImages) {
+          reqBody.image_urls = imageUrls
+        }
+
+        const submitRes = await fetch(`https://queue.fal.run/${falModel}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Key ${falKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(reqBody)
+        })
+
+        if (!submitRes.ok) {
+          const errText = await submitRes.text()
+          console.error(`[generate-avatar] FAL Nano Banana Lite shot ${idx + 1} submit error:`, submitRes.status, errText)
+          throw new Error(`FAL shot ${idx + 1} error: ${submitRes.status}`)
+        }
+
+        const submitData: any = await submitRes.json()
+        return {
+          jobId:        submitData.request_id,
+          provider:     'fal' as const,
+          falModel,
+          status:       'IN_QUEUE',
+          _statusUrl:   submitData.status_url,
+          _responseUrl: submitData.response_url,
+          shotLabel:    [`Front Entrance`, `Front Door Welcome`, `Wide Exterior`, `Agent Portrait`][idx]
+        }
+      })
+
+      const jobs = await Promise.all(submitPromises)
+      return c.json({ success: true, mode: 'multi-async', jobs, provider: 'fal' })
+    }
+
     // ── Route: FAL Flux Kontext Pro (reference image support, 4 shots) ──
     if (requestedModel === 'kontext-pro') {
       const falKey = c.env.FAL_API_KEY
