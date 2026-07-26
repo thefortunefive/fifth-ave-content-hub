@@ -1061,11 +1061,11 @@ app.post('/api/generate-avatar', async (c) => {
       }
 
       const imageUrls: string[] = body.image_urls || []
-      const hasImages = imageUrls.length > 0
-      // Seedream V5 Pro uses bytedance/seedream/v5/pro/edit (with image refs) or bytedance/seedream/v5/pro (text-only)
-      const falModel = hasImages
-        ? 'bytedance/seedream/v5/pro/edit'
-        : 'bytedance/seedream/v5/pro'
+      if (imageUrls.length === 0) {
+        return c.json({ success: false, error: 'Seedream V5 Pro requires at least one reference image. Please upload an agent headshot.' }, 400)
+      }
+      // Seedream V5 Pro only supports /edit endpoint (requires image_urls)
+      const falModel = 'bytedance/seedream/v5/pro/edit'
 
       // 4-shot prompt variations — Seedream uses "Figure N" to reference images
       const promptVariations = [
@@ -1083,13 +1083,11 @@ app.post('/api/generate-avatar', async (c) => {
       const submitPromises = promptVariations.map(async (variantPrompt, idx) => {
         const reqBody: Record<string, any> = {
           prompt: variantPrompt,
+          image_urls: imageUrls,
           image_size: 'portrait_4_3',
           num_images: 1,
           output_format: 'jpeg',
           enable_safety_checker: true
-        }
-        if (hasImages) {
-          reqBody.image_urls = imageUrls
         }
 
         const submitRes = await fetch(`https://queue.fal.run/${falModel}`, {
