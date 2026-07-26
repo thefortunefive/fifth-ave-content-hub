@@ -1053,6 +1053,76 @@ app.post('/api/generate-avatar', async (c) => {
       return c.json({ success: true, mode: 'multi-async', jobs, provider: 'fal' })
     }
 
+    // ── Route: Seedream V5 Pro Edit (reference image support, 4 shots) ──
+    if (requestedModel === 'seedream-v5-pro') {
+      const falKey = c.env.FAL_API_KEY
+      if (!falKey) {
+        return c.json({ success: false, error: 'FAL_API_KEY not configured. Set it in environment.' }, 500)
+      }
+
+      const imageUrls: string[] = body.image_urls || []
+      const hasImages = imageUrls.length > 0
+      // Seedream V5 Pro uses bytedance/seedream/v5/pro/edit (with image refs) or bytedance/seedream/v5/pro (text-only)
+      const falModel = hasImages
+        ? 'bytedance/seedream/v5/pro/edit'
+        : 'bytedance/seedream/v5/pro'
+
+      // 4-shot prompt variations — Seedream uses "Figure N" to reference images
+      const promptVariations = [
+        // Shot 1: Agent standing at front entrance, full facade
+        `Professional real estate marketing photo. The person in Figure 1 is a real estate agent standing confidently in front of the property shown in Figure 2. Wide establishing shot showing the full facade of the property. The agent is wearing professional business attire, standing at center-left with arms relaxed. Natural golden hour lighting. The agent's face, hair, and body proportions must exactly match Figure 1. The property architecture must exactly match Figure 2. Photorealistic, high-end real estate photography, sharp focus.`,
+        // Shot 2: Agent at front door welcoming pose
+        `Professional real estate marketing photo. The person in Figure 1 is a real estate agent standing at the front door of the property shown in Figure 2, making a welcoming gesture with one hand toward the entrance. Medium shot framing the agent and the doorway. The agent is smiling warmly, wearing professional business attire. The agent's face and appearance must exactly match Figure 1. The property entrance and architectural details must exactly match Figure 2. Warm inviting lighting, photorealistic, luxury real estate photography.`,
+        // Shot 3: Wide exterior with agent in foreground
+        `Professional real estate marketing photo. Dramatic wide shot of the property shown in Figure 2 with the person from Figure 1 standing in the foreground, positioned at the left third of the frame. The property dominates the background. The agent is wearing professional business attire with a confident posture. The agent's face and appearance must exactly match Figure 1. The property must exactly match Figure 2. Blue sky, manicured landscaping visible, photorealistic, architectural photography style.`,
+        // Shot 4: Agent portrait with property softly blurred
+        `Professional real estate headshot portrait. The person from Figure 1 is shown in a sharp, well-lit portrait with the property from Figure 2 softly blurred in the background with bokeh effect. Tight framing on the agent from chest up. The agent is smiling professionally, wearing business attire. The agent's face, hair, skin tone, and features must be an exact match to Figure 1. The property in the soft background must match Figure 2. Studio-quality lighting on the face, shallow depth of field, luxury real estate branding photo.`
+      ]
+
+      // Submit all 4 prompts to FAL queue in parallel
+      const submitPromises = promptVariations.map(async (variantPrompt, idx) => {
+        const reqBody: Record<string, any> = {
+          prompt: variantPrompt,
+          image_size: 'portrait_4_3',
+          num_images: 1,
+          output_format: 'jpeg',
+          enable_safety_checker: true
+        }
+        if (hasImages) {
+          reqBody.image_urls = imageUrls
+        }
+
+        const submitRes = await fetch(`https://queue.fal.run/${falModel}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Key ${falKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(reqBody)
+        })
+
+        if (!submitRes.ok) {
+          const errText = await submitRes.text()
+          console.error(`[generate-avatar] FAL Seedream V5 Pro shot ${idx + 1} submit error:`, submitRes.status, errText)
+          throw new Error(`FAL shot ${idx + 1} error: ${submitRes.status}`)
+        }
+
+        const submitData: any = await submitRes.json()
+        return {
+          jobId:        submitData.request_id,
+          provider:     'fal' as const,
+          falModel,
+          status:       'IN_QUEUE',
+          _statusUrl:   submitData.status_url,
+          _responseUrl: submitData.response_url,
+          shotLabel:    [`Front Entrance`, `Front Door Welcome`, `Wide Exterior`, `Agent Portrait`][idx]
+        }
+      })
+
+      const jobs = await Promise.all(submitPromises)
+      return c.json({ success: true, mode: 'multi-async', jobs, provider: 'fal' })
+    }
+
     // Unknown model
     return c.json({ success: false, error: `Unknown model: ${requestedModel}` }, 400)
 
